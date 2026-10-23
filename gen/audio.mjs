@@ -24,6 +24,7 @@ const { values: o, positionals } = parseArgs({
     name: { type: 'string' },
     seconds: { type: 'string' },
     loop: { type: 'boolean', default: false },
+    mono: { type: 'boolean', default: false },
     influence: { type: 'string', default: '0.4' },
     vocals: { type: 'boolean', default: false },
     voice: { type: 'string', default: 'JBFqnCBsd6RMkjVDRZzb' },
@@ -40,7 +41,7 @@ const [kind, ...rest] = positionals;
 const text = rest.join(' ').trim();
 const KINDS = { sfx: 'SFX', music: 'MUS', voice: 'VO' };
 if (o.help || (!KINDS[kind] && kind !== 'voices') || (kind !== 'voices' && !text)) {
-  console.log('usage: node gen/audio.mjs sfx|music|voice "<prompt or line>" [--name N] [--seconds S] [--loop] [--n 3] [--voice id] [--vocals]\n       node gen/audio.mjs voices');
+  console.log('usage: node gen/audio.mjs sfx|music|voice "<prompt or line>" [--name N] [--seconds S] [--loop] [--mono] [--n 3] [--voice id] [--vocals]\n       --mono: downmix to one channel (any sound played at a 3D location; stereo only spatialises as mono anyway)\n       node gen/audio.mjs voices');
   process.exit(o.help ? 0 : 2);
 }
 
@@ -99,7 +100,7 @@ const FFMPEG = findFfmpeg();
 function toWav(file) {
   if (!FFMPEG) return null;
   const wav = file.replace(/\.[a-z0-9]+$/, '.wav');
-  const r = spawnSync(FFMPEG, ['-y', '-loglevel', 'error', '-i', file, '-ar', '48000', '-sample_fmt', 's16', wav]);
+  const r = spawnSync(FFMPEG, ['-y', '-loglevel', 'error', '-i', file, '-ar', '48000', '-sample_fmt', 's16', ...(o.mono ? ['-ac', '1'] : []), wav]);
   return r.status === 0 ? wav : null;
 }
 

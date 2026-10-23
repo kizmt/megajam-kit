@@ -1,0 +1,221 @@
+# Debugging, testing and profiling (UE 5.8.4, Development builds)
+
+The goal: the agent proves every fix with a log line or a screenshot ("done means seen") and finds the
+cause of a problem from evidence, not guesses. Budgets live in `performance.md`; this note is the *how*.
+Facts marked "verified" were checked on GIZMO (SmokeTest project + its packaged build) on 2026-10-24.
+
+## Triage: when X happens, do Y
+
+| When | Do first | Then |
+|---|---|---|
+| Feature "doesn't work", no crash | `GetLogEntries` filtered to `Error`/`Warning` since PIE start | Add a `UE_LOG` on the code path; re-run PIE; quote the line |
+| PIE stops with red text / "Accessed None" | Message Log > Play In Editor (Window > Message Log) | Fix the first error; later ones are usually fallout |
+| Editor/PIE crash | Newest `Saved/Crashes/UECC-*/` folder: `CrashContext.runtime-xml` `<ErrorMessage>` + `<CallStack>` | Also tail `Saved/Logs/<Project>.log` |
+| Packaged build crash | `<Build>\<Game>\Saved\Logs\<Game>.log`, last 100 lines | Keep the matching `.pdb` (see Crashes) |
+| `Saved/Crashes` folder appeared but nothing crashed | It's an **ensure** (`<CrashType>Ensure</CrashType>`) | Read `EnsureFailed: Error:` line in the log; fix or note it |
+| Game runs slow all the time | `stat unit` | Biggest of Game/Draw/GPU decides: `stat game` / `stat scenerendering` / `stat gpu` |
+| Game hitches (spikes) | `stat unitgraph`, then `stat hitches` | Unreal Insights capture with the `Loading` preset |
+| Textures blurry | `stat streaming` | Over pool = cut texture res (see performance.md) |
+| Memory climbing / 8 GB VRAM worry | `stat memory`, `stat rhi` | `memreport -full`, diff two reports |
+| Actor not where expected / no hit | `show collision`, `DrawDebug*` at the trace | Visual Logger to scrub frames |
+| AI/pathing wrong | Gameplay Debugger (`'` key), numpad categories | `show navigation` |
+| Packaged build worse than PIE | Packaged smoke test (below) + `-trace` | Grey material = missing usage flag (performance.md) |
+
+## A. Logs
+
+**Where they live (verified):**
+- Editor: `<Project>\Saved\Logs\<Project>.log`. A second editor instance writes `<Project>_2.log`.
+  Older runs are renamed `<Project>-backup-YYYY.MM.DD-HH.MM.SS.log`. Engine keeps 10 files / 5 days
+  (`[LogFiles] MaxLogFilesOnDisk=10, PurgeLogsDays=5` in BaseEngine.ini).
+- Packaged Development build: next to the build, `<Build>\Windows\<Game>\Saved\Logs\<Game>.log`
+  (verified: `C:\dev\Builds\SmokeTest\Windows\SmokeTest\Saved\Logs\SmokeTest.log`). Not in %LOCALAPPDATA%.
+- Packaging (BuildCookRun) log: wherever our package script writes it (SmokeTest: `Saved\Logs\package-*.log`).
+  Success marker: `BUILD SUCCESSFUL` and `AutomationTool exiting with ExitCode=0 (Success)`.
+- Epic docs say "`.txt`"; on 5.8.4 the files are `.log`. Trust disk.
+- **Timestamps inside the log are UTC** (`[2026.10.23-17.21.26:334][752]` = UTC time, frame number);
+  the file header `Log file open, 10/24/26 02:20:52` is local time. Don't misread "old" lines.
+
+**Line format:** `[time][frame]Category: Verbosity: message`. `Log`-level lines omit the verbosity word.
+Filter with `': Error:'`, `': Warning:'`, `'Fatal'`, `'Ensure condition failed'`, `'Assertion failed'`.
+PowerShell: `Select-String <log> -Pattern ': (Error|Warning):' | group Line | sort Count -desc`.
+
+**Our own logging (C++):**
+```cpp
+// Header: DECLARE_LOG_CATEGORY_EXTERN(LogMegajam, Log, All);   .cpp: DEFINE_LOG_CATEGORY(LogMegajam);
+UE_LOG(LogMegajam, Display, TEXT("Door %s opened by %s"), *GetName(), *GetNameSafe(Instigator));
+```
+- Verbosity: Fatal (crashes) > Error (red) > Warning (yellow) > Display (console + file) > Log (file only)
+  > Verbose > VeryVerbose. Use **Display** for "done means seen" proof lines so they show everywhere.
+- One category per project (`LogMegajam`); grep for it. Prefix proof lines e.g. `[PROOF] ...`.
+- Change at runtime: console `log LogMegajam Verbose` (or MCP `SetVerbosity`). Command line:
+  `-LogCmds="LogMegajam Verbose, LogTemp Warning"`. Permanent: `DefaultEngine.ini [Core.Log] LogMegajam=Verbose`.
+- `UE_LOGFMT` (structured, `#include "Logging/StructuredLog.h"`) is fine but `UE_LOG` is enough.
+- `-log` on a packaged exe opens a live log console window; `-ABSLOG=C:\path\run.log` writes to a chosen file.
+
+**Message Log** (Window > Message Log) holds what the Output Log buries: Blueprint compile errors,
+**Play In Editor** runtime errors ("Accessed None trying to read property..."), Map Check
+(Build > Map Check, or console `MAP CHECK`), asset load errors. Read it after every PIE that misbehaves.
+
+**Scary but harmless (all seen on GIZMO):**
+- `LogWindows: Failed to load 'aqProf.dll'` / `'VtuneApi.dll'` - optional profiler hooks.
+- `LogHttp: Warning: [FHttpManager::Shutdown] Unbinding delegates ... datarouter` - telemetry on exit.
+- `LogLayoutService: Warning: ... "UnrealEd_Layout_v1.5" was not found` - editor layout version.
+- `LogModelContextProtocol: Warning: Data transmitted via this plugin ... Licensed Technology` - MCP notice.
+- Packaging: `Warning: Visual Studio compiler 14.51.x is not a preferred version` - builds fine.
+
+**Real problems (act on these):**
+- `LogMaterial: Warning: ... Failed to compile Material for platform PCD3D_SM6` (seen on SmokeTest
+  `M_Chest`, the FBX importer's auto material, since replaced by `MI_Chest` from `M_PBR_Master` and deleted by the
+  pipeline): renders default material. Open the material, fix the error, re-save.
+- `EnsureFailed: Error: Ensure condition failed: ...` followed by many `LogOutputDevice: Error: [Callstack]`
+  lines - that block is **one** ensure and its stack, not 30 errors.
+- Blueprint `Accessed None`, `LogLinker`/`LogStreaming` "failed to load"/"can't find" a package, any `Fatal`.
+
+## B. Crashes
+
+- **`check(x)` / `checkf(x, fmt, ...)`**: crash if false (Development keeps them; Shipping strips them).
+  Use for "impossible" states. **`verify(x)`** keeps evaluating `x` in Shipping.
+- **`ensure(x)` / `ensureMsgf(x, fmt, ...)`**: logs + callstack, **keeps running**, fires once per call site
+  per session; `ensureAlways` fires every time. Prefer ensure in jam code: a crash costs a PIE restart.
+- Null-check `UObject*` with `IsValid(Ptr)`; most jam crashes are null/pending-kill pointers.
+- **Editor crash/ensure folder (verified):** `<Project>\Saved\Crashes\UECC-Windows-<GUID>_0000\` with
+  `CrashContext.runtime-xml` (`ErrorMessage`, `CrashType` = Crash/Assert/Ensure, `CallStack`),
+  `<Project>.log` copy, `UEMinidump.dmp`, `CrashReportClient.ini`. Ensures also create one.
+- **Reading a callstack:** top frames are the engine's assert machinery; scan down to the **first frame in
+  our module** (`UnrealEditor-<Game>.dll` in editor, `<Game>.exe` packaged). That function + line is the bug.
+- **`UnknownFunction []` frames** (verified on GIZMO) = no symbols for that module. Our own module's PDB is
+  built with the editor target, so our frames should resolve. Engine frames need the launcher option
+  *UE 5.8 > Options > "Editor symbols for debugging"* (large download, (unverified) tens of GB) - only
+  install it if a crash is inside the engine and you can't tell why.
+- **Packaged Development PDBs (verified):** BuildCookRun stages them by default ("Copying DebugFiles"):
+  `<Build>\<Game>\Binaries\Win64\<Game>.pdb` (SmokeTest: 370 MB, bigger than the 337 MB exe).
+  Rule: **keep the PDB next to the exe it was built with**; a PDB from another build is useless.
+  (`IncludeDebugFiles` in Project Settings only matters for Shipping.)
+- Packaged builds have **no crash reporter UI** (`IncludeCrashReporter=False` in BaseGame.ini; SmokeTest's
+  build has no CrashReportClient.exe). The crash stack goes into `<Game>\Saved\Logs\<Game>.log`.
+- Debugging live: attach Visual Studio/Rider to `UnrealEditor.exe` (Debug > Attach) and break on the
+  exception; Live Coding (Ctrl+Alt+F11) for body-only C++ changes, full rebuild for header/UPROPERTY changes.
+
+## C. Gameplay debugging
+
+- **On-screen text** (PIE + packaged Development; not Shipping):
+  `GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("HP %d"), HP));`
+  Key `-1` = new line each call; a fixed key (e.g. `1`) overwrites in place (good for per-tick values).
+  Guard with `if (GEngine)`. Visible in viewport captures, so it doubles as screenshot proof.
+- **`DrawDebug*`** (`#include "DrawDebugHelpers.h"`): `DrawDebugLine/Sphere/Box/Capsule/Point/
+  DirectionalArrow/String(World, ..., Color, bPersistent=false, LifeTime=-1, DepthPriority=0, Thickness=0)`.
+  Draw at every trace you're unsure of. Compiled only when `ENABLE_DRAW_DEBUG` (=
+  `!(UE_BUILD_SHIPPING||UE_BUILD_TEST) || WITH_EDITOR`): works in Development, compiles to nothing in
+  Shipping. Wrap calls in `#if ENABLE_DRAW_DEBUG` + a cvar/bool so they're off for the final build video.
+  `FlushPersistentDebugLines(World)` clears persistent ones.
+- **Visual Logger** (Window > Developer Tools > Visual Logger): records per-actor logs + shapes over time,
+  scrub the timeline after PIE. `UE_VLOG(this, LogMegajam, Log, TEXT("..."))`,
+  `UE_VLOG_SEGMENT(this, Cat, Log, Start, End, FColor::Red, TEXT(""))`,
+  `UE_VLOG_LOCATION(this, Cat, Log, Loc, Radius, Color, TEXT(""))`, `UE_VLOG_BOX(...)`.
+  Free when not recording; compiled out unless `ENABLE_VISUAL_LOG`. Best for AI/movement bugs that happen
+  in a single frame.
+- **Gameplay Debugger**: `'` (apostrophe) toggles, numpad 0-9 toggle categories (AI, Behavior Tree, EQS,
+  Perception, Navmesh), numpad +/- change row; console `EnableGDT`. Works in PIE/standalone
+  (packaged Development: (unverified)). Needs a pawn/AI under the crosshair to show per-actor data.
+- **`ShowDebug`** (console): `ShowDebug` cycles HUD debug; `ShowDebug Collision`, `ShowDebug Camera`,
+  `ShowDebug Input`, `ShowDebug AbilitySystem` (GAS) (category list (unverified) for 5.8).
+- **Show flags:** `show collision`, `show navigation`, `show bounds`, `show volumes`; toggle the same command.
+- **Cheats** (UCheatManager, standalone/PIE, Development OK): `god`, `ghost` (no collision, fly), `fly`,
+  `walk` (undo), `teleport` (to surface under crosshair), `slomo 0.2`, `pause`, `ChangeSize 2`,
+  `PlayersOnly`, `ToggleDebugCamera` (or `;`), `BugIt` (logs a `BugItGo x y z p y r` line + screenshot),
+  `BugItGo ...` to jump back to that exact spot. Use `BugIt` to make a repro reproducible.
+- **Screenshots as proof:** `HighResShot 1` writes to `Saved\Screenshots\` (unverified path in 5.8);
+  prefer our MCP viewport capture.
+
+## D. Profiling
+
+Read `performance.md` for budgets. Workflow: **measure in packaged Development, at the real resolution.**
+
+- `stat fps`, `stat unit` (Frame/Game/Draw/GPU/RHIT/DynRes ms), `stat unitgraph` (spikes over time).
+- `stat game` (tick costs), `stat gpu` (per-pass GPU ms), `stat scenerendering` (draw calls, mesh passes),
+  `stat rhi` (RHI memory/draws), `stat streaming` (texture pool use), `stat memory`.
+- `stat hitches` logs frames over `t.HitchFrameTimeThreshold` (seconds) - leave it on during a playthrough
+  and grep the log afterwards. `stat none` clears all.
+- `ProfileGPU` (Ctrl+Shift+,): one-frame GPU breakdown; editor opens the GPU Visualizer, packaged dumps
+  the tree to the log. Look for the biggest pass (Lumen, shadows, post, Nanite).
+- **Unreal Insights** (verified present: `Engine\Binaries\Win64\UnrealInsights.exe`):
+  - Editor: bottom toolbar **Trace** status widget > start/stop; or console `Trace.File` (writes
+    `<Project>\Saved\Profiling\<timestamp>.utrace`), `Trace.Stop`, `Trace.Status`.
+  - Live: start UnrealInsights.exe first; the editor/game connects to the local trace server (port 1981)
+    and the session shows as LIVE. Store: `%LOCALAPPDATA%\UnrealEngine\Common\UnrealTrace`.
+  - Packaged: `<Game>.exe -trace=default,gpu -tracefile` (file into the build's Saved\Profiling (unverified))
+    or `-tracehost=127.0.0.1` with Insights running. Add `-statnamedevents` for finer CPU scopes.
+  - Presets in BaseEngine.ini (verified): `Rendering`=gpu,cpu,frame,log,bookmark;
+    `Loading`=+loadtime,assetloadtime,file; `TaskGraph`; `ContextSwitching`. e.g. `-trace=Loading`.
+  - Open: drag the `.utrace` onto Insights. Timing Insights: find the long frame, read the Game Thread
+    track top-down. 30-60 s captures; traces get big.
+- **Memory:** `memreport -full` writes to `Saved\Profiling\MemReports\` (verified in source); take one at
+  level start and one after 5 min, diff the texture/mesh lists. `stat memory` for a live glance.
+- **Slow vs hitch:** *slow* = every frame over budget: `stat unit` names the thread, then the matching stat
+  page, then Insights. *Hitch* = occasional spikes: usually first-time shader/PSO compile, a synchronous
+  asset load, a big spawn, or GC. Capture Insights with `Loading` preset and look at the spike frame.
+  Hitches in PIE that vanish in the packaged build are editor noise - always confirm packaged.
+
+## E. Automated testing (keep it small)
+
+- Jam-worthy tests: one **packaged smoke test** (daily, with the package) and a handful of C++ automation
+  tests for pure logic (scoring, inventory, save/load). Skip screenshot-comparison and big functional suites.
+- C++ test (`#include "Misc/AutomationTest.h"`, in a non-shipping module or `#if WITH_AUTOMATION_TESTS`):
+```cpp
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FScoreTest, "Megajam.Score.Combo",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+bool FScoreTest::RunTest(const FString&) { TestEqual(TEXT("x3 combo"), ScoreFor(3), 300); return true; }
+```
+- **AutomationTestToolset MCP** (editor-only, experimental; enabled via `AllToolsets` in SmokeTest):
+  `DiscoverTests()` first (async, several seconds) > `ListTests(NameFilter="Megajam")` >
+  `RunTests([...])` or `RunTestsByFilter("StartsWith:Megajam")` (also `^Foo`, `Bar$`, `Group:Name`) >
+  `GetTestStatus()` / `GetTestResults()` (JSON with per-test errors) > `StopTests()`.
+  Window > Test Automation (Session Frontend) is the same backend.
+- Command line equivalent (editor, headless): `UnrealEditor-Cmd.exe <uproject> -ExecCmds="Automation
+  RunTests Megajam; Quit" -unattended -nullrhi -log` (Automation subcommands verified in source:
+  `List`, `RunTests`, `RunFilter`, `RunAll`, `Quit`; the full run (unverified) on GIZMO).
+- **Packaged smoke test** (Development only: `-seconds=N` is compiled out of Shipping; it quits after N
+  seconds of accumulated game time - verified in LaunchEngineLoop.cpp; not yet run on GIZMO):
+```powershell
+$g='MyGame'; $b="C:\dev\Builds\$g\Windows"; $log="$b\$g\Saved\Logs\$g.log"
+$p = Start-Process "$b\$g\Binaries\Win64\$g.exe" -PassThru -ArgumentList `
+     '-seconds=60','-unattended','-windowed','-ResX=1280','-ResY=720','-nosplash'
+if (-not $p.WaitForExit(240000)) { $p.Kill(); 'FAIL: hang/timeout' }
+Select-String $log -Pattern ': Error:|Fatal|Ensure condition failed|Assertion failed|Unhandled Exception'
+Select-String $log -Pattern '\[PROOF\]|Log file closed'   # proof lines + clean exit marker
+```
+  Pass = no error matches, our `[PROOF]` lines present, and `Log file closed` at the end (clean exit;
+  verified as the last line of SmokeTest's packaged log). Keep a real RHI (no `-nullrhi`) so
+  rendering/material errors surface. `-unattended` suppresses blocking dialogs. To drive gameplay,
+  add `-ExecCmds="teleport, slomo 2"` or a level that auto-plays.
+
+## Kit decisions: fit and conflicts
+
+- "Done means seen": proof = a `Display`-level `[PROOF]` log line or a viewport capture with
+  `AddOnScreenDebugMessage`/`DrawDebug` visible. Strip or gate debug drawing before the final video.
+- **Conflict:** performance.md caps the zip at 1 GB, but a Development build ships a ~370 MB PDB.
+  Zip **without** `*.pdb` for itch; archive the PDB with the build date beside the build folder.
+- **Conflict risk:** all of section C, `stat`, cheats and `-seconds` disappear in Shipping. We package
+  Development; if anyone switches to Shipping for the final upload, the smoke test stops working.
+
+## Verified against
+
+- GIZMO 2026-10-24: `C:\dev\SmokeTest\Saved\Logs\` (names, backups, `_2` instance, UTC timestamps),
+  `Saved\Crashes\UECC-*` (an ensure in `AssetManagerTypes.cpp`, `UnknownFunction` frames, no engine PDBs),
+  packaged `C:\dev\Builds\SmokeTest\Windows\` (log path, staged PDB, no CrashReportClient, 0 errors).
+- Engine source/config 5.8: `DrawDebugHelpers.h`, `EngineDefines.h`, `AssertionMacros.h`, `VisualLogger.h`,
+  `Engine.h` (AddOnScreenDebugMessage), `CheatManager.h`, `GameplayDebuggerConfig.cpp` (keys),
+  `LaunchEngineLoop.cpp` (`-seconds`), `GenericPlatformOutputDevices.cpp` (`-LOG=`/`-ABSLOG=`),
+  `AutomationTest.h`, `AutomationCommandline.cpp`, `UnrealEngine.cpp` (MemReports path), BaseEngine.ini
+  (`[LogFiles]`, `[Trace.ChannelPresets]`), BaseGame.ini, AutomationTestToolset plugin source.
+
+## Sources (5.8)
+
+- Logging: https://dev.epicgames.com/documentation/en-us/unreal-engine/logging-in-unreal-engine?application_version=5.8
+- Stat commands: https://dev.epicgames.com/documentation/en-us/unreal-engine/stat-commands-in-unreal-engine?application_version=5.8
+- Unreal Insights: https://dev.epicgames.com/documentation/en-us/unreal-engine/unreal-insights-in-unreal-engine?application_version=5.8
+- Insights reference (flags, Trace.* commands, channels): https://dev.epicgames.com/documentation/en-us/unreal-engine/unreal-insights-reference-in-unreal-engine-5?application_version=5.8
+- Trace quick start: https://dev.epicgames.com/documentation/en-us/unreal-engine/trace-quick-start-guide-in-unreal-engine?application_version=5.8
+- Gameplay Debugger: https://dev.epicgames.com/documentation/en-us/unreal-engine/using-the-gameplay-debugger-in-unreal-engine?application_version=5.8
+- Visual Logger: https://dev.epicgames.com/documentation/en-us/unreal-engine/visual-logger-in-unreal-engine?application_version=5.8
+- Automation test framework: https://dev.epicgames.com/documentation/en-us/unreal-engine/automation-test-framework-in-unreal-engine?application_version=5.8

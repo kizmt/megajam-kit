@@ -25,6 +25,7 @@ Unreal: `/Game/Props/<Name>/` (SM_, MI_, T_*).
 | `--tex 1024` | Smaller textures for small props (default 2048). |
 | `--faces 30000` / `--tris N` | Tripo face limit / extra Blender decimation. |
 | `--place x,y,z --yaw deg` | Placement in cm. Use `--yaw=-90` form for negatives. |
+| `--hulls 6` | Replace default collision with N convex hulls (4–8). For props the player pushes, carries or brushes against. |
 | `--no-unreal` | Stop after the FBX. |
 
 Measured 2026-10-24: ~3 min per new prop (Tripo ~2.5-3.5 min), 45 Tripo credits ($0.45).
@@ -44,6 +45,8 @@ node gen/audio.mjs voice "The map was right." --name Line01      # needs TTS per
 Output: `out/audio/SFX_*.mp3/.wav`, `MUS_*`, `VO_*`. Music is instrumental unless `--vocals`.
 WAVs (48 kHz, 16-bit, via ffmpeg) are imported automatically into `/Game/Audio/SFX|Music|Voice`
 when the editor is open; music and `--loop` sounds are set to loop. Needs the MegajamTools plugin.
+Add `--mono` for any sound played at a location in the world (footsteps, chest, pickups); keep
+stereo for music, UI and 2D ambience.
 Measured: SFX ~2 s end to end, 30 s music track ~6 s.
 
 ## Individual tools
@@ -56,7 +59,7 @@ Measured: SFX ~2 s end to end, 30 s music track ~6 s.
 | `gen/blender/inspect.py` | Stats JSON + preview render |
 | `gen/unreal/mcp.mjs` | Call any Unreal MCP tool from scripts; `captureViewport()` |
 | `gen/unreal/materials.mjs` | `M_PBR_Master` + per-asset material instances |
-| `unreal/Plugins/MegajamTools` | Project plugin: MCP tools `import_sound`, `import_any`, `run_console_command`, `get_sound_info` |
+| `unreal/Plugins/MegajamTools` | Project plugin: MCP tools `import_sound`, `import_any`, `run_console_command`, `run_python`, `get_sound_info` |
 
 ## Tool references (check here when a generation step fails)
 

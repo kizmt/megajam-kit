@@ -1,4 +1,7 @@
+import contextlib
+import io
 import os
+import traceback
 
 import unreal
 
@@ -75,9 +78,33 @@ class MegajamTools(unreal.ToolsetDefinition):
         Returns:
             True once the command has been issued.
         """
-        world = unreal.EditorLevelLibrary.get_editor_world()
+        world = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_editor_world()
         unreal.SystemLibrary.execute_console_command(world, command)
         return True
+
+    @toolset_registry.tool_call
+    @staticmethod
+    def run_python(code: str) -> str:
+        """Runs a Python script in the editor and returns its printed output. Use for one-off
+        editor automation no other tool covers. Prefer dedicated tools when one exists.
+
+        Args:
+            code: Python source to execute (multiple statements allowed; 'import unreal' as needed).
+
+        Returns:
+            'OK' or 'ERROR', followed by everything the script printed or logged, and the
+            exception trace on failure.
+        """
+        buffer = io.StringIO()
+        scope = {"__name__": "__megajam_run_python__", "unreal": unreal}
+        status = "OK"
+        with contextlib.redirect_stdout(buffer), contextlib.redirect_stderr(buffer):
+            try:
+                exec(compile(code, "<run_python>", "exec"), scope)
+            except Exception:
+                status = "ERROR"
+                traceback.print_exc(file=buffer)
+        return f"{status}\n{buffer.getvalue()}".rstrip()
 
     @toolset_registry.tool_call
     @staticmethod

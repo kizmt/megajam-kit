@@ -67,10 +67,22 @@ if ($ok) {
 
     try {
         if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+        Add-Type -AssemblyName System.IO.Compression
         Add-Type -AssemblyName System.IO.Compression.FileSystem
-        # Include the top-level folder so the zip extracts into a single directory
-        [System.IO.Compression.ZipFile]::CreateFromDirectory($archiveDir, $zipPath,
-            [System.IO.Compression.CompressionLevel]::Optimal, $true)
+        # Zip everything except debug symbols (*.pdb, ~350 MB); they stay in the build folder
+        # for crash debugging. Entries keep the top-level folder so the zip extracts into one directory.
+        $rootName = Split-Path -Leaf $archiveDir
+        $zip = [System.IO.Compression.ZipFile]::Open($zipPath, [System.IO.Compression.ZipArchiveMode]::Create)
+        $skipped = 0
+        try {
+            Get-ChildItem -Path $archiveDir -Recurse -File | ForEach-Object {
+                if ($_.Extension -ieq '.pdb') { $skipped++; return }
+                $rel = $_.FullName.Substring($archiveDir.Length).TrimStart('\') -replace '\\', '/'
+                [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $_.FullName,
+                    "$rootName/$rel", [System.IO.Compression.CompressionLevel]::Optimal)
+            }
+        } finally { $zip.Dispose() }
+        if ($skipped -gt 0) { Write-Host "Left $skipped .pdb file(s) out of the zip (kept in $archiveDir)" }
         $zipSize = (Get-Item $zipPath).Length
     } catch {
         Write-Host "Zip failed: $_"

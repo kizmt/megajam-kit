@@ -35,6 +35,12 @@ Source: https://dev.epicgames.com/documentation/en-us/unreal-engine/recommended-
 | Material Function | `MF_` | |
 | Level / Map | `L_` (main map stays `Main`) | |
 | Level Sequence | `LS_` | |
+| Sound Concurrency | `SCON_` | |
+| Geometry Collection (destruction) | `GC_` | |
+| Niagara Effect Type | `FXT_` | systems stay `FXS_` (Epic's quick start uses `FX_`; we don't) |
+| Post Process Material | `PPM_` | listed in Epic's 5.8 docs (not in the table above) |
+| Material Parameter Collection | `MPC_` | |
+| Other master materials | `M_Glass`, `M_Decal` | allowed exceptions to the single master; still used via `MI_` |
 
 Texture descriptors: `T_<Name>_BaseColor`, `_Normal`, `_Roughness`, `_Metallic`, `_ORM` (packed).
 (The pipeline currently writes lowercase descriptors, e.g. `T_Chest_basecolor`; fine, but keep new ones consistent.)

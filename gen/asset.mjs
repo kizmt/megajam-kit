@@ -39,6 +39,7 @@ const { values: o, positionals } = parseArgs({
     dest: { type: 'string', default: '/Game/Props' },
     place: { type: 'string', default: '300,0,0' },
     yaw: { type: 'string', default: '0' },
+    hulls: { type: 'string' },
     'no-unreal': { type: 'boolean', default: false },
     help: { type: 'boolean', short: 'h', default: false },
   },
@@ -48,7 +49,9 @@ const prompt = positionals.join(' ').trim();
 if (o.help || (!prompt && !o.image && !o.model)) {
   console.log(`usage: node gen/asset.mjs "<prompt>" --name Name [--max 0.8 | --height 1.8]
        [--concepts N] [--image file] [--provider gemini|openai] [--style file] [--ref img]
-       [--tex 2048] [--faces 30000] [--tris N] [--dest /Game/Props] [--place x,y,z] [--yaw deg] [--no-unreal]`);
+       [--tex 2048] [--faces 30000] [--tris N] [--dest /Game/Props] [--place x,y,z] [--yaw deg] [--hulls 4-8] [--no-unreal]
+  --hulls N  replace the default collision with N convex hulls (props the player pushes, picks up or
+             walks around closely; leave off for background props)`);
   process.exit(o.help ? 0 : 2);
 }
 
@@ -160,6 +163,12 @@ try {
       // renders all ~25k triangles at any distance (one LOD), which adds up fast as the level fills.
       await mcpCall(S, 'set_nanite_enabled', { mesh: { refPath: `${assetPath}.SM_${name}` }, enabled: true });
       manifest.steps.nanite = true;
+      if (o.hulls) {
+        const hull_count = Math.max(1, Math.min(16, parseInt(o.hulls, 10) || 4));
+        const r = await mcpCall(S, 'generate_convex_collisions', { mesh: { refPath: `${assetPath}.SM_${name}` }, hull_count });
+        manifest.steps.collision = { hulls: hull_count, ok: !!r.returnValue };
+        console.log(`  collision: ${hull_count} convex hulls ${r.returnValue ? 'OK' : 'FAILED'}`);
+      }
       const [x, y, z] = o.place.split(',').map(Number);
       const placed = await mcpCall(SC, 'add_to_scene_from_asset', {
         asset_path: assetPath, name,

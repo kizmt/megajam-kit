@@ -71,6 +71,9 @@ Order of authority (highest first):
      "optional" parameters are required.
    - Claude Code `unreal-engine-skills-for-claude-code` plugin skills (unreal-mcp, create-toolset, unreal-skill).
 4. **Kit knowledge**: `PIPELINE.md` (tools and hard-won facts) and `docs/ue/` (curated 5.8 notes).
+   `docs/ue/README.md` says which note to read before each kind of work (C++, gameplay, characters,
+   AI, lighting, materials, VFX, physics, audio/UI, PCG, editor scripting, debugging, video); read it
+   before starting work in that area. `docs/ue/INDEX-docs.md` maps the whole 5.8 doc site with URLs.
 5. **Official docs** (always 5.8; append `?application_version=5.8` to doc URLs):
    - Python API reference: https://dev.epicgames.com/documentation/en-us/unreal-engine/python-api/?application_version=5.8
      Same content as the local stub (both come from the engine's reflection data). Grep the stub first;

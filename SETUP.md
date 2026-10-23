@@ -26,6 +26,13 @@ Target: ~10 minutes on jam day. Do the steps in order.
    - Asset Base Class: `GameFeatureData`
    - Directories: `/Game/Unused`
    A one-off "Ensure condition failed: HasValidRuntimeData()" while filling this in is expected and harmless.
+4. Optional, only if the jam idea uses procedural levels: also enable **PCG Primitives** (Experimental;
+   pulls in PCG Geometry Script Interop). See `docs/ue/pcg.md`. Restart again.
+5. Renderer check (no clicks needed; the Blank C++ template already has these). Open
+   `Config\DefaultEngine.ini` and confirm:
+   `r.DynamicGlobalIlluminationMethod=1` (Lumen), `r.ReflectionMethod=1` (Lumen),
+   `r.Shadow.Virtual.Enable=1` (Virtual Shadow Maps), `r.Substrate=True`.
+   Verified on SmokeTest 2026-10-24. If one is missing, ask Claude to fix it rather than changing it by hand.
 
 ## 3. MCP server (1 min)
 
@@ -79,9 +86,19 @@ Verified 2026-10-24 on SmokeTest: 17 files tracked (0.07 MB), `Main.umap` via LF
 
 - `scripts\package.ps1` → Win64 Development build to `C:\dev\Builds\<ProjectName>\` + zip.
 - **Close the editor first** (File → Save All, then exit). Live Coding locks the build tools while the editor is open.
-- Verified 2026-10-24: empty project packaged in 4m47s, zip 500.2 MB. That 500 MB is engine baseline,
-  so the game's own content has roughly 500 MB before hitting itch's 1 GB zip limit (butler can upload larger).
+- Verified 2026-10-24: empty project packaged in 4m47s. The zip leaves out the ~350 MB `.pdb` debug
+  symbols (they stay in the build folder for crash debugging), so the empty-project zip is 401 MB.
+  That is engine baseline: the game's own content has about 600 MB before itch's 1 GB zip limit.
 
-## Still to add
+## 8. Editor performance (re-check, 1 min)
 
-- Editor performance settings for the 8 GB card
+Editor-only settings for the RTX 4060 on a 4K monitor. They don't change the packaged game.
+Most are per-user and carry over between projects; confirm on jam day.
+
+1. Edit → Editor Preferences → Performance → Viewport Resolution:
+   - "Override project's default screen percentage mode for realtime editor viewports using desktop rendering" = **Manual**
+   - Tick "Override project's manual screen percentage", set "Editor viewport screen percentage" = **60** (75 if too soft)
+2. Same page: "Use Less CPU when in Background" on.
+3. Viewport toolbar → speedometer icon (Performance & Scalability) → **Viewport Scalability → High**.
+   Switch to Epic only when judging final visuals. Untick **Realtime Viewport** (Ctrl+R) when idle.
+4. Edit → Editor Preferences → Loading & Saving → **Auto Save** on (10 min).

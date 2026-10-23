@@ -12,13 +12,15 @@ game feels slow.
 | Unique generated props | ~20-40 for a 5-10 min game | Each is ~25k tris + four 2K textures |
 | Textures per prop | 2K hero, 1K small/background (`--tex 1024`) | Texture memory is the real 8 GB limit |
 | Dynamic shadow-casting lights | Keep few (sun + a handful) | Each one re-renders shadows |
-| Packaged zip | under 1 GB (empty project = 500 MB) | itch limit |
+| Packaged zip | under 1 GB; zip excludes the ~350 MB `.pdb` (`package.ps1` keeps it beside the build) | itch limit |
 
 ## Geometry
 
 - **Nanite on for every static prop** (pipeline does it). Epic: enable "wherever possible". Without it a generated
   prop draws all its triangles at every distance (they import with one LOD) - the Unity-style "too many LODs/polys" trap.
 - Nanite supports **Opaque and Masked** materials only. Translucent (glass, water) needs a non-Nanite mesh/material.
+- Exceptions to "Nanite on": meshes used **as particles** in Niagara (keep small, non-Nanite, no collision/shadows;
+  see `vfx.md`) and translucent/glass meshes (`materials.md`).
 - Nanite skeletal meshes: use animation LODs, not geometry LODs; morph targets unsupported.
 - Many copies of one prop (rocks, crates, trees): place as **instances** (instanced static mesh / PCG), not hundreds of
   separate actors.

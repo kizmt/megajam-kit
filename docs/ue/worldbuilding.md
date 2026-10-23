@@ -50,7 +50,8 @@ session). The decisions below already apply.
 
 - Water plugin: rivers, lakes, oceans via splines, with buoyancy and Single Layer Water shading; designed to work with
   Landscape. Stability status not stated on the page: treat as **test in a practice run before relying on it**.
-  Water is translucent-style shading: not Nanite (see `performance.md`).
+  Water uses its own Single Layer Water shading model (not ordinary translucency); Nanite compatibility unverified
+(see `materials.md`, `performance.md`).
 
 ## Sources (5.8)
 
