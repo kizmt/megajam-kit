@@ -61,14 +61,24 @@ The Blank template opens a temporary Open World level (Landscape, World Partitio
 5. `/mcp` should list only `unreal-mcp` (3 tools: tool search mode).
 6. Test: "What actors are in the current level?" — should list the Basic level's actors.
 
-## 6. Packaging
+## 6. Kit scripts + Git (1 min)
 
-- `scripts\package.ps1` (from the kit) → Win64 Development build to `C:\dev\Builds\<ProjectName>\` + zip.
+1. Copy the kit's `scripts\` folder into the project root (`C:\dev\<ProjectName>\scripts\`).
+   The scripts find the project from their own location, so they must live inside the project.
+2. `.\scripts\init-repo.ps1` → writes Unreal `.gitignore` + `.gitattributes`, runs `git init`, enables LFS,
+   makes the first commit. Binaries/Intermediate/Saved/DerivedDataCache are ignored; `.uasset`/`.umap`,
+   images, models and audio go through LFS.
+3. Commit at the end of every round. On jam day the first commit must be after 2026-11-12 14:00 JST.
+
+Verified 2026-10-24 on SmokeTest: 17 files tracked (0.07 MB), `Main.umap` via LFS, clean status.
+
+## 7. Packaging
+
+- `scripts\package.ps1` → Win64 Development build to `C:\dev\Builds\<ProjectName>\` + zip.
 - **Close the editor first** (File → Save All, then exit). Live Coding locks the build tools while the editor is open.
 - Verified 2026-10-24: empty project packaged in 4m47s, zip 500.2 MB. That 500 MB is engine baseline,
   so the game's own content has roughly 500 MB before hitting itch's 1 GB zip limit (butler can upload larger).
 
 ## Still to add
 
-- Git + LFS init with an Unreal `.gitignore` / `.gitattributes`
 - Editor performance settings for the 8 GB card
