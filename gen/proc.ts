@@ -57,6 +57,14 @@ export function readTripoTask(outputDir: string): TripoTaskFile {
   return JSON.parse(readFileSync(join(outputDir, 'task.json'), 'utf8')) as TripoTaskFile;
 }
 
+export interface OrmResult { file: string; size: number[]; from: Record<'ao' | 'roughness' | 'metallic', boolean> }
+
+/** Pack T_<Name>_ao/_roughness/_metallic PNGs in texDir into T_<Name>_orm.png (gen/blender/pack_orm.py). */
+export async function packOrm(kit: string, texDir: string, name: string): Promise<OrmResult> {
+  const out = await run('blender', ['-b', '--factory-startup', '--python', q(join(kit, 'gen', 'blender', 'pack_orm.py')), '--', q(texDir), name], 'blender pack_orm');
+  return parseMarkedJson<OrmResult>(out, 'ORM_JSON');
+}
+
 /** Find the JSON payload of a `KEY=...` line printed by a Blender script. */
 export function parseMarkedJson<T>(out: string, key: string): T {
   const line = out.split('\n').find((l) => l.startsWith(`${key}=`));

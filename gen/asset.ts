@@ -13,9 +13,10 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { KIT, errorMessage, generatedDir } from './paths.ts';
-import { parseMarkedJson, parseTripo, q, run, secs } from './proc.ts';
+import { packOrm, parseMarkedJson, parseTripo, q, run, secs, type OrmResult } from './proc.ts';
 import { applyPbr, ref, type ApplyPbrResult } from './unreal/materials.ts';
 import { McpUnreachableError, callTool, captureViewport, mcpCall, type Box, type CameraTransform, type ObjectRef } from './unreal/mcp.ts';
+import { runPythonCode } from './unreal/python.ts';
 
 process.env['TRIPO_NO_UPDATE_CHECK'] = '1';
 
@@ -66,6 +67,7 @@ interface Manifest {
     concept?: { files: string[]; time?: string; supplied?: boolean };
     tripo?: { model: string; supplied?: boolean; credits?: number; task?: string; time?: string };
     prep?: PrepResult & { time: string };
+    orm?: OrmResult;
     preview?: string;
     material?: ApplyPbrResult;
     nanite?: boolean;
@@ -156,6 +158,8 @@ try {
   if (o.tris) pargs.push('--tris', o.tris);
   const prep = parsePrep(await run('blender', pargs, 'blender prep'));
   manifest.steps.prep = { ...prep, time: secs(t) };
+  // Roughness + metallic (+ AO) -> one ORM texture for M_PBR_Master v2.
+  manifest.steps.orm = await packOrm(KIT, join(dir, `${name}_tex`), name);
   console.log(`    ${fbx}  ${prep.size_m.join(' x ')} m, ${prep.triangles_out} tris, ${prep.fbx_mb} MB`);
 
   // 4. Preview render
@@ -174,6 +178,13 @@ try {
     const assetPath = `${folder}/SM_${name}`;
     const meshRef = ref(assetPath);
     try {
+      // Rerun: remove this prop's previous actors FIRST. Otherwise every run stacks a new actor, and the old ones
+      // keep pointing at the deleted mesh (seen 2026-10-24: three TsLantern actors, two empty).
+      const removed = await runPythonCode(
+        'import unreal\nA = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)\nn = 0\n' +
+        'for a in A.get_all_level_actors():\n    if a.get_actor_label() == ARGS["label"]:\n        A.destroy_actor(a)\n        n += 1\nprint(n)',
+        { label: name });
+      if (removed.ok && removed.output.trim() !== '0') console.log(`    removed ${removed.output.trim()} previous ${name} actor(s)`);
       if (await callTool<boolean>(AS, 'exists', { path: folder })) await mcpCall(AS, 'delete', { path: folder });
       // Import geometry only (the importer's auto materials drop metallic and can fail to compile),
       // then build MI_<Name> from the kit's master PBR material.

@@ -101,6 +101,7 @@ Measured: SFX ~2 s end to end, 30 s music track ~6 s.
 | `gen/unreal/shot.ts` | Viewport screenshot to PNG (`--wait N` for shader compiles) |
 | `gen/character.ts` | Concept -> rigged, PBR-textured, retargeted character (+ BP); see Characters |
 | `gen/blender/prep_rig.py` | Rigged character: height, facing, armature-safe cm export, textures stripped |
+| `gen/blender/pack_orm.py` | Pack roughness/metallic/AO PNGs into `T_<Name>_orm.png` for M_PBR_Master v2 |
 | `gen/blender/extract_pbr.py` | Colour/normal/roughness/metallic PNGs from a Tripo textured model (FBX or GLB) |
 | `gen/unreal/py/import_skeletal.py` / `check_skeletal.py` / `retarget_setup.py` / `clean_character.py` / `make_character_bp.py` | Skeletal import, root-scale check, IK retarget, safe rebuild, thin BP |
 | `gen/unreal/materials.ts` | `M_PBR_Master` + per-asset material instances |
@@ -162,3 +163,8 @@ Measured: SFX ~2 s end to end, 30 s music track ~6 s.
 - Texture size: keep the full-res source and set `MaxTextureSize` (cooked size) instead of downscaling in
   Blender, so a hero asset can be raised later with one setting. Characters do this (`--max-tex`); props still
   downscale in `prep.py`.
+- M_PBR_Master is version-tagged and rebuilt **in place** (`materials.ts master [--force]`). Existing instances
+  keep working; ones made before v2 lose their old Roughness/Metallic parameters until rebuilt (`asset.ts --model`,
+  `character.ts --rig --pbr`: free). Details: `docs/ue/materials.md` "Master material v2".
+- `asset.ts` reruns used to stack a new actor each time while the old ones pointed at the deleted mesh; it now
+  removes same-label actors first. Editor scripts that run user code: catch `SystemExit` too (`run_python` does).

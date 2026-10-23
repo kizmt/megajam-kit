@@ -101,7 +101,8 @@ class MegajamTools(unreal.ToolsetDefinition):
         with contextlib.redirect_stdout(buffer), contextlib.redirect_stderr(buffer):
             try:
                 exec(compile(code, "<run_python>", "exec"), scope)
-            except Exception:
+            except (Exception, SystemExit):
+                # SystemExit too: a script calling exit() must not unwind into the editor's Python.
                 status = "ERROR"
                 traceback.print_exc(file=buffer)
         return f"{status}\n{buffer.getvalue()}".rstrip()

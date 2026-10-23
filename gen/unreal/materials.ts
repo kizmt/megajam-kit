@@ -1,6 +1,11 @@
 // PBR material setup through Unreal MCP.
-//   ensureMaster()  -> creates /Game/Kit/Materials/M_PBR_Master once (BaseColor, Normal, Roughness, Metallic)
-//   applyPbr({...}) -> imports an asset's 4 textures with correct settings, makes MI_<Name>, assigns it to the mesh
+//   ensureMaster()  -> builds / upgrades /Game/Kit/Materials/M_PBR_Master (v2, gen/unreal/py/build_master_material.py)
+//   applyPbr({...}) -> imports an asset's textures (basecolor, normal, orm, emissive), makes MI_<Name>, assigns it
+//
+// v2 parameters: BaseColor, Normal, ORM (R=AO G=Roughness B=Metallic), EmissiveTexture; Tint, Saturation;
+// RoughnessScale/Offset, MetallicOverride/Value, NormalStrength, AOStrength; EmissiveColor/Strength,
+// UseEmissiveTexture (static switch); FlashAmount (Custom Primitive Data 0), FlashColor, FlashStrength.
+// ORM comes from gen/blender/pack_orm.py (packs T_<Name>_roughness/metallic/ao).
 //
 // CLI: node gen/unreal/materials.ts master [--force]
 //      node gen/unreal/materials.ts apply <Name> <textureDir> [/Game/Props]
@@ -8,11 +13,12 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { errorMessage, isMain } from '../paths.ts';
+import { KIT, errorMessage, isMain } from '../paths.ts';
+import { parseMarkedJson } from '../proc.ts';
 import { callTool, mcpCall, type ObjectRef } from './mcp.ts';
+import { runPythonFileOrThrow } from './python.ts';
 
 const AS = 'editor_toolset.toolsets.asset.AssetTools';
-const M = 'editor_toolset.toolsets.material.MaterialTools';
 const MI = 'editor_toolset.toolsets.material_instance.MaterialInstanceTools';
 const TX = 'editor_toolset.toolsets.texture.TextureTools';
 const OB = 'editor_toolset.toolsets.object.ObjectTools';
@@ -26,23 +32,21 @@ const KIT_TEX = '/Game/Kit/Textures';
 export const ref = (p: string): ObjectRef => ({ refPath: p.includes('.') ? p : `${p}.${p.split('/').pop() ?? ''}` });
 
 type Rgb = readonly [number, number, number];
-type MapKey = 'basecolor' | 'normal' | 'roughness' | 'metallic';
-interface TextureProps { SRGB: boolean; CompressionSettings: 'TC_Default' | 'TC_Normalmap' | 'TC_Grayscale'; MaxTextureSize?: number }
-interface MapSpec {
-  param: string;
-  props: TextureProps;
-  sampler: 'SAMPLERTYPE_Color' | 'SAMPLERTYPE_Normal' | 'SAMPLERTYPE_LinearGrayscale';
-  out: 'RGB' | 'R';
-  prop: 'MP_BaseColor' | 'MP_Normal' | 'MP_Roughness' | 'MP_Metallic';
-  fill: Rgb;
+export type MapKey = 'basecolor' | 'normal' | 'orm' | 'emissive';
+interface TextureProps {
+  SRGB: boolean;
+  CompressionSettings: 'TC_Default' | 'TC_Normalmap' | 'TC_Masks';
+  MaxTextureSize?: number;
 }
+interface MapSpec { param: string; props: TextureProps; fill: Rgb; defaultName: string }
 
-// Per-map texture settings and the master parameter each one feeds.
+// Per-map texture settings, the master parameter each one feeds, and the master's default texture.
 const MAPS = {
-  basecolor: { param: 'BaseColor', props: { SRGB: true, CompressionSettings: 'TC_Default' }, sampler: 'SAMPLERTYPE_Color', out: 'RGB', prop: 'MP_BaseColor', fill: [128, 128, 128] },
-  normal: { param: 'Normal', props: { SRGB: false, CompressionSettings: 'TC_Normalmap' }, sampler: 'SAMPLERTYPE_Normal', out: 'RGB', prop: 'MP_Normal', fill: [128, 128, 255] },
-  roughness: { param: 'Roughness', props: { SRGB: false, CompressionSettings: 'TC_Grayscale' }, sampler: 'SAMPLERTYPE_LinearGrayscale', out: 'R', prop: 'MP_Roughness', fill: [160, 160, 160] },
-  metallic: { param: 'Metallic', props: { SRGB: false, CompressionSettings: 'TC_Grayscale' }, sampler: 'SAMPLERTYPE_LinearGrayscale', out: 'R', prop: 'MP_Metallic', fill: [0, 0, 0] },
+  basecolor: { param: 'BaseColor', props: { SRGB: true, CompressionSettings: 'TC_Default' }, fill: [128, 128, 128], defaultName: 'T_Kit_Default_BaseColor' },
+  normal: { param: 'Normal', props: { SRGB: false, CompressionSettings: 'TC_Normalmap' }, fill: [128, 128, 255], defaultName: 'T_Kit_Default_Normal' },
+  // AO 1, roughness 0.6, metallic 0
+  orm: { param: 'ORM', props: { SRGB: false, CompressionSettings: 'TC_Masks' }, fill: [255, 153, 0], defaultName: 'T_Kit_Default_ORM' },
+  emissive: { param: 'EmissiveTexture', props: { SRGB: true, CompressionSettings: 'TC_Default' }, fill: [0, 0, 0], defaultName: 'T_Kit_Default_Black' },
 } as const satisfies Record<MapKey, MapSpec>;
 
 const MAP_KEYS = Object.keys(MAPS) as MapKey[];
@@ -56,6 +60,10 @@ function writeTga(file: string, [r, g, b]: Rgb): void {
   writeFileSync(file, Buffer.concat([header, px]));
 }
 
+/**
+ * Import one texture and set its properties. Replaces an existing asset of the same name, so only use it where
+ * nothing outside the caller's own folder references that texture (deleting a referenced asset = modal dialog).
+ */
 async function importTexture(folder: string, name: string, file: string, props: TextureProps): Promise<ObjectRef> {
   const path = `${folder}/${name}`;
   if (await callTool<boolean>(AS, 'exists', { path })) await mcpCall(AS, 'delete', { path });
@@ -66,46 +74,34 @@ async function importTexture(folder: string, name: string, file: string, props: 
   return tex;
 }
 
-export async function ensureMaster({ force = false }: { force?: boolean } = {}): Promise<ObjectRef> {
-  const exists = await callTool<boolean>(AS, 'exists', { path: MASTER });
-  if (exists && !force) return ref(MASTER);
-  if (exists) await mcpCall(AS, 'delete', { path: MASTER });
+export interface MasterResult { path: string; version: string; rebuilt: boolean; expressions?: number; errors?: string[] }
 
-  // Default textures so every parameter has a valid, correctly typed texture.
+/**
+ * Make sure M_PBR_Master is at the current version. The graph is rebuilt in place (instances keep working),
+ * default textures are imported only when missing (the master references them, so they are never replaced).
+ */
+export async function ensureMaster({ force = false }: { force?: boolean } = {}): Promise<MasterResult> {
   const tmp = join(tmpdir(), 'megajam-kit-defaults');
   mkdirSync(tmp, { recursive: true });
-  const defaults = {} as Record<MapKey, ObjectRef>;
+  const defaults = {} as Record<MapKey, string>;
   for (const key of MAP_KEYS) {
     const m = MAPS[key];
-    const f = join(tmp, `T_Kit_Default_${m.param}.tga`);
-    writeTga(f, m.fill);
-    defaults[key] = await importTexture(KIT_TEX, `T_Kit_Default_${m.param}`, f, m.props);
+    const path = `${KIT_TEX}/${m.defaultName}`;
+    if (!(await callTool<boolean>(AS, 'exists', { path }))) {
+      const f = join(tmp, `${m.defaultName}.tga`);
+      writeTga(f, m.fill);
+      await importTexture(KIT_TEX, m.defaultName, f, m.props);
+    }
+    defaults[key] = path;
   }
-
-  const folder = MASTER.slice(0, MASTER.lastIndexOf('/'));
-  const mat = await callTool<ObjectRef>(M, 'create_material', { folder_path: folder, asset_name: MASTER.split('/').pop() });
-  let y = -300;
-  for (const key of MAP_KEYS) {
-    const m = MAPS[key];
-    const expr = await callTool<ObjectRef>(M, 'add_expression', {
-      material_or_function: mat, expression_class: { refPath: '/Script/Engine.MaterialExpressionTextureSampleParameter2D' }, x: -500, y,
-    });
-    y += 280;
-    await mcpCall(OB, 'set_properties', {
-      instance: expr,
-      values: JSON.stringify({ ParameterName: m.param, SamplerType: m.sampler, Texture: defaults[key].refPath, Group: 'Textures' }),
-    });
-    await mcpCall(M, 'connect_to_output', { expression: expr, output_name: m.out, material_property: m.prop });
-  }
-  // Usage flags up front. Missing flags get auto-set in the editor (shaders recompile, props render grey
-  // meanwhile) but CANNOT be set in a packaged game, where the mesh then shows the default material.
-  await mcpCall(OB, 'set_properties', {
-    instance: mat,
-    values: JSON.stringify({ bUsedWithNanite: true, bUsedWithSkeletalMesh: true, bUsedWithInstancedStaticMeshes: true }),
-  });
-  await mcpCall(M, 'recompile', { material_or_function: mat });
-  await mcpCall(AS, 'save_assets', { asset_paths: [] });
-  return mat;
+  const result = parseMarkedJson<MasterResult>(
+    await runPythonFileOrThrow(join(KIT, 'gen', 'unreal', 'py', 'build_master_material.py'), {
+      path: MASTER, tex_basecolor: defaults.basecolor, tex_normal: defaults.normal, tex_orm: defaults.orm,
+      tex_black: defaults.emissive, ...(force ? { force: '1' } : {}),
+    }),
+    'MASTER_JSON');
+  if (result.errors && result.errors.length > 0) throw new Error(`M_PBR_Master compile errors: ${result.errors.join('; ')}`);
+  return result;
 }
 
 export interface ApplyPbrOptions {
@@ -123,7 +119,7 @@ export interface ApplyPbrOptions {
 }
 export interface ApplyPbrResult { instance: string; textures: MapKey[]; slots: string[] }
 
-/** texDir contains T_<Name>_basecolor.png etc. (output of gen/blender/prep.py). */
+/** texDir contains T_<Name>_basecolor.png, _normal.png, _orm.png (pack_orm.py), optional _emissive.png. */
 export async function applyPbr({ name, texDir, dest = '/Game/Props', mesh, kind = 'static', maxTextureSize = 2048 }: ApplyPbrOptions): Promise<ApplyPbrResult> {
   const meshTools = kind === 'skeletal' ? SK : SM;
   await ensureMaster();

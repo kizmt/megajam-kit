@@ -38,9 +38,29 @@ Naming: Epic's 5.8 list has `PPM_` for post-process materials; `MPC_` is not in 
 - Metallic is binary (0/1) except rust/dust; very matte = high Roughness, not Specular 0; leave Specular at 0.5
   (Epic PBR page). AI textures often have grey "metallic" noise: clamp or override per MI if props look dirty-chrome.
 
-## Proposed master material v2
+## Master material v2 (built 2026-10-24)
 
-Not built yet. Each item: what, nodes (all verified in the 5.8 Python stub / engine content), cost, why.
+**Built:** items 1, 3, 4, 5, 6, 7, 9 below, by `gen/unreal/py/build_master_material.py` (34 expressions, 0 errors),
+called from `materials.ts ensureMaster()`. Parameters by group:
+Textures `BaseColor`, `Normal`, `ORM`, `EmissiveTexture` · Color `Tint`, `Saturation` · Surface `RoughnessScale`,
+`RoughnessOffset`, `MetallicOverride` (lerp alpha) + `MetallicValue`, `NormalStrength` (FlattenNormal),
+`AOStrength` · Emissive `EmissiveColor`, `EmissiveStrength`, `UseEmissiveTexture` (the only static switch) ·
+Feedback `FlashAmount` (Custom Primitive Data 0), `FlashColor`, `FlashStrength` (20).
+Texture samples: 3 (colour, normal, ORM), +1 only with `UseEmissiveTexture`. Both pipelines pack the ORM
+(`gen/blender/pack_orm.py`). Not built: 2 (HueShift), 8 (Wetness MPC), 10 (triplanar); add when a game needs them.
+
+- **Upgrading:** the script tags the asset `MegajamMasterVersion` and rebuilds the graph **in place**
+  (`delete_all_material_expressions`), never delete-and-recreate: instances reference the master, and deleting a
+  referenced asset opens a blocking modal dialog. Bump `VERSION` to roll out a change.
+- **Hit flash from C++:** `Mesh->SetCustomPrimitiveDataFloat(0, 1.f)` then fade to 0 over ~0.15 s (timer or
+  timeline; not Tick). Per actor, no MID. At `FlashStrength` 20 a full flash blows out to pure white (verified):
+  good as a 1-frame hit; use 3-5 for a readable glow, `FlashColor` red for damage.
+- **Editor vs runtime CPD:** in editor scripts set `set_default_custom_primitive_data_float` (what the viewport shows
+  and the level saves); `set_custom_primitive_data_float` is the runtime value.
+
+The original proposal, kept for the remaining items:
+
+Each item: what, nodes (all verified in the 5.8 Python stub / engine content), cost, why.
 
 | # | Add | Nodes | Cost | Why |
 |---|---|---|---|---|

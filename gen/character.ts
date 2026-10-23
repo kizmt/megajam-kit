@@ -20,7 +20,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { KIT, errorMessage, generatedDir } from './paths.ts';
-import { parseMarkedJson, parseTripo, q, readTripoTask, run, secs } from './proc.ts';
+import { packOrm, parseMarkedJson, parseTripo, q, readTripoTask, run, secs, type OrmResult } from './proc.ts';
 import { applyPbr, type ApplyPbrResult } from './unreal/materials.ts';
 import { McpUnreachableError, callTool, mcpCall } from './unreal/mcp.ts';
 import { runPythonFileOrThrow } from './unreal/python.ts';
@@ -92,6 +92,7 @@ interface Manifest {
     texture?: { task: string; file: string; credits: number; time: string } | { skipped: string };
     rig?: { fbx: string; task?: string; credits?: number; time?: string; supplied?: boolean };
     pbr?: PbrResult;
+    orm?: OrmResult;
     prep?: PrepRigResult & { time: string };
     import?: ImportResult;
     material?: ApplyPbrResult;
@@ -222,6 +223,7 @@ try {
     await run('blender', ['-b', '--factory-startup', '--python', q(BL('extract_pbr.py')), '--', q(pbrSource), q(texDir), name, '--tex', o.tex], 'blender extract_pbr'),
     'PBR_JSON');
   manifest.steps.pbr = pbr;
+  manifest.steps.orm = await packOrm(KIT, texDir, name); // roughness + metallic -> ORM for M_PBR_Master v2
   console.log(`    ${Object.keys(pbr.maps).join(', ')}${pbr.missing.length ? ` (missing: ${pbr.missing.join(', ')})` : ''}`);
 
   // 4. Blender: real height + facing applied into the armature, cm export (root bone scale 1), no textures
