@@ -18,5 +18,8 @@ try:
     ok = abs(rs.x - 1) < 1e-3 and abs(rs.y - 1) < 1e-3 and abs(rs.z - 1) < 1e-3
     print(f"root={root} root_scale=({rs.x:.3f},{rs.y:.3f},{rs.z:.3f}) {pelvis}_local=({pl.x:.2f},{pl.y:.2f},{pl.z:.2f}) head_z_cm={head_z} mesh_size_cm=({e.x*2:.0f},{e.y*2:.0f},{e.z*2:.0f})")
     print("CHECK_SKELETAL", "ok" if ok else "FAIL (root bone scale is not 1)")
+    import json
+    print("CHECK_JSON=" + json.dumps({"ok": ok, "root": str(root), "root_scale": [rs.x, rs.y, rs.z],
+                                      "head_z_cm": head_z, "bones": len(names)}))
 finally:
     actors.destroy_actor(a)

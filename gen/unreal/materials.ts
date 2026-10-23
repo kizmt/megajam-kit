@@ -17,6 +17,7 @@ const MI = 'editor_toolset.toolsets.material_instance.MaterialInstanceTools';
 const TX = 'editor_toolset.toolsets.texture.TextureTools';
 const OB = 'editor_toolset.toolsets.object.ObjectTools';
 const SM = 'editor_toolset.toolsets.static_mesh.StaticMeshTools';
+const SK = 'editor_toolset.toolsets.skeletal_mesh.SkeletalMeshTools';
 
 export const MASTER = '/Game/Kit/Materials/M_PBR_Master';
 const KIT_TEX = '/Game/Kit/Textures';
@@ -26,7 +27,7 @@ export const ref = (p: string): ObjectRef => ({ refPath: p.includes('.') ? p : `
 
 type Rgb = readonly [number, number, number];
 type MapKey = 'basecolor' | 'normal' | 'roughness' | 'metallic';
-interface TextureProps { SRGB: boolean; CompressionSettings: 'TC_Default' | 'TC_Normalmap' | 'TC_Grayscale' }
+interface TextureProps { SRGB: boolean; CompressionSettings: 'TC_Default' | 'TC_Normalmap' | 'TC_Grayscale'; MaxTextureSize?: number }
 interface MapSpec {
   param: string;
   props: TextureProps;
@@ -107,11 +108,24 @@ export async function ensureMaster({ force = false }: { force?: boolean } = {}):
   return mat;
 }
 
-export interface ApplyPbrOptions { name: string; texDir: string; dest?: string; mesh?: string }
+export interface ApplyPbrOptions {
+  name: string;
+  texDir: string;
+  dest?: string;
+  mesh?: string;
+  /** 'skeletal' for characters (SkeletalMeshTools); default 'static'. */
+  kind?: 'static' | 'skeletal';
+  /**
+   * In-game texture cap (Texture MaxTextureSize; cooked at this size). Source stays full-res in the asset, so a
+   * hero asset can be raised later with one setting, no regeneration. 0 = no cap. Default 2048 (8 GB VRAM budget).
+   */
+  maxTextureSize?: number;
+}
 export interface ApplyPbrResult { instance: string; textures: MapKey[]; slots: string[] }
 
 /** texDir contains T_<Name>_basecolor.png etc. (output of gen/blender/prep.py). */
-export async function applyPbr({ name, texDir, dest = '/Game/Props', mesh }: ApplyPbrOptions): Promise<ApplyPbrResult> {
+export async function applyPbr({ name, texDir, dest = '/Game/Props', mesh, kind = 'static', maxTextureSize = 2048 }: ApplyPbrOptions): Promise<ApplyPbrResult> {
+  const meshTools = kind === 'skeletal' ? SK : SM;
   await ensureMaster();
   const folder = `${dest}/${name}`;
   const instPath = `${folder}/MI_${name}`;
@@ -122,13 +136,13 @@ export async function applyPbr({ name, texDir, dest = '/Game/Props', mesh }: App
     const m = MAPS[key];
     const file = join(texDir, `T_${name}_${key}.png`);
     if (!existsSync(file)) continue;
-    const tex = await importTexture(folder, `T_${name}_${key}`, file, m.props);
+    const tex = await importTexture(folder, `T_${name}_${key}`, file, { ...m.props, MaxTextureSize: maxTextureSize });
     await mcpCall(MI, 'set_texture_parameter', { instance: inst, name: m.param, value: tex });
     applied.push(key);
   }
-  const meshRef = ref(mesh ?? `${dest}/SM_${name}`);
-  const slots = await callTool<string[]>(SM, 'get_material_slots', { mesh: meshRef });
-  for (const s of slots) await mcpCall(SM, 'set_material', { mesh: meshRef, slot_name: s, material: inst });
+  const meshRef = ref(mesh ?? `${dest}/${kind === 'skeletal' ? 'SK' : 'SM'}_${name}`);
+  const slots = await callTool<string[]>(meshTools, 'get_material_slots', { mesh: meshRef });
+  for (const s of slots) await mcpCall(meshTools, 'set_material', { mesh: meshRef, slot_name: s, material: inst });
   await mcpCall(AS, 'save_assets', { asset_paths: [] });
   return { instance: instPath, textures: applied, slots };
 }

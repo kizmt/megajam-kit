@@ -221,6 +221,11 @@ and a 93-hour budget. **Skip.** At most, migrate a few of its AnimSequences and 
 
 ## Recommended path for a generated character
 
+**Automated (2026-10-24):** `gen/character.ts` runs steps 1-9 below in one command (~4 min, 90 Tripo credits) and
+prints the one manual step (8). Usage, options and the failure modes found while building it: `PIPELINE.md`
+"Characters" and "Hard-won facts". Material differs from step 4 below: PBR maps come from the textured model,
+not the rig (the rig FBX wires its colour image as the normal map). The steps stay here as the explanation.
+
 `[S]` = scriptable (MCP/Python/CLI), `[UI]` = editor UI needed, `[V]` = verify with screenshot/PIE.
 
 1. `[S]` Concept image in **T-pose**, front view (`-p template=t_pose`). Generate with a face cap (`--faces`).

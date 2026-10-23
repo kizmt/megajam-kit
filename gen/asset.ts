@@ -9,11 +9,11 @@
 //        Blender preview -> Unreal import + place + screenshot (if the editor is open).
 // Everything for one asset lands in <Project>/Generated/assets/<name>/ with a manifest.json (see gen/paths.ts).
 
-import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { KIT, errorMessage, generatedDir } from './paths.ts';
+import { parseMarkedJson, parseTripo, q, run, secs } from './proc.ts';
 import { applyPbr, ref, type ApplyPbrResult } from './unreal/materials.ts';
 import { McpUnreachableError, callTool, captureViewport, mcpCall, type Box, type CameraTransform, type ObjectRef } from './unreal/mcp.ts';
 
@@ -55,8 +55,6 @@ if (o.help || (!prompt && !o.image && !o.model)) {
 
 // ---------- external process output shapes (verified 2026-10-24) ----------
 
-/** Last JSON line of `tripo make ... --json`. */
-interface TripoMakeResult { task_id: string; type: string; status: string; credits_consumed: number; model_file: string; source_task_id?: string }
 /** PREP_JSON= line of gen/blender/prep.py. */
 interface PrepResult { size_m: number[]; triangles_out: number; fbx_mb: number; [extra: string]: unknown }
 
@@ -78,19 +76,9 @@ interface Manifest {
   error?: string;
 }
 
-function parseTripo(out: string): TripoMakeResult {
-  const line = out.trim().split('\n').reverse().find((l) => l.trim().startsWith('{'));
-  if (!line) throw new Error(`tripo printed no JSON:\n${out.slice(-800)}`);
-  const j = JSON.parse(line) as Partial<TripoMakeResult>;
-  if (typeof j.model_file !== 'string' || typeof j.task_id !== 'string') throw new Error(`unexpected tripo JSON: ${line.slice(0, 400)}`);
-  return j as TripoMakeResult;
-}
-
 function parsePrep(out: string): PrepResult {
-  const line = out.split('\n').find((l) => l.startsWith('PREP_JSON='));
-  if (!line) throw new Error(`blender prep printed no PREP_JSON:\n${out.slice(-800)}`);
-  const j = JSON.parse(line.slice('PREP_JSON='.length)) as Partial<PrepResult>;
-  if (!Array.isArray(j.size_m) || typeof j.triangles_out !== 'number') throw new Error(`unexpected PREP_JSON: ${line.slice(0, 400)}`);
+  const j = parseMarkedJson<Partial<PrepResult>>(out, 'PREP_JSON');
+  if (!Array.isArray(j.size_m) || typeof j.triangles_out !== 'number') throw new Error(`unexpected PREP_JSON: ${JSON.stringify(j).slice(0, 400)}`);
   return j as PrepResult;
 }
 
@@ -103,25 +91,7 @@ const dir = join(generatedDir('assets'), name.toLowerCase());
 mkdirSync(dir, { recursive: true });
 const manifest: Manifest = { name, prompt, created: new Date().toISOString(), steps: {} };
 const t0 = Date.now();
-const secs = (t: number): string => `${((Date.now() - t) / 1000).toFixed(1)}s`;
 const save = (): void => writeFileSync(join(dir, 'manifest.json'), JSON.stringify(manifest, null, 2));
-
-// On Windows `tripo` is an npm .cmd shim, which needs a shell. Node 24 deprecates args + shell:true (DEP0190:
-// args are concatenated unescaped), so build one command line ourselves; every path argument goes through q().
-function run(cmd: string, args: string[], label: string): Promise<string> {
-  return new Promise((res, rej) => {
-    const p = process.platform === 'win32'
-      ? spawn([cmd, ...args].join(' '), { shell: true, env: process.env })
-      : spawn(cmd, args, { env: process.env });
-    let out = '', err = '';
-    p.stdout.on('data', (d: Buffer) => { out += d.toString(); });
-    p.stderr.on('data', (d: Buffer) => { err += d.toString(); });
-    p.on('error', rej);
-    p.on('close', (code) => (code === 0 ? res(out) : rej(new Error(`${label} failed (exit ${code}):\n${(err || out).slice(-1500)}`))));
-  });
-}
-/** Quote one argument for the Windows command line (paths and free text; " cannot occur in Windows paths). */
-const q = (s: string): string => (process.platform === 'win32' ? `"${s.replace(/"/g, '\\"')}"` : s);
 const step = (n: number, msg: string): void => console.log(`[${n}] ${msg}`);
 
 const S = 'editor_toolset.toolsets.static_mesh.StaticMeshTools';
@@ -171,7 +141,7 @@ try {
     step(2, `Tripo image-to-3D (face limit ${o.faces}) ... ~3-4 min`);
     const tripoDir = join(dir, 'tripo');
     const tj = parseTripo(await run('tripo', ['make', q(image), '--for', 'game-pc', '-p', `face_limit=${o.faces}`, '-o', q(tripoDir), '--name', name.toLowerCase(), '--json', '--yes', '--no-open'], 'tripo'));
-    raw = resolve(tj.model_file); // CLI reports paths relative to the current directory
+    raw = tj.model_file; // parseTripo resolves the CLI's cwd-relative paths
     manifest.steps.tripo = { model: raw, credits: tj.credits_consumed, task: tj.source_task_id ?? tj.task_id, time: secs(t) };
     console.log(`    ${raw} (${tj.credits_consumed} credits, ${secs(t)})`);
   }

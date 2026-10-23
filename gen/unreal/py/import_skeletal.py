@@ -53,3 +53,6 @@ print(f"mesh {mesh.get_path_name()}")
 print(f"size_cm x={e.x*2:.1f} y={e.y*2:.1f} z={e.z*2:.1f} origin_z={b.origin.z:.1f}")
 print(f"skeleton {mesh.skeleton.get_path_name()}")
 print("imported", [str(p) for p in task.imported_object_paths])
+import json
+print("IMPORT_JSON=" + json.dumps({"mesh": mesh.get_path_name(), "skeleton": mesh.skeleton.get_path_name(),
+                                   "size_cm": [round(e.x * 2, 1), round(e.y * 2, 1), round(e.z * 2, 1)]}))

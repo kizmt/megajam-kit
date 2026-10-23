@@ -28,7 +28,7 @@ Unreal: `/Game/Props/<Name>/` (SM_, MI_, T_*).
 | `--tex 1024` | Smaller textures for small props (default 2048). |
 | `--faces 30000` / `--tris N` | Tripo face limit / extra Blender decimation. |
 | `--place x,y,z --yaw deg` | Placement in cm. Use `--yaw=-90` form for negatives. |
-| `--hulls 6` | Replace default collision with N convex hulls (4â€“8). For props the player pushes, carries or brushes against. |
+| `--hulls 6` | Replace default collision with N convex hulls (4Ã¢â‚¬â€œ8). For props the player pushes, carries or brushes against. |
 | `--no-unreal` | Stop after the FBX. |
 
 Measured 2026-10-24: ~3 min per new prop (Tripo ~2.5-3.5 min), 45 Tripo credits ($0.45).
@@ -36,33 +36,41 @@ With `--model`: ~14 s.
 
 Known limits: master material is opaque (glass renders dark).
 
-## Characters: concept to playable (tested 2026-10-24, Explorer in SmokeTest)
-
-Manual sequence for now (to be wrapped as `gen/character.ts`). Details and reasoning: `docs/ue/characters.md`.
+## Characters: concept to playable (tested 2026-10-24: Explorer, Mechanic in SmokeTest)
 
 ```powershell
-# 1. T-pose concept (pick one with arms straight out; A-pose rigs worse)
-node gen/image.ts "Full-body character ... strict T-pose, arms straight out horizontally, front orthographic view, plain light-grey background" --n 2 --aspect 3:4 --out <Project>/Generated/characters/<name>
-# 2. Model, then rig the ORIGINAL image_to_model task (not the game-pc convert task). Load TRIPO_* from .env first.
-tripo make <concept.jpg> --for game-pc -p face_limit=30000 -o <Project>/Generated/characters/<name>/tripo/model --json --yes --no-open
-#    original task id = "original_model_id" in the model's task.json
-tripo anim rig <image_to_model task id> --spec unreal --out-format fbx -o <Project>/Generated/characters/<name>/tripo/rig --json --yes --no-open
-# 3. Armature-safe size/facing in Blender (cm workflow), then import and check
-blender -b --factory-startup --python gen/blender/prep_rig.py -- <rig model.fbx> <Project>/Generated/characters/<name>/SK_<Name>.fbx --height 1.8
-node gen/unreal/py.ts gen/unreal/py/import_skeletal.py --arg fbx=<SK_Name.fbx> --arg folder=/Game/Characters/<Name> --arg name=SK_<Name>
-node gen/unreal/py.ts gen/unreal/py/check_skeletal.py --arg mesh=/Game/Characters/<Name>/SK_<Name>   # must print CHECK_SKELETAL ok
-# 4. IK rigs + retargeter + batch retarget of ABP_Unarmed (needs the Third Person content pack in the project)
-node gen/unreal/py.ts gen/unreal/py/retarget_setup.py --arg name=<Name>
+# 1. Three T-pose concepts, then STOP for Scott to pick (art direction; also catches A-poses)
+node gen/character.ts "a young mechanic in blue work overalls, brown work boots" --name Mechanic --concepts 3
+# 2. Everything else, then the one manual step it prints
+node gen/character.ts --image <picked concept> --name Mechanic --parent /Script/<Module>.PlayerCharacter
 ```
 
-5. **[UI, 2 min]** Open `ABP_Unarmed_<Name>` â†’ AnimGraph â†’ delete the **Control Rig** node (CR_Mannequin_FootIK) between
-   `Slot 'DefaultSlot'` and `Output Pose`, wire Slot â†’ Output Pose, delete the orphaned NOT / Is Falling nodes, Compile, Save.
-   Without this the feet twist outwards (Tripo's skeleton lacks Manny's extra spine/metacarpal bones).
-6. Character: mesh `SK_<Name>`, Anim Class `ABP_Unarmed_<Name>`, mesh offset Z = -capsule half-height, yaw 270 (same as Manny).
-7. Verify in PIE (not the editor viewport): walk (speed 300), jog (600), jump, land.
+Steps: Tripo model (45 cr) -> v3.5 re-texture (20 cr) -> rig `--spec unreal` on the textured task (25 cr) ->
+`extract_pbr.py` (colour/normal/roughness/metallic from the textured model) -> `prep_rig.py` (1.8 m, face +Y,
+cm export, no textures) -> import -> `MI_<Name>` of `M_PBR_Master` (textures capped at 2048 in-game, 4K source
+kept) -> root-scale gate -> IK rigs + retargeter + batch retarget of `ABP_Unarmed` -> `BP_<Name>` on `--parent`.
+Measured: ~4 min and 90 credits per new character; a rebuild from downloaded files takes ~20 s and no credits.
 
-Measured: concept 26 s, Tripo model ~2.5 min, rig 25 s (25 credits), Blender + import + retarget < 1 min.
-Blend space speeds: idle 0, walk 300, jog 600. A keyboard always gives full speed, so walking needs a walk key or MaxWalkSpeed 300.
+| Option | Use |
+|---|---|
+| `--concepts N` | Stop after N T-pose concepts. Always do this first. |
+| `--image file` | Start from a picked concept. |
+| `--task id [--pbr file]` | Start from a Tripo task. With `--pbr`, rig it as is; without, re-texture it first. |
+| `--rig fbx --pbr file` | Rebuild from downloaded files: no credits (e.g. after a pipeline fix, or the editor was closed). |
+| `--no-retexture` | Skip the v3.5 re-texture (70 credits); maps come from the first model. Blotch risk. |
+| `--max-tex 2048` | In-game texture cap (cooked size). Raise to 4096 for a hero/close-up character; no regeneration. |
+| `--parent /Script/M.C` | Make `BP_<Name>`: thin subclass of the game's C++ Character (mesh, ABP, offset only). |
+| `--height 1.8` `--rot -90` | Real height in metres; Blender Z rotation (Tripo faces +X in Unreal; -90 makes +Y like Manny). |
+
+Needs the Third Person content pack in the project (Manny + `ABP_Unarmed`). Reruns replace the character's whole
+folder (`clean_character.py`); if anything outside it still references the character (game mode pawn, placed
+actors), the run stops and lists them instead of triggering an Unreal dialog. Point those elsewhere first.
+
+**Manual step (2 min, UI):** open `ABP_Unarmed_<Name>` > AnimGraph, delete the **Control Rig** node
+(`CR_Mannequin_FootIK`) between `Slot 'DefaultSlot'` and `Output Pose` plus the orphaned NOT / Is Falling nodes,
+wire Slot -> Output Pose, Compile, Save. Without it the feet twist outwards.
+
+Blend space speeds: idle 0, walk 300, jog 600 (the C++ player recipe in `docs/ue/gameplay.md` matches these).
 
 ## Audio
 
@@ -89,10 +97,12 @@ Measured: SFX ~2 s end to end, 30 s music track ~6 s.
 | `gen/blender/prep.py` | Size, pivot at base, texture budget, single mesh, UE-scaled FBX |
 | `gen/blender/inspect.py` | Stats JSON + preview render |
 | `gen/unreal/mcp.ts` | Call any Unreal MCP tool from scripts; `captureViewport()` |
-| `gen/unreal/py.ts` | Run a Python file (or `-c` code) in the editor via `run_python`; `--arg k=v` â†’ `ARGS` dict |
+| `gen/unreal/py.ts` | Run a Python file (or `-c` code) in the editor via `run_python`; `--arg k=v` Ã¢â€ â€™ `ARGS` dict |
 | `gen/unreal/shot.ts` | Viewport screenshot to PNG (`--wait N` for shader compiles) |
-| `gen/blender/prep_rig.py` | Rigged character: height, facing, armature-safe cm export |
-| `gen/unreal/py/import_skeletal.py` / `check_skeletal.py` / `retarget_setup.py` | Skeletal import, root-scale check, IK rigs + retarget + batch |
+| `gen/character.ts` | Concept -> rigged, PBR-textured, retargeted character (+ BP); see Characters |
+| `gen/blender/prep_rig.py` | Rigged character: height, facing, armature-safe cm export, textures stripped |
+| `gen/blender/extract_pbr.py` | Colour/normal/roughness/metallic PNGs from a Tripo textured model (FBX or GLB) |
+| `gen/unreal/py/import_skeletal.py` / `check_skeletal.py` / `retarget_setup.py` / `clean_character.py` / `make_character_bp.py` | Skeletal import, root-scale check, IK retarget, safe rebuild, thin BP |
 | `gen/unreal/materials.ts` | `M_PBR_Master` + per-asset material instances |
 | `unreal/Plugins/MegajamTools` | Project plugin: MCP tools `import_sound`, `import_any`, `run_console_command`, `run_python`, `get_sound_info` |
 
@@ -132,3 +142,23 @@ Measured: SFX ~2 s end to end, 30 s music track ~6 s.
   Verify animation in PIE: start with `LevelEditorSubsystem.editor_request_begin_play()`, screenshot with
   `HighResShot WxH filename=...` on the PIE world, read bone positions with `get_socket_location`.
 - Inline Python through PowerShell breaks on quotes. Put scripts in files and run `node gen/unreal/py.ts file.py --arg k=v`.
+- **Tripo's rig FBX keeps only the colour image** and points its normal-map slot at that same image (verified by
+  scanning the file: 1 JPEG inside; the textured GLB has 3 maps). Imported as is, the colour map is used as the
+  normal map: blotchy, wrong lighting in Unreal. Take PBR maps from the textured model (`extract_pbr.py`) and
+  export the rig without textures.
+- Tripo texture quality varies between models with identical settings (Explorer clean, two Mechanics blotchy
+  in Tripo's own preview). `tripo model texture <task> --model v3.5-20260815 --texture-quality detailed`
+  (delight on by default) fixed it: 20 credits, ~70 s, output GLB packs roughness (G) + metallic (B).
+  `tripo anim rig` accepts the `texture_model` task. The command is `tripo model texture` (not `tripo texture`);
+  `--dry-run` exists on `make` only. `--for game-pc` and `--for anim` send the same generation settings.
+- T-pose concepts: say the arm angle ("exactly 90 degrees, NOT an A-pose") and camera alignment ("facing the
+  viewer squarely, zero rotation, symmetrical"): 3/3 clean vs 1/2 without (one A-pose, one turned body).
+- Editor Python must never delete an asset something else references: `delete_asset` force-deletes, but the
+  object lives on in memory, and creating one with the same name then opens a modal **"Overwrite Existing
+  Object"** dialog that blocks the game thread (and every MCP call) until someone clicks. Reuse shared assets
+  (`IK_Manny`), delete referencers first, check `get_referencers` and refuse with a message instead.
+- Re-importing a skeletal mesh deletes its skeleton; an existing ABP for that skeleton then fails to compile
+  ("The skeleton asset for this animation Blueprint is missing"). Rebuild a character's whole folder at once.
+- Texture size: keep the full-res source and set `MaxTextureSize` (cooked size) instead of downscaling in
+  Blender, so a hero asset can be raised later with one setting. Characters do this (`--max-tex`); props still
+  downscale in `prep.py`.

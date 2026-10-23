@@ -55,12 +55,30 @@ if mode == "cm":
     arm.scale = (100.0, 100.0, 100.0)
     bpy.context.view_layer.update()
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+# No textures in the export. Tripo's rig FBX keeps only the colour image and points its normal-map slot at that
+# same image (verified 2026-10-24: colour used as normal = blotchy lighting in Unreal). The real PBR maps come
+# from the textured model via gen/blender/extract_pbr.py and go onto MI_<Name> of the kit's master material.
+# Removing the image nodes also ends the "texture name clash" import warning. The material slot stays (M_<Name>).
+import os
+stem = os.path.splitext(os.path.basename(dst))[0]
+stem = stem[3:] if stem.startswith("SK_") else stem
+for m in bpy.data.materials:
+    if m.use_nodes:
+        for n in [n for n in m.node_tree.nodes if n.type in ("TEX_IMAGE", "NORMAL_MAP", "SEPARATE_COLOR", "SEPARATE_RGB")]:
+            m.node_tree.nodes.remove(n)
+for img in list(bpy.data.images):
+    bpy.data.images.remove(img)
+result["textures"] = []
+mats = [m for m in bpy.data.materials if m.users > 0]
+for i, m in enumerate(mats):
+    m.name = f"M_{stem}" if len(mats) == 1 else f"M_{stem}_{i + 1}"
+result["materials"] = [m.name for m in mats]
 scale_opt = {"none": "FBX_SCALE_NONE", "all": "FBX_SCALE_ALL", "units": "FBX_SCALE_UNITS", "cm": "FBX_SCALE_NONE"}[mode]
 result["mode"] = mode
 bpy.ops.export_scene.fbx(
     filepath=dst, use_selection=False, object_types={"ARMATURE", "MESH"},
     apply_unit_scale=True, apply_scale_options=scale_opt, global_scale=1.0,
     bake_space_transform=False, add_leaf_bones=False, armature_nodetype="NULL",
-    bake_anim=False, mesh_smooth_type="FACE", path_mode="COPY", embed_textures=True,
+    bake_anim=False, mesh_smooth_type="FACE", path_mode="AUTO", embed_textures=False,
 )
 print("PREP_RIG_JSON=" + json.dumps(result))
