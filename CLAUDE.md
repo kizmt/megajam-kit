@@ -40,6 +40,9 @@ Scott is the director: he owns concept, feel, art direction and sign-off. Claude
 - C++ must compile with **zero UHT warnings** (UHT treats warnings as errors). `.generated.h` is the last
   include; a delegates-only header needs `UDELEGATE`. See `docs/ue/production.md`.
 - **Name assets per `docs/ue/naming.md`** (Epic prefixes + kit extensions) and keep the folder layout there.
+- **Lighting is Lumen-only, all lights Movable, no baking** (`docs/ue/worldbuilding.md`). PCG work follows Epic's
+  agent workflow there (load the PCG skill first, adapt example graphs, plan before executing).
+- **Beta/Experimental features** follow `docs/ue/features.md`: welcome when they earn their place, never first used on jam day.
 - **Follow `docs/ue/performance.md`** (budgets, Nanite, one master material, tick off by default, pooling,
   instancing). Read it before adding content or gameplay systems.
 
