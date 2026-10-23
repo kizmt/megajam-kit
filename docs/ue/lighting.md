@@ -1,4 +1,4 @@
-# Lighting and look (UE 5.8.4, RTX 4060 8 GB, 1440p internal, 60 fps)
+# Lighting and look (UE 5.8.4, RTX 4060 8 GB, 4K output / 1080p internal, 100+ fps)
 
 Visuals are judged. This note is how we get a good-looking, fully dynamic image without blowing the 16.6 ms frame.
 Kit decisions (see `worldbuilding.md`): **Lumen GI + Lumen reflections, Virtual Shadow Maps, all lights Movable,
@@ -81,11 +81,12 @@ Groups: `sg.ResolutionQuality` (= screen percentage), `sg.ViewDistanceQuality`, 
 | 2 High | Screen Probe Gather, downsample 32, no mesh-SDF tracing | Lumen, half res (`DownsampleFactor=2`) | pool 2048, volumetric fog on |
 | 3 Epic | Screen Probe Gather, downsample 16, hit lighting allowed | Lumen, full res | pool 4096, sharper directional |
 
-- **Target High (2) for GI, Reflections and Shadows** on the 4060 at 60 fps: Epic: High = 60 fps budget, Epic = 30 fps.
+- **Target High (2) for GI, Reflections and Shadows** on the 4060: Epic: High = 60 fps budget, Epic = 30 fps. Measured: High is +22 fps at 4K (`performance.md`).
   Lumen GI+reflections+translucency+volumetric fog budget at 60 fps is **~4 ms** (console 1080p figure).
-- Ship a settings default of High for these three groups (via `DefaultScalability.ini` or GameUserSettings), not Epic.
+- Ship a settings default of High for these three groups (`DefaultGameUserSettings.ini`, SETUP step 7b), not Epic.
   Other groups can stay Epic if `stat unit` allows.
-- Resolution: 1440p internal on a 4K output = TSR at ~66.7% ("Quality" preset in `[ResolutionQuality]`).
+- Resolution: 4K output, 1080p internal (engine default for a 4K display). 1440p internal costs ~4 ms more;
+  only raise it if `bench.ts` shows headroom (`performance.md`).
 
 ## Post Process Volume (one, Infinite Extent (Unbound) ticked)
 
@@ -190,7 +191,8 @@ Groups: `sg.ResolutionQuality` (= screen percentage), `sg.ViewDistanceQuality`, 
 - `stat unit` first, then `stat gpu`. Lumen shows as **Lumen Scene Lighting**, **Lumen Screen Probe Gather**,
   **Lumen Reflections**; VSM as **Shadow Depths** (Nanite vs Non-Nanite) and **Shadow Projection** (exact stat strings unverified).
   `ProfileGPU` for detail; `stat SceneRendering` for ray tracing instance count.
-- Rough targets at 1440p internal (ours, not Epic's): Lumen total <= 4 ms, shadows <= 2 ms, fog+clouds <= 1.5 ms.
+- Rough targets at 4K output / 1080p internal (ours, not Epic's): whole GPU frame <= 9 ms; Lumen <= 2 ms, shadows <= 2 ms,
+  fog <= 1 ms, no VolumetricCloud (measured ~2.5 ms).
 - For isolated Lumen timings, `r.Lumen.AsyncCompute 0` while profiling only.
 - Final numbers come from the **packaged** build on GIZMO.
 
