@@ -64,7 +64,7 @@ no Lightmass/baking, Nanite on static props, one opaque master material, few sha
 - Turn off **Visible In Ray Tracing** on skydomes and huge overlapping background meshes.
 - Nanite meshes are ray traced via a **fallback mesh** (Static Mesh `Fallback Relative Error`). Self-shadow/leak
   artifacts on Nanite props in HWRT: raise Fallback Relative Error accuracy or check `Show > Advanced > Nanite Meshes`.
-- A/B: if Lumen passes exceed ~4 ms at 1440p, try `r.Lumen.HardwareRayTracing 0` (SW RT, Global Tracing is the
+- A/B: if Lumen passes exceed ~2 ms (4K output, 1080p internal), try `r.Lumen.HardwareRayTracing 0` (SW RT, Global Tracing is the
   fastest path; cost doesn't scale with instance count). Keep whichever is faster *in the packaged build*.
 
 ## Scalability (sg.*) - what each level means for Lumen/VSM
