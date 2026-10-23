@@ -31,6 +31,7 @@ const { values: o, positionals } = parseArgs({
     format: { type: 'string', default: 'mp3_44100_128' },
     n: { type: 'string', default: '1' },
     out: { type: 'string', default: join(KIT, 'out', 'audio') },
+    'no-unreal': { type: 'boolean', default: false },
     help: { type: 'boolean', short: 'h', default: false },
   },
 });
@@ -109,6 +110,7 @@ console.log(`Generating ${count} ${kind} clip(s): ${name}`);
 const t = Date.now();
 const results = await Promise.allSettled(Array.from({ length: count }, one));
 let ok = 0;
+const toImport = [];
 results.forEach((r, i) => {
   if (r.status === 'rejected') { console.error(`  [${i + 1}] FAILED: ${r.reason.message}`); return; }
   const file = join(o.out, `${KINDS[kind]}_${name}${count > 1 ? `_${i + 1}` : ''}.${ext}`);
@@ -117,6 +119,22 @@ results.forEach((r, i) => {
   const wav = ext === 'wav' ? file : toWav(file);
   console.log(`  [${i + 1}] ${file} (${(r.value.buf.length / 1024).toFixed(0)} KB)${wav && wav !== file ? `\n      ${wav}` : FFMPEG ? '' : '  (no ffmpeg: WAV not made)'}`);
   ok++;
+  if (wav) toImport.push({ wav, asset: `${KINDS[kind]}_${name}${count > 1 ? `_${i + 1}` : ''}` });
 });
 console.log(`${ok}/${count} succeeded in ${((Date.now() - t) / 1000).toFixed(1)}s`);
+
+// Import into the open Unreal project (needs the MegajamTools plugin). Skipped with --no-unreal or if the editor is closed.
+if (!o['no-unreal'] && toImport.length) {
+  const folder = { sfx: '/Game/Audio/SFX', music: '/Game/Audio/Music', voice: '/Game/Audio/Voice' }[kind];
+  const looping = kind === 'music' || o.loop;
+  try {
+    const { mcpCall } = await import('./unreal/mcp.mjs');
+    for (const { wav, asset } of toImport) {
+      await mcpCall('megajam_tools.toolsets.MegajamTools', 'import_sound', { folder_path: folder, asset_name: asset, source_file: wav.replace(/\\/g, '/'), looping, replace: true });
+      console.log(`  imported ${folder}/${asset}${looping ? ' (looping)' : ''}`);
+    }
+  } catch (e) {
+    console.log(/cannot reach Unreal MCP/.test(e.message) ? '  editor not running: WAVs ready, import later' : `  Unreal import failed: ${e.message.slice(0, 300)}`);
+  }
+}
 process.exit(ok ? 0 : 1);

@@ -41,7 +41,10 @@ node gen/audio.mjs music "calm mysterious exploration theme, harp, low strings" 
 node gen/audio.mjs voice "The map was right." --name Line01      # needs TTS permission on the key
 ```
 
-Output: `out/audio/SFX_*.mp3`, `MUS_*.mp3`, `VO_*.mp3`. Music is instrumental unless `--vocals`.
+Output: `out/audio/SFX_*.mp3/.wav`, `MUS_*`, `VO_*`. Music is instrumental unless `--vocals`.
+WAVs (48 kHz, 16-bit, via ffmpeg) are imported automatically into `/Game/Audio/SFX|Music|Voice`
+when the editor is open; music and `--loop` sounds are set to loop. Needs the MegajamTools plugin.
+Measured: SFX ~2 s end to end, 30 s music track ~6 s.
 
 ## Individual tools
 
@@ -53,6 +56,7 @@ Output: `out/audio/SFX_*.mp3`, `MUS_*.mp3`, `VO_*.mp3`. Music is instrumental un
 | `gen/blender/inspect.py` | Stats JSON + preview render |
 | `gen/unreal/mcp.mjs` | Call any Unreal MCP tool from scripts; `captureViewport()` |
 | `gen/unreal/materials.mjs` | `M_PBR_Master` + per-asset material instances |
+| `unreal/Plugins/MegajamTools` | Project plugin: MCP tools `import_sound`, `import_any`, `run_console_command`, `get_sound_info` |
 
 ## Hard-won facts (UE 5.8.4)
 

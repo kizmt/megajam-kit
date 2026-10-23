@@ -61,10 +61,13 @@ The Blank template opens a temporary Open World level (Landscape, World Partitio
 5. `/mcp` should list only `unreal-mcp` (3 tools: tool search mode).
 6. Test: "What actors are in the current level?" — should list the Basic level's actors.
 
-## 6. Kit scripts + Git (1 min)
+## 6. Kit scripts, plugin + Git (2 min)
 
 1. Copy the kit's `scripts\` folder into the project root (`C:\dev\<ProjectName>\scripts\`).
    The scripts find the project from their own location, so they must live inside the project.
+   Copy `unreal\Plugins\MegajamTools` into `C:\dev\<ProjectName>\Plugins\` and restart the editor.
+   Check: Output Log shows `Registering Toolset megajam_tools.toolsets.MegajamTools`.
+   (Adds sound import, generic import and console commands to MCP. Enabled by default; no prompt.)
 2. `.\scripts\init-repo.ps1` → writes Unreal `.gitignore` + `.gitattributes`, runs `git init`, enables LFS,
    makes the first commit. Binaries/Intermediate/Saved/DerivedDataCache are ignored; `.uasset`/`.umap`,
    images, models and audio go through LFS.

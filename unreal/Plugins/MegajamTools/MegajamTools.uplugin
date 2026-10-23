@@ -1,0 +1,19 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "Megajam Tools",
+	"Description": "Extra AI-callable editor tools (sound import, generic import, console commands) for the megajam-kit pipeline, exposed through Unreal MCP via the Toolset Registry.",
+	"Category": "Editor",
+	"CreatedBy": "megajam-kit",
+	"CanContainContent": true,
+	"EnabledByDefault": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Plugins": [
+		{ "Name": "PythonScriptPlugin", "Enabled": true },
+		{ "Name": "ToolsetRegistry", "Enabled": true },
+		{ "Name": "EditorToolset", "Enabled": true }
+	]
+}
