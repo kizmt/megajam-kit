@@ -28,9 +28,14 @@ Target: ~10 minutes on jam day. Do the steps in order.
    - Asset Base Class: `GameFeatureData`
    - Directories: `/Game/Unused`
    A one-off "Ensure condition failed: HasValidRuntimeData()" while filling this in is expected and harmless.
-4. Optional, only if the jam idea uses procedural levels: also enable **PCG Primitives** (Experimental;
+4. Edit → **Editor Preferences** → Plugins → Python → tick **Developer Mode** (per-user; prefer this over the
+   Project Settings copy, as Epic's own comment says). On the next restart the editor writes the Python API stub
+   `Intermediate\PythonStub\unreal.py`, which Claude greps before writing editor Python.
+5. Content Drawer → **Add** → **Add Feature or Content Pack** → **Third Person** → Add to Project. The character
+   pipeline needs its Manny skeleton and `ABP_Unarmed` (`PIPELINE.md`, characters).
+6. Optional, only if the jam idea uses procedural levels: also enable **PCG Primitives** (Experimental;
    pulls in PCG Geometry Script Interop). See `docs/ue/pcg.md`. Restart again.
-5. Renderer check (no clicks needed; the Blank C++ template already has these). Open
+7. Renderer check (no clicks needed; the Blank C++ template already has these). Open
    `Config\DefaultEngine.ini` and confirm:
    `r.DynamicGlobalIlluminationMethod=1` (Lumen), `r.ReflectionMethod=1` (Lumen),
    `r.Shadow.Virtual.Enable=1` (Virtual Shadow Maps), `r.Substrate=True`.
@@ -39,7 +44,7 @@ Target: ~10 minutes on jam day. Do the steps in order.
 ## 3. MCP server (1 min)
 
 1. Edit → Editor Preferences → General → Model Context Protocol → tick **Auto Start Server** (port 8000, path `/mcp`). Do not use "Set as Default".
-2. Console (backtick): `ModelContextProtocol.StartServer`
+2. Console: Window → Output Log → the **Cmd** box at the bottom (backtick is a dead key on the NZ layout): `ModelContextProtocol.StartServer`
 3. Console: `ModelContextProtocol.GenerateClientConfig ClaudeCode` → writes `.mcp.json` to the project root.
 4. Output Log should show `Created new HttpListener on 127.0.0.1:8000` and ~52 "Registering Toolset" lines.
 
