@@ -49,6 +49,31 @@ Jam rules forbid shipping a lightly modified template, so take the patterns belo
   choice: play the montage with `PlayAnimMontage`. While the character walks or falls, the Z axis of root motion is
   ignored and gravity still applies. Root-motion modes push the anim graph update onto the game thread, which costs CPU.
 
+## Verified recipe: third-person player (built and play-tested in SmokeTest, 2026-10-24)
+
+Write it fresh in the jam project (no pre-jam gameplay code in the kit); this is the layout that worked first time.
+Expect ~15 min including one full build.
+
+- `UPlayerTuningData : UPrimaryDataAsset`: RunSpeed 600, WalkSpeed 300 (the retargeted Manny blend space plays
+  walk at 300 and jog at 600), JumpZVelocity 500, AirControl 0.35, TurnRate 500, BrakingDecelerationWalking 2000,
+  CameraDistance 400, bCameraLag + CameraLagSpeed 12. `EditDefaultsOnly, BlueprintReadOnly`, `ClampMin` metas.
+- `APlayerCharacter : ACharacter` (`UCLASS(Abstract)`): capsule 42/96, controller rotation off, orient to
+  movement, spring arm + camera (template pattern), `TObjectPtr` UPROPERTYs for Tuning and five `UInputAction`s
+  (Move, Look, MouseLook, Jump, Walk). `BeginPlay` → `ApplyTuning()` copies the asset onto the CMC and boom (and logs
+  it). `SetupPlayerInputComponent` warns for each unassigned action (null actions bind silently), binds Walk
+  `Started`/`Completed` → `SetWalking(true/false)` which swaps `MaxWalkSpeed`. Walk/Shift = hold to walk.
+- `AMainPlayerController`: `TArray<TObjectPtr<UInputMappingContext>> DefaultMappingContexts`, added in
+  `SetupInputComponent` for local players. `AMainGameMode`: sets `PlayerControllerClass` as a fallback.
+- Thin BPs (editor Python, no graph logic): `BP_Player<Name>` (mesh, ABP class, mesh Z = -capsule half-height,
+  yaw 270, input actions, DA), `BP_MainPlayerController` (IMC_Default + IMC_MouseLook), `BP_MainGameMode`
+  (pawn + controller) → World Settings GameMode Override.
+- Python facts: no factory for `InputAction` in the stub, so duplicate an existing bool action
+  (`IA_Jump` → `IA_Walk`) and set `value_type`/`triggers`; `imc.map_key(action, key)` with
+  `key.set_editor_property("key_name", "LeftShift")`; data assets via `DataAssetFactory` + `data_asset_class`;
+  BPs via `BlueprintFactory` + `parent_class`, then set CDO properties (`get_default_object`) and compile.
+- Verify in PIE from script: pawn/controller/game mode classes, `MaxWalkSpeed` before/after `set_walking(True)`,
+  foot bone Z ≈ 15, log has no `LogPlayerCharacter` warnings.
+
 ## Enhanced Input (the only input path in 5.8)
 
 - **Never** use the legacy `BindAxis` / `BindAction(FName, IE_Pressed...)` or the ActionMappings in Project Settings.

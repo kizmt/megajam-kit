@@ -70,7 +70,7 @@ The Blank template opens a temporary Open World level (Landscape, World Partitio
 
 ## 6. Kit scripts, plugin + Git (2 min)
 
-1. Copy the kit's `scripts\` folder into the project root (`C:\dev\<ProjectName>\scripts\`).
+1. Copy the kit's `scripts\` folder (`build.ps1`, `package.ps1`, `init-repo.ps1`) into the project root (`C:\dev\<ProjectName>\scripts\`).
    The scripts find the project from their own location, so they must live inside the project.
    Copy `unreal\Plugins\MegajamTools` into `C:\dev\<ProjectName>\Plugins\` and restart the editor.
    Check: Output Log shows `Registering Toolset megajam_tools.toolsets.MegajamTools`.
@@ -84,6 +84,12 @@ The Blank template opens a temporary Open World level (Landscape, World Partitio
    Never leave it pointing at a practice project on jam day.
 
 Verified 2026-10-24 on SmokeTest: 17 files tracked (0.07 MB), `Main.umap` via LFS, clean status.
+
+## 6b. C++ build loop (verified 2026-10-24)
+
+- New or changed UCLASS/UPROPERTY/UFUNCTION, new files, Build.cs: Save All → close the editor →
+  `.\scripts\build.ps1` (PASS = 0 errors, 0 warnings in our files) → reopen. No "rebuild modules" prompt expected.
+- Function-body changes: stay in the editor; Claude runs `LiveCoding.Compile` and checks the log.
 
 ## 7. Packaging
 

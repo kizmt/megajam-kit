@@ -144,7 +144,16 @@ protected:
 
 ## Live Coding vs full rebuild
 
-- Live Coding: Ctrl+Alt+F11 in editor or IDE; patches the running editor/PIE.
+- Live Coding: Ctrl+Alt+F11 in editor or IDE; patches the running editor/PIE. **Scriptable:** run the console
+  command `LiveCoding.Compile` (MCP `MegajamTools.run_console_command`), then poll the Output Log for
+  `LogLiveCoding: Display: Live coding succeeded` (~7 s for one .cpp on GIZMO, verified 2026-10-24). Changes apply
+  from the next PIE session.
+- Full build with the editor closed: `scripts\build.ps1` (24 s for a 4-class module on GIZMO). It passes only with
+  zero warnings in our files; engine/toolchain warnings are listed separately. Known engine one: 5.8's own
+  `GameFramework/Character.h(798)` raises **C4996 GetMovementBase deprecated** for every `ACharacter` subclass;
+  not ours, can't be fixed, ignore it. Also "Visual Studio compiler 14.51 is not a preferred version" (harmless).
+- Flat module with subfolders (`Source/<Module>/Player/...`): add `PublicIncludePaths.Add(ModuleDirectory);` to
+  Build.cs so `#include "Player/PlayerCharacter.h"` resolves (Epic's templates list their folders the same way).
 - **Kit rule (stricter than Epic's docs): Live Coding for function bodies only.** New or changed UPROPERTY,
   UFUNCTION, UCLASS/USTRUCT/UENUM, class members, Build.cs, new files = close editor, full build, reopen.
   (5.8 docs say Object Reinstancing, on by default, can take new functions/variables; it is the source of
