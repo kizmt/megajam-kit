@@ -1,5 +1,5 @@
 # Import a rigged FBX as a SkeletalMesh with scale / rotation control (the MCP import_file tool has neither).
-# Run via: node gen/unreal/py.mjs gen/unreal/py/import_skeletal.py --arg fbx=C:/.../model.fbx
+# Run via: node gen/unreal/py.ts gen/unreal/py/import_skeletal.py --arg fbx=C:/.../model.fbx
 #            --arg folder=/Game/Characters/Explorer --arg name=SK_Explorer [--arg scale=100] [--arg yaw=0]
 #            [--arg materials=1] [--arg skeleton=/Game/.../SKEL_X]
 # Replaces existing assets of the same name. Prints size (cm) and bone count.

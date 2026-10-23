@@ -32,14 +32,14 @@ game feels slow.
 - **One master material + instances** (`M_PBR_Master`, `MI_<Name>`). Never per-asset materials: each new material
   is a new set of shaders to compile and a new stall.
 - Master material must have usage flags set (Nanite, skeletal, instanced). A flag missing in a **packaged** build
-  = default grey material. `materials.mjs` sets them.
+  = default grey material. `materials.ts` sets them.
 - Shader compiles after a material change make things render grey for a while in the editor. Wait before judging a screenshot.
 
 ## Textures and memory
 
 - Streaming pool is shared by all textures; over budget = blurry textures (engine drops top mips). Watch for
   blurriness after adding many props; `--tex 1024` for anything small or far.
-- Normal maps: `TC_Normalmap`, sRGB off. Roughness/metallic: grayscale, sRGB off. (`materials.mjs` handles it.)
+- Normal maps: `TC_Normalmap`, sRGB off. Roughness/metallic: grayscale, sRGB off. (`materials.ts` handles it.)
 - Possible later win: pack roughness/metallic into one texture (ORM) to cut texture count per prop.
 
 ## CPU / gameplay code

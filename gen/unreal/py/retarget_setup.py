@@ -1,5 +1,5 @@
 # IK Rigs + IK Retargeter (Manny -> character) and batch-retarget Epic's template animations.
-# Run via: node gen/unreal/py.mjs gen/unreal/py/retarget_setup.py --arg name=Explorer
+# Run via: node gen/unreal/py.ts gen/unreal/py/retarget_setup.py --arg name=Explorer
 #            [--arg mesh=/Game/Characters/Explorer/SK_Explorer] [--arg anims=/Game/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed,...]
 # Creates: /Game/Characters/Rigs/IK_Manny (shared), /Game/Characters/<Name>/Rig/IK_<Name>, RTG_Manny_To_<Name>,
 #          retargeted copies in /Game/Characters/<Name>/Anims with suffix _<Name>.

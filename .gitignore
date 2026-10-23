@@ -7,3 +7,4 @@
 out/
 tripo-out/
 .tripo/
+node_modules/

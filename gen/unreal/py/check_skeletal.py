@@ -1,5 +1,5 @@
 # Check an imported SkeletalMesh is retarget-safe: root bone scale 1, sensible height, bone offsets in cm.
-#   node gen/unreal/py.mjs gen/unreal/py/check_skeletal.py --arg mesh=/Game/Characters/X/SK_X
+#   node gen/unreal/py.ts gen/unreal/py/check_skeletal.py --arg mesh=/Game/Characters/X/SK_X
 # Prints CHECK_SKELETAL ok/FAIL. Root scale != 1 means retargeted animations will collapse or explode.
 import unreal
 mesh = unreal.load_asset(ARGS["mesh"])

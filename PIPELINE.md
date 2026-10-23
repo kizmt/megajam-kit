@@ -8,8 +8,8 @@ Nothing generated is ever written into the kit.
 ## Props: prompt to placed actor
 
 ```powershell
-node gen/asset.mjs "an old brass ship lantern" --name Lantern --height 0.45
-node gen/asset.mjs "a weathered treasure chest" --name Chest --max 0.8 --place 300,0,0 --yaw 270
+node gen/asset.ts "an old brass ship lantern" --name Lantern --height 0.45
+node gen/asset.ts "a weathered treasure chest" --name Chest --max 0.8 --place 300,0,0 --yaw 270
 ```
 
 Steps: concept image (Gemini) -> Tripo image-to-3D -> Blender prep -> Blender preview ->
@@ -38,21 +38,21 @@ Known limits: master material is opaque (glass renders dark).
 
 ## Characters: concept to playable (tested 2026-10-24, Explorer in SmokeTest)
 
-Manual sequence for now (to be wrapped as `gen/character.mjs`). Details and reasoning: `docs/ue/characters.md`.
+Manual sequence for now (to be wrapped as `gen/character.ts`). Details and reasoning: `docs/ue/characters.md`.
 
 ```powershell
 # 1. T-pose concept (pick one with arms straight out; A-pose rigs worse)
-node gen/image.mjs "Full-body character ... strict T-pose, arms straight out horizontally, front orthographic view, plain light-grey background" --n 2 --aspect 3:4 --out <Project>/Generated/characters/<name>
+node gen/image.ts "Full-body character ... strict T-pose, arms straight out horizontally, front orthographic view, plain light-grey background" --n 2 --aspect 3:4 --out <Project>/Generated/characters/<name>
 # 2. Model, then rig the ORIGINAL image_to_model task (not the game-pc convert task). Load TRIPO_* from .env first.
 tripo make <concept.jpg> --for game-pc -p face_limit=30000 -o <Project>/Generated/characters/<name>/tripo/model --json --yes --no-open
 #    original task id = "original_model_id" in the model's task.json
 tripo anim rig <image_to_model task id> --spec unreal --out-format fbx -o <Project>/Generated/characters/<name>/tripo/rig --json --yes --no-open
 # 3. Armature-safe size/facing in Blender (cm workflow), then import and check
 blender -b --factory-startup --python gen/blender/prep_rig.py -- <rig model.fbx> <Project>/Generated/characters/<name>/SK_<Name>.fbx --height 1.8
-node gen/unreal/py.mjs gen/unreal/py/import_skeletal.py --arg fbx=<SK_Name.fbx> --arg folder=/Game/Characters/<Name> --arg name=SK_<Name>
-node gen/unreal/py.mjs gen/unreal/py/check_skeletal.py --arg mesh=/Game/Characters/<Name>/SK_<Name>   # must print CHECK_SKELETAL ok
+node gen/unreal/py.ts gen/unreal/py/import_skeletal.py --arg fbx=<SK_Name.fbx> --arg folder=/Game/Characters/<Name> --arg name=SK_<Name>
+node gen/unreal/py.ts gen/unreal/py/check_skeletal.py --arg mesh=/Game/Characters/<Name>/SK_<Name>   # must print CHECK_SKELETAL ok
 # 4. IK rigs + retargeter + batch retarget of ABP_Unarmed (needs the Third Person content pack in the project)
-node gen/unreal/py.mjs gen/unreal/py/retarget_setup.py --arg name=<Name>
+node gen/unreal/py.ts gen/unreal/py/retarget_setup.py --arg name=<Name>
 ```
 
 5. **[UI, 2 min]** Open `ABP_Unarmed_<Name>` â†’ AnimGraph â†’ delete the **Control Rig** node (CR_Mannequin_FootIK) between
@@ -67,10 +67,10 @@ Blend space speeds: idle 0, walk 300, jog 600. A keyboard always gives full spee
 ## Audio
 
 ```powershell
-node gen/audio.mjs sfx "heavy wooden chest lid creaking open" --seconds 2.5 --name ChestOpen
-node gen/audio.mjs sfx "night forest ambience, crickets" --seconds 20 --loop --name ForestAmb
-node gen/audio.mjs music "calm mysterious exploration theme, harp, low strings" --seconds 90 --name Explore
-node gen/audio.mjs voice "The map was right." --name Line01      # needs TTS permission on the key
+node gen/audio.ts sfx "heavy wooden chest lid creaking open" --seconds 2.5 --name ChestOpen
+node gen/audio.ts sfx "night forest ambience, crickets" --seconds 20 --loop --name ForestAmb
+node gen/audio.ts music "calm mysterious exploration theme, harp, low strings" --seconds 90 --name Explore
+node gen/audio.ts voice "The map was right." --name Line01      # needs TTS permission on the key
 ```
 
 Output: `<Project>/Generated/audio/SFX_*.mp3/.wav`, `MUS_*`, `VO_*`. Music is instrumental unless `--vocals`.
@@ -84,16 +84,16 @@ Measured: SFX ~2 s end to end, 30 s music track ~6 s.
 
 | Tool | Does |
 |---|---|
-| `gen/image.mjs` | Concept images (Gemini `gemini-3-pro-image` / OpenAI `gpt-image-2`), `--asset` framing for 3D |
+| `gen/image.ts` | Concept images (Gemini `gemini-3-pro-image` / OpenAI `gpt-image-2`), `--asset` framing for 3D |
 | `tripo` CLI | Image-to-3D, rig, retarget, decimate, convert (`tripo docs --llm`) |
 | `gen/blender/prep.py` | Size, pivot at base, texture budget, single mesh, UE-scaled FBX |
 | `gen/blender/inspect.py` | Stats JSON + preview render |
-| `gen/unreal/mcp.mjs` | Call any Unreal MCP tool from scripts; `captureViewport()` |
-| `gen/unreal/py.mjs` | Run a Python file (or `-c` code) in the editor via `run_python`; `--arg k=v` â†’ `ARGS` dict |
-| `gen/unreal/shot.mjs` | Viewport screenshot to PNG (`--wait N` for shader compiles) |
+| `gen/unreal/mcp.ts` | Call any Unreal MCP tool from scripts; `captureViewport()` |
+| `gen/unreal/py.ts` | Run a Python file (or `-c` code) in the editor via `run_python`; `--arg k=v` â†’ `ARGS` dict |
+| `gen/unreal/shot.ts` | Viewport screenshot to PNG (`--wait N` for shader compiles) |
 | `gen/blender/prep_rig.py` | Rigged character: height, facing, armature-safe cm export |
 | `gen/unreal/py/import_skeletal.py` / `check_skeletal.py` / `retarget_setup.py` | Skeletal import, root-scale check, IK rigs + retarget + batch |
-| `gen/unreal/materials.mjs` | `M_PBR_Master` + per-asset material instances |
+| `gen/unreal/materials.ts` | `M_PBR_Master` + per-asset material instances |
 | `unreal/Plugins/MegajamTools` | Project plugin: MCP tools `import_sound`, `import_any`, `run_console_command`, `run_python`, `get_sound_info` |
 
 ## Tool references (check here when a generation step fails)
@@ -125,10 +125,10 @@ Measured: SFX ~2 s end to end, 30 s music track ~6 s.
   `FBX_SCALE_ALL` / `FBX_SCALE_UNITS` give root scale 1 but import at 1/100 size.
 - Tripo's rigged FBX is 1 m tall, faces +X in Unreal, bones use Manny names (61 bones, no `ik_foot_*`). Rig/rig-check
   reject `convert_model` tasks (API 2006): pass the `image_to_model` task id. The `tripo` CLI only reads
-  `TRIPO_API_KEY` from the environment (asset.mjs loads `.env`; manual runs must too).
+  `TRIPO_API_KEY` from the environment (asset.ts loads `.env`; manual runs must too).
 - Retargeted `ABP_Unarmed` keeps the `CR_Mannequin_FootIK` Control Rig node: compile warnings "Hierarchy
   discrepancy" and twisted feet on non-Manny skeletons. Delete it (UI; AnimGraph nodes can't be edited from Python).
 - Placed SkeletalMeshActors don't evaluate animation in the editor viewport (even with `set_update_animation_in_editor`).
   Verify animation in PIE: start with `LevelEditorSubsystem.editor_request_begin_play()`, screenshot with
   `HighResShot WxH filename=...` on the PIE world, read bone positions with `get_socket_location`.
-- Inline Python through PowerShell breaks on quotes. Put scripts in files and run `node gen/unreal/py.mjs file.py --arg k=v`.
+- Inline Python through PowerShell breaks on quotes. Put scripts in files and run `node gen/unreal/py.ts file.py --arg k=v`.

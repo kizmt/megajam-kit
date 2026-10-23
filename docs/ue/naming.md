@@ -24,7 +24,7 @@ Source: https://dev.epicgames.com/documentation/en-us/unreal-engine/recommended-
 
 | Asset | Prefix | Notes |
 |---|---|---|
-| Sound effect (SoundWave) | `SFX_` | `gen/audio.mjs` |
+| Sound effect (SoundWave) | `SFX_` | `gen/audio.ts` |
 | Music | `MUS_` | looping |
 | Voice line | `VO_` | |
 | MetaSound Source | `MS_` | |

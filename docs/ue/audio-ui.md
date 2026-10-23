@@ -231,4 +231,4 @@ Functions (C++ names; the MCP may expose them snake_cased):
 
 - `naming.md` has no prefix for Sound Concurrency: use `SCON_` (proposed; add to naming.md).
 - Kit brief calls MetaSounds "Beta in 5.8"; the 5.8 plugin descriptor says not beta (quick start page still says Beta).
-- `gen/audio.mjs` outputs stereo only: add a mono option for 3D one-shots (see Attenuation).
+- `gen/audio.ts` outputs stereo only: add a mono option for 3D one-shots (see Attenuation).

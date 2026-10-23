@@ -1,7 +1,7 @@
 # Materials (UE 5.8.4, RTX 4060 8 GB)
 
 Rule zero: **one master material, many instances.** Props get `MI_<Name>` parented to `/Game/Kit/Materials/M_PBR_Master`
-(built by `gen/unreal/materials.mjs`). Before making any material, load Epic's agent skill `MaterialBasicsSkill`
+(built by `gen/unreal/materials.ts`). Before making any material, load Epic's agent skill `MaterialBasicsSkill`
 (`editor_toolset/skills/material_basics.py`). Its decision order is ours:
 1. Search for an existing Material/MI that covers the need. 2. If a parent fits, make an **MI**. 3. Make a new Material
 only when nothing is close. Search `/Engine/Functions` for a Material Function before writing graph logic by hand.
@@ -29,7 +29,7 @@ Naming: Epic's 5.8 list has `PPM_` for post-process materials; `MPC_` is not in 
   shader set (Epic skill: 2 switches = 4, 4 = 16). An MI that overrides a static switch gets its own permutation.
   Prefer **scalar params + Lerp** (a few ALU instructions, zero new shaders) for toggles; use a static switch only to
   strip an expensive branch (e.g. triplanar, extra texture). Max 1-2 on the master.
-- **Parameter groups:** set `Group` on every parameter (materials.mjs uses `Textures`). Proposed groups:
+- **Parameter groups:** set `Group` on every parameter (materials.ts uses `Textures`). Proposed groups:
   `Textures`, `Color`, `Surface`, `Emissive`, `Global`. Neutral defaults (multiply by 1, lerp by 0) so existing MIs
   don't change when params are added.
 - Adding parameters to the master recompiles it and all its MIs once (editor shows grey meanwhile). Batch master
@@ -98,7 +98,7 @@ in a packaged build = default material.
 - Under Substrate, translucent blend modes are TranslucentColoredTransmittance / TranslucentGreyTransmittance
   (grey is cheaper). Glass look via Slab: high SSS MFP + IOR 1.514. Extra slabs cost almost linearly: one slab only.
 - The output pin `MP_FRONT_MATERIAL` is the Substrate root; MCP `connect_to_output` with `MP_BaseColor` etc. works for
-  legacy authoring (as materials.mjs does today).
+  legacy authoring (as materials.ts does today).
 
 ## Emissive with Lumen
 
@@ -178,7 +178,7 @@ Epic: use PP materials sparingly, prefer built-in volume settings (color grading
   to verify wiring; `rename_parameter_group`; `layout_expressions`; `delete_unused_expressions`; `recompile`.
 - Gotchas: call `recompile` **once** after a batch of edits (it raises with the compile errors; read them).
   `delete_unused_expressions` doesn't recompile. No tool for usage flags, blend mode or domain: set them with
-  `ObjectTools.set_properties` (`BlendMode`, `MaterialDomain`, `bUsedWith*`), as materials.mjs does. Texture sampler
+  `ObjectTools.set_properties` (`BlendMode`, `MaterialDomain`, `bUsedWith*`), as materials.ts does. Texture sampler
   type must match compression (Normal/`TC_Normalmap`, Masks/`TC_Masks`, LinearGrayscale/`TC_Grayscale`) or compile fails.
   `create_material` itself warns: prefer an MI.
 - Setting `material_function` on a FunctionCall through generic `set_properties` may not refresh its pins; check with

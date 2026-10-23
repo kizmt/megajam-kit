@@ -108,6 +108,10 @@ add a one-line entry to "Hard-won facts" in `PIPELINE.md` in the same round.
 - After gameplay changes: run PIE, capture a short clip or screenshot sequence, check the Output
   Log for errors and warnings.
 - Never claim something works without a capture or a log line proving it.
+- Kit scripts (`gen/**/*.ts`) are strict TypeScript run directly by Node 24 (type stripping: no enums,
+  namespaces or parameter properties; `import type`; `.ts` in import paths). After changing one, run
+  `npm run typecheck` in the kit (must pass) and run the script for real. Type external results at the
+  boundary (`callTool<T>`, typed parse functions) only after seeing the real shape.
 
 ## Shipping
 

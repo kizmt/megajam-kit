@@ -12,7 +12,7 @@ Python stub or headers before writing an API call from memory.
   `py "C:/path/script.py"` (fire-and-forget: errors only show in the Output Log).
 - **MCP calls are serial.** Tools run on the game thread, and Epic says clients must not overlap calls. This is
   why one session drives the editor. Do the next call after the previous one returns.
-- **Read results.** Many tools report failure in the payload, not as an MCP error. `mcp.mjs` throws on `isError`;
+- **Read results.** Many tools report failure in the payload, not as an MCP error. `mcp.ts` throws on `isError`;
   for anything else, read back (`get_editor_property`, a find/list tool, `captureViewport()`).
 - **Save points.** Tool edits are not always undoable (imports never are). Save before and after bulk changes.
 - **Not during PIE.** Asset and level tools act differently while Play-In-Editor runs. Stop PIE first.
@@ -79,8 +79,8 @@ unreal.get_editor_subsystem(unreal.LevelEditorSubsystem).save_current_level()
 
 ## B. Writing MCP toolsets
 
-The server lists 3 meta-tools (`list_toolsets`, `describe_toolset`, `call_tool`). `mcp.mjs` wraps them:
-`node gen/unreal/mcp.mjs describe <toolset>` before calling anything new. Python toolset names are
+The server lists 3 meta-tools (`list_toolsets`, `describe_toolset`, `call_tool`). `mcp.ts` wraps them:
+`node gen/unreal/mcp.ts describe <toolset>` before calling anything new. Python toolset names are
 module path + class (`megajam_tools.toolsets.MegajamTools`); C++ ones are `Plugin.Class`
 (`EditorToolset.EditorAppToolset`).
 
@@ -111,13 +111,13 @@ function. Register with `UToolsetRegistry::RegisterToolsetClass` in `StartupModu
    Project Settings > Python > Enable Remote Execution. Without it: console
    `py import megajam_tools, toolset_registry; toolset_registry.reload_module(megajam_tools)` (unverified).
 2. Console `ModelContextProtocol.RefreshTools` so the server re-reads tools. If the client still has the old
-   schema, reconnect (`mcp.mjs` opens a new session for each process, so the next script run is enough).
+   schema, reconnect (`mcp.ts` opens a new session for each process, so the next script run is enough).
 3. C++: Live Coding updates function bodies only. A **new UFUNCTION needs an editor restart.**
-4. Verify: `mcp.mjs describe <toolset>` shows the new signature, then call it once.
+4. Verify: `mcp.ts describe <toolset>` shows the new signature, then call it once.
 
 **Schema strictness (C++ tools).** The `required` list comes from the C++ signature, and struct parameters
 are often required even when the docs call them optional. Found so far: `EditorAppToolset.CaptureViewport` needs
-`captureTransform` + `annotations` (see `captureViewport()` in `mcp.mjs`); `find_actors` needs `tag: ''` +
+`captureTransform` + `annotations` (see `captureViewport()` in `mcp.ts`); `find_actors` needs `tag: ''` +
 `collision_channels: []`. If a call fails with "input param X is required", pass an empty/zero value, and add
 the case to PIPELINE.md.
 
@@ -130,7 +130,7 @@ is enough.
 | Tool | Status | Worth it in the jam for | Skip when |
 |---|---|---|---|
 | **Modeling Mode** (Shift+5; plugin on) | Beta | Manual level blockout: boxes, ramps, stairs, Extrude Polygon/Path, PolyEdit push/pull, booleans. Output is a Static Mesh in the folder set in Quick Settings | The agent is driving: it's a mouse-driven UI with no tools for it |
-| **Geometry Scripting** (Python/BP) | Beta (per docs) | Generated simple geometry the agent can script: walls, floors, arches, pipes, blockout kits, boolean cutouts, collision. Output is a real StaticMesh asset, so it works with Nanite | Organic or detailed props: use `gen/asset.mjs` |
+| **Geometry Scripting** (Python/BP) | Beta (per docs) | Generated simple geometry the agent can script: walls, floors, arches, pipes, blockout kits, boolean cutouts, collision. Output is a real StaticMesh asset, so it works with Nanite | Organic or detailed props: use `gen/asset.ts` |
 | **Editor Utility Widgets** | Production | A button panel for a person (e.g. "rebuild level") | Agent-only work: a toolset tool is faster and testable |
 | **Scriptable Tools** (needs Scriptable Tools Editor Mode plugin, off) | Beta | Custom click-in-viewport tools for a person | Almost always in a 93 h jam |
 
