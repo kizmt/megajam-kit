@@ -58,11 +58,44 @@ export async function describeToolset(toolset) {
 
 // Call one tool. Returns parsed JSON when the tool returns JSON text, otherwise the raw text.
 export async function mcpCall(toolset, tool, args = {}) {
+  const result = await mcpCallRaw(toolset, tool, args);
+  const text = contentText(result);
+  try { return JSON.parse(text); } catch { return text; }
+}
+
+// Call one tool and return the raw MCP result ({content:[{type:'text'|'image', ...}]}).
+export async function mcpCallRaw(toolset, tool, args = {}) {
   await ensureSession();
   const result = await rpc('tools/call', { name: 'call_tool', arguments: { toolset_name: toolset, tool_name: tool, arguments: args } });
-  const text = contentText(result);
-  if (result?.isError) throw new Error(`${toolset}.${tool}: ${text}`);
-  try { return JSON.parse(text); } catch { return text; }
+  if (result?.isError) throw new Error(`${toolset}.${tool}: ${contentText(result)}`);
+  return result;
+}
+
+// Capture the level viewport to a PNG/JPEG file. Returns the written path.
+export async function captureViewport(outFile, args = {}) {
+  const { writeFileSync, mkdirSync } = await import('node:fs');
+  const { dirname } = await import('node:path');
+  // The tool requires captureTransform; default to the viewport's current camera.
+  if (!args.captureTransform) {
+    const cam = await mcpCall('EditorToolset.EditorAppToolset', 'GetCameraTransform', {});
+    args = { ...args, captureTransform: cam.returnValue ?? cam };
+  }
+  // annotations is also required; grid 0 + label distance 0 = a clean image with no overlay.
+  args = {
+    annotations: { gridSpacing: 0, gridExtent: 0, gridHeight: 0, maxLabelDistance: 0, classFilter: null, maxLabels: 0 },
+    bShowUI: false,
+    ...args,
+  };
+  const result = await mcpCallRaw('EditorToolset.EditorAppToolset', 'CaptureViewport', args);
+  // Image arrives either as an MCP image block or inside JSON text: {"returnValue":{"image":{"mimeType","data"}}}.
+  let img = (result?.content ?? []).find((c) => c.type === 'image');
+  if (!img) {
+    try { img = JSON.parse(contentText(result))?.returnValue?.image; } catch { /* not JSON */ }
+  }
+  if (!img?.data) throw new Error(`CaptureViewport returned no image: ${contentText(result).slice(0, 300)}`);
+  mkdirSync(dirname(outFile), { recursive: true });
+  writeFileSync(outFile, Buffer.from(img.data, 'base64'));
+  return outFile;
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {

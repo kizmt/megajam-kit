@@ -107,7 +107,9 @@ for m in obj.data.materials:
 
 bpy.ops.export_scene.fbx(
     filepath=dst, use_selection=False, object_types={"MESH"},
-    apply_unit_scale=True, apply_scale_options="FBX_SCALE_UNITS", bake_space_transform=True,
+    # Tested against UE 5.8 import: FBX_SCALE_NONE + apply_unit_scale gives 1 Blender metre = 100 cm.
+    # FBX_SCALE_UNITS and FBX_SCALE_ALL both imported 100x too small (and UE then dropped tiny triangles).
+    apply_unit_scale=True, apply_scale_options="FBX_SCALE_NONE", global_scale=1.0, bake_space_transform=True,
     mesh_smooth_type="FACE", use_tspace=True, add_leaf_bones=False,
     path_mode="COPY", embed_textures=True,
 )
