@@ -59,9 +59,12 @@ The Blank template opens a temporary Open World level (Landscape, World Partitio
    {
      "enabledMcpjsonServers": ["unreal-mcp"],
      "allowedMcpServers": [{ "serverUrl": "http://127.0.0.1:8000/mcp" }],
-     "disableClaudeAiConnectors": true
+     "disableClaudeAiConnectors": true,
+     "permissions": { "additionalDirectories": ["C:\\dev\\megajam-kit"] }
    }
    ```
+
+   `additionalDirectories` gives the session the kit (scripts, `PIPELINE.md`, `docs/ue/`) without leaving the project.
 
    This limits the session to Unreal only. Remove `disableClaudeAiConnectors` / widen the allowlist if a jam idea needs another service (e.g. Vercel for a backend).
 2. Set effort to **high** (`/effort high`, or have Claude set it as the project default).

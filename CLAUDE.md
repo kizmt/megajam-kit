@@ -3,6 +3,16 @@
 Pipeline and agent setup for a 93-hour solo Unreal Engine 5.8 jam entry (2026 Epic AI MegaJam).
 Scott is the director: he owns concept, feel, art direction and sign-off. Claude owns implementation, tooling and verification.
 
+## Where things are
+
+- **This file is a copy.** The session runs in the game project (`C:\dev\<ProjectName>`); the kit lives at
+  **`C:\dev\megajam-kit`** (added as a working directory in `.claude\settings.local.json`, SETUP step 5).
+- Kit paths in this file (`PIPELINE.md`, `SETUP.md`, `docs/ue/`, `gen/`, `prompts/`) are relative to the kit.
+  Run generators from the kit folder: `cd C:\dev\megajam-kit; node gen\asset.ts ...`. Their output goes to the
+  project (`<Project>\Generated\`) via `MEGAJAM_PROJECT` in the kit's `.env`. Check it names this project first.
+- Project paths (`scripts/`, `PROGRESS.md`, `art/`, `devlog/`, `Source/`, `Config/`) are relative to the project.
+- At the start of a session: read `PROGRESS.md` if it exists, then `C:\dev\megajam-kit\docs\ue\README.md`.
+
 ## The two rules that matter most
 
 1. **Small scope, always.** One playable space, a 5–10 minute experience, finished and polished.
