@@ -77,3 +77,6 @@ Measured: SFX ~2 s end to end, 30 s music track ~6 s.
 - `CaptureViewport` requires `captureTransform` and `annotations`; the image comes back inside JSON.
 - `add_to_scene_from_asset` `snap_to_ground` did not move the actor; place at z=0 (pivots are at the base).
 - Gemini image API only returns JPEG.
+- Generated props import with 1 LOD and Nanite off; the pipeline enables Nanite. See `docs/ue/performance.md`.
+- Master material needs usage flags (Nanite, skeletal, instanced) set up front; a missing flag in a packaged build = default material.
+- After material/Nanite changes, wait ~20 s for shader compiles before taking a judging screenshot (props render grey/blocky meanwhile).

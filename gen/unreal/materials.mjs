@@ -74,6 +74,12 @@ export async function ensureMaster({ force = false } = {}) {
     });
     await mcpCall(M, 'connect_to_output', { expression: expr, output_name: m.out, material_property: m.prop });
   }
+  // Usage flags up front. Missing flags get auto-set in the editor (shaders recompile, props render grey
+  // meanwhile) but CANNOT be set in a packaged game, where the mesh then shows the default material.
+  await mcpCall(OB, 'set_properties', {
+    instance: mat,
+    values: JSON.stringify({ bUsedWithNanite: true, bUsedWithSkeletalMesh: true, bUsedWithInstancedStaticMeshes: true }),
+  });
   await mcpCall(M, 'recompile', { material_or_function: mat });
   await mcpCall(AS, 'save_assets', { asset_paths: [] });
   return mat;

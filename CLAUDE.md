@@ -36,7 +36,9 @@ Scott is the director: he owns concept, feel, art direction and sign-off. Claude
 - Live Coding for function bodies only. New UPROPERTY/UFUNCTION/UCLASS = close editor, full build.
 - Fix compile errors before anything else. Never work around a broken build.
 - Target the RTX 4060 (8 GB VRAM): 1440p internal at 60 fps in a packaged build. Prefer a stylized
-  look; keep Lumen and Nanite scenes modest; check `stat unit` and `stat gpu` after big visual changes.
+  look; check `stat unit` and `stat gpu` after big visual changes.
+- **Follow `docs/ue/performance.md`** (budgets, Nanite, one master material, tick off by default, pooling,
+  instancing). Read it before adding content or gameplay systems.
 
 ## Unreal knowledge: look it up, then verify
 

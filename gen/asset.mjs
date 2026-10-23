@@ -156,6 +156,10 @@ try {
       const mat = await applyPbr({ name, texDir: join(dir, `${name}_tex`), dest: o.dest, mesh: assetPath });
       if ((await mcpCall(AS, 'exists', { path: autoMat })).returnValue) await mcpCall(AS, 'delete', { path: autoMat });
       manifest.steps.material = mat;
+      // Nanite on: Epic's 5.8 guidance is to enable it wherever supported. Without it every generated prop
+      // renders all ~25k triangles at any distance (one LOD), which adds up fast as the level fills.
+      await mcpCall(S, 'set_nanite_enabled', { mesh: { refPath: `${assetPath}.SM_${name}` }, enabled: true });
+      manifest.steps.nanite = true;
       const [x, y, z] = o.place.split(',').map(Number);
       const placed = await mcpCall(SC, 'add_to_scene_from_asset', {
         asset_path: assetPath, name,
