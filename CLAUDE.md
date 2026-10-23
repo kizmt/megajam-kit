@@ -57,8 +57,9 @@ Scott is the director: he owns concept, feel, art direction and sign-off. Claude
   hard-coded. Scott tunes feel without a recompile.
 - Live Coding for function bodies only. New UPROPERTY/UFUNCTION/UCLASS = close editor, full build.
 - Fix compile errors before anything else. Never work around a broken build.
-- Target the RTX 4060 (8 GB VRAM): 1440p internal at 60 fps in a packaged build. Prefer a stylized
-  look; check `stat unit` and `stat gpu` after big visual changes.
+- Target the RTX 4060 (8 GB VRAM): **100+ fps at 4K output** (1080p internal, TSR) in a packaged build,
+  using the render defaults in `docs/ue/performance.md` (SETUP step 7b). Prefer a stylized look; check
+  `stat unit` and `stat gpu` after big visual changes, and run `gen/perf/bench.ts` on a packaged build per milestone.
 - C++ must compile with **zero UHT warnings** (UHT treats warnings as errors). `.generated.h` is the last
   include; a delegates-only header needs `UDELEGATE`. See `docs/ue/production.md`.
 - **Name assets per `docs/ue/naming.md`** (Epic prefixes + kit extensions) and keep the folder layout there.
