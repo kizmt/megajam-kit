@@ -227,9 +227,10 @@ and a 93-hour budget. **Skip.** At most, migrate a few of its AnimSequences and 
 2. `[S]` `tripo anim check` (free) > `tripo anim rig --spec unreal --out-format fbx` (fallback `--spec mixamo`).
    Default rig model is v3.0 (best for humanoids). Non-humanoid: rig type from the check, and Manny retargeting is
    out. Use Tripo presets only.
-3. `[S]` Import the rigged FBX: `SkeletalMeshTools.import_file(..., create_physics_asset=True)` to
-   `/Game/Characters/<Name>/SK_<Name>`. Save. `get_bounds` (~180 cm), `get_bone_names` (expect the spec's names).
-   **Decision:** wrong scale/axis means a Blender pass (armature-safe, not `prep.py`), then re-import.
+3. `[S]` **Always** run `gen/blender/prep_rig.py` first (Tripo rigs are 1 m tall and face +X), then import with
+   `gen/unreal/py/import_skeletal.py` and run `check_skeletal.py` (root bone scale must be 1). Never fix scale with
+   the FBX import scale: it lands on the root bone and breaks every retargeted animation. Exact commands and the
+   tested failure modes: `PIPELINE.md` "Characters" and "Hard-won facts" (verified 2026-10-24).
 4. `[S]` `MI_<Name>` from the master material with Tripo's textures; `set_material` per slot.
 5. `[S]` IK Rigs (`IK_Manny`, `IK_<Name>`) with `apply_auto_generated_retarget_definition()`. **Decision:** False
    means build chains with `set_retarget_root` + `add_retarget_chain` from the bone list (or `[UI]` in the IK Rig editor).
@@ -237,7 +238,8 @@ and a 93-hour budget. **Skip.** At most, migrate a few of its AnimSequences and 
    play `MM_Idle` and a jog, fix the retarget pose/root scale if arms clip or feet float.
 7. `[S]` `run_batch_retarget` on `ABP_Unarmed` + `AM_ComboAttack` (+ any extra montages/anims), referenced assets on,
    suffix `_<Name>`.
-8. `[UI]` Open the new ABP: delete/disable the `CR_Mannequin_FootIK` Control Rig node if bones don't match. Compile.
+8. `[UI]` Open the new ABP: delete the `CR_Mannequin_FootIK` Control Rig node (confirmed needed for Tripo
+   `--spec unreal` rigs: without it the feet twist). Wire Slot 'DefaultSlot' → Output Pose. Compile.
    Optional `[S]`: reparent to the C++ `UAnimInstance` parent.
 9. `[S]` BP subclass of the C++ Character: mesh = `SK_<Name>`, Anim Class = new ABP, mesh offset (Z = -capsule
    half-height, yaw -90 typical).
