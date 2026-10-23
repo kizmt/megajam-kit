@@ -19,7 +19,8 @@ Scott is the director: he owns concept, feel, art direction and sign-off. Claude
   judgement (research, docs lookups), but only the main session calls Unreal MCP (tool calls run
   one at a time on the game thread anyway).
 - **Repeatable pipeline jobs are plain scripts, not agents**: asset generation, import, package,
-  zip and upload live in `scripts/` and are run by the session. Deterministic and re-runnable.
+  zip and upload live in `gen/` and `scripts/` and are run by the session (see `PIPELINE.md`).
+  Deterministic and re-runnable. Run one editor-touching script at a time.
 - **Keep context fresh.** At the end of each round, write state to `PROGRESS.md` (what exists,
   what's next, open problems). When the session gets long or slow, start a new one from
   CLAUDE.md + PROGRESS.md rather than pushing on.
@@ -36,6 +37,39 @@ Scott is the director: he owns concept, feel, art direction and sign-off. Claude
 - Fix compile errors before anything else. Never work around a broken build.
 - Target the RTX 4060 (8 GB VRAM): 1440p internal at 60 fps in a packaged build. Prefer a stylized
   look; keep Lumen and Nanite scenes modest; check `stat unit` and `stat gpu` after big visual changes.
+
+## Unreal knowledge: look it up, then verify
+
+Memory of Unreal is not good enough: APIs change between versions and some behaviour is undocumented.
+Before using an Unreal API, setting, or workflow you have not already verified **in this project**,
+check a source below. Never write UE C++ or Python API calls from memory alone.
+
+Order of authority (highest first):
+
+1. **What the engine actually does here**: compile result, Output Log (`EditorToolset.LogsToolset.GetLogEntries`),
+   screenshots, property reads (`ObjectTools.get_properties`). This beats every document.
+2. **Exact-version API on disk (UE 5.8.4)**
+   - C++ headers: `C:\Program Files\Epic Games\UE_5.8\Engine\Source\{Runtime,Editor,Developer}\` and
+     `...\Engine\Plugins\**\Source\`. Grep for the class/function before using it.
+   - Python API stub: `<Project>\Intermediate\PythonStub\unreal.py` (generated when Editor Preferences >
+     Plugins > Python > Developer Mode is on). Grep it before writing any `unreal.*` Python.
+   - Epic C++ templates for working patterns (character, input, camera): `C:\Program Files\Epic Games\UE_5.8\Templates\TP_ThirdPerson`,
+     `TP_FirstPerson`, `TP_TopDown`, `TP_VehicleAdv`. Reference only: the jam forbids lightly modified templates.
+3. **Epic's agent guidance**
+   - In-editor Agent Skills via MCP: `ToolsetRegistry.AgentSkillToolset` > `ListSkills`, then `GetSkills`
+     for the relevant one **before** working in that area (materials, Blueprints, outdoor lighting,
+     Niagara, PCG, ...).
+   - `describe_toolset` before calling any MCP tool you have not used; schemas are strict and some
+     "optional" parameters are required.
+   - Claude Code `unreal-engine-skills-for-claude-code` plugin skills (unreal-mcp, create-toolset, unreal-skill).
+4. **Kit knowledge**: `PIPELINE.md` (tools and hard-won facts) and `docs/ue/` (curated 5.8 notes).
+5. **Official docs**: dev.epicgames.com/documentation/en-us/unreal-engine/... for 5.8 (check the version
+   selector says 5.8). Python API reference for the `unreal` module. Prefer these over forum posts and
+   older-version tutorials.
+6. Memory, last, and only for things you then verify with (1).
+
+When something behaves differently from what a source said, or a tool needs an undocumented argument,
+add a one-line entry to "Hard-won facts" in `PIPELINE.md` in the same round.
 
 ## Verification ("done" means seen)
 
