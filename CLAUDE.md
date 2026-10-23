@@ -37,6 +37,18 @@ Scott is the director: he owns concept, feel, art direction and sign-off. Claude
 - **Rounds, not marathons.** Each round: plan (≤5 bullets) → build → capture screenshots/video →
   stop for Scott's review. No round longer than ~2 hours without a review.
 
+## Money, keys and installs
+
+- **Paid generations cost real money** (Tripo prop ~45 credits, character ~90, re-texture 20; image and
+  ElevenLabs calls are billed too; see `PIPELINE.md`). Before a batch, say how many generations and roughly
+  what they cost. Scott decides on paid experiments.
+- **Never re-roll a paid generation to fix a problem you haven't diagnosed.** Find the cause first (inspect
+  the files, check `PIPELINE.md` hard-won facts). Rebuild from downloaded files (`--rig/--pbr/--model`, no
+  credits) wherever possible. Concept images that Scott approved are not the problem by default.
+- **API keys live in the kit's `.env`.** Never print, read aloud, log or commit key values; edit only the
+  `MEGAJAM_PROJECT` line if needed.
+- **Ask before installing software, updating tools, or accepting terms/licences.** Say what and why.
+
 ## Engine conventions
 
 - Gameplay in **C++**. Blueprints only as thin data/asset wrappers (subclass a C++ class, assign
