@@ -9,7 +9,7 @@
 //
 // Output: out/audio/<Kind>_<Name>.mp3 (+ .json sidecar). --n 3 makes variants (_1, _2, _3).
 
-import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { writeFileSync, mkdirSync, existsSync, readdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -80,10 +80,16 @@ async function one() {
   return { buf: Buffer.from(await res.arrayBuffer()), body };
 }
 
-// ffmpeg converts to 48 kHz 16-bit WAV for Unreal. winget's alias dir is checked in case PATH predates the install.
+// ffmpeg converts to 48 kHz 16-bit WAV for Unreal. If PATH predates the winget install, look in winget's package dir.
 function findFfmpeg() {
-  const links = join(process.env.LOCALAPPDATA ?? '', 'Microsoft', 'WinGet', 'Links', 'ffmpeg.exe');
-  for (const c of ['ffmpeg', links]) {
+  const candidates = ['ffmpeg'];
+  const pkgs = join(process.env.LOCALAPPDATA ?? '', 'Microsoft', 'WinGet', 'Packages');
+  try {
+    for (const p of readdirSync(pkgs).filter((d) => d.startsWith('Gyan.FFmpeg'))) {
+      for (const v of readdirSync(join(pkgs, p))) candidates.push(join(pkgs, p, v, 'bin', 'ffmpeg.exe'));
+    }
+  } catch { /* no winget packages dir */ }
+  for (const c of candidates) {
     if (spawnSync(c, ['-version'], { stdio: 'ignore' }).status === 0) return c;
   }
   return null;
