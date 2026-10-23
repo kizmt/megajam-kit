@@ -101,6 +101,20 @@ Verified 2026-10-24 on SmokeTest: 17 files tracked (0.07 MB), `Main.umap` via LF
   symbols (they stay in the build folder for crash debugging), so the empty-project zip is 401 MB.
   That is engine baseline: the game's own content has about 600 MB before itch's 1 GB zip limit.
 
+## 7b. Game display + render defaults (Claude applies, 1 min; editor closed)
+
+Measured in `docs/ue/performance.md` (UE defaults 64 fps -> these 120 fps at 4K on the RTX 4060).
+
+- `Config/DefaultEngine.ini`:
+  - under the existing `[/Script/Engine.RendererSettings]`: `r.DefaultFeature.MotionBlur=False`
+  - under the existing `[/Script/Engine.UserInterfaceSettings]`: `bAllowHighDPIInGameMode=True` (true 4K, not 2560x1440 stretched)
+- `Config/DefaultScalability.ini`: `[AntiAliasingQuality@3]` and `[AntiAliasingQuality@Cine]` each `r.TSR.History.ScreenPercentage=100`
+- `Config/DefaultGameUserSettings.ini`: `[ScalabilityGroups]` with `sg.GlobalIlluminationQuality=2`,
+  `sg.ReflectionQuality=2`, `sg.ShadowQuality=2`
+- `Config/DefaultInput.ini`: add `+ConsoleKeys=F10` after `+ConsoleKeys=Tilde` (backtick is a dead key on the NZ layout)
+- Level: delete the template's **VolumetricCloud** actor (~2.5 ms at 4K).
+- Check: package, then `node gen/perf/bench.ts --res native --variant "check:"` -> expect ~120 fps on the starting level.
+
 ## 8. Editor performance (re-check, 1 min)
 
 Editor-only settings for the RTX 4060 on a 4K monitor. They don't change the packaged game.

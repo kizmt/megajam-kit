@@ -4,11 +4,45 @@ The goal: never dig a hole we can't climb out of in 93 hours. These rules come f
 (links at the bottom) plus what we measured on GIZMO. Check them when adding content, not after the
 game feels slow.
 
-## Budgets (packaged build, 1440p internal)
+## Display + render defaults (measured 2026-10-24, packaged SmokeTest, GIZMO 4K monitor)
+
+Target: **100+ fps at 4K output** on the RTX 4060. Measure with `node gen/perf/bench.ts` (launches the packaged
+build per variant, cvars via `-DPCVars`, no repackage) and `node gen/perf/csv_report.ts <csv>`.
+
+| Variant (4K output, internal 1080p unless noted) | avg fps | p95 fps | GPU ms |
+|---|---|---|---|
+| UE defaults (Epic, TSR history 200%, template clouds, motion blur) | 64 | 61 | 14.8 |
+| + TSR history 100% | 81 | 76 | 11.6 |
+| + no volumetric clouds, no motion blur ("lean") | 98 | 88 | 9.7 |
+| **lean + High GI/reflections/shadows (kit default)** | **120** | **108-110** | **7.5** |
+| lean + internal 1440p (Epic) | 71 | 66 | 13.5 |
+| lean + internal 1440p + High | 83 | 76 | 11.5 |
+| lean + internal 1620p (75%) | 61 | 56 | 16.0 |
+
+Facts:
+- The game is GPU-bound (game thread ~2 ms). The biggest costs were **TSR at Epic (200% history, ~3 ms)** and the
+  template level's **VolumetricCloud (~2.5 ms)**. Our models/materials cost under 1 ms.
+- Internal resolution is the expensive crispness lever: 1080p -> 1440p internal costs ~4 ms at 4K output.
+- Desktop screen percentage defaults to "based on display resolution": 4K display -> 1080p internal (50%), 1440p -> ~900p.
+- High-DPI: without `bAllowHighDPIInGameMode=True` a 150%-scaled 4K monitor gives the game 2560x1440 and Windows
+  stretches it (soft). With it the window is true 3840x2160 (verified with `-ExecCmds="HighResShot 1"` -> 3840x2160 PNG).
+  The CSV/log `systemresolution` metadata still says 2560x1440: it is recorded before DPI awareness is set. Ignore it.
+- In WindowedFullscreen (the default mode) the saved `ResolutionSizeX/Y` is ignored; the desktop resolution is used.
+- Unreal stores `<Build>\<Project>\Saved\Config\Windows\GameUserSettings.ini` on the first run; it overrides
+  `DefaultGameUserSettings.ini` afterwards. Delete it when testing new defaults.
+
+Config (SETUP step 7b applies it): `DefaultEngine.ini` `[/Script/Engine.RendererSettings] r.DefaultFeature.MotionBlur=False`,
+`[/Script/Engine.UserInterfaceSettings] bAllowHighDPIInGameMode=True`; `DefaultScalability.ini`
+`[AntiAliasingQuality@3]` and `@Cine` `r.TSR.History.ScreenPercentage=100`; `DefaultGameUserSettings.ini`
+`[ScalabilityGroups] sg.GlobalIlluminationQuality=2 sg.ReflectionQuality=2 sg.ShadowQuality=2`.
+**Don't place a VolumetricCloud** (use SkyAtmosphere + a cheap sky). The empty test scene is the floor: real content
+adds cost, so re-bench after each big content round and keep ~8 ms GPU headroom in mind.
+
+## Budgets (packaged build, 4K output)
 
 | Thing | Budget | Why |
 |---|---|---|
-| Frame | 60 fps = 16.6 ms; check `stat unit` after every big change | Fix slowness the round it appears |
+| Frame | 100+ fps (10 ms) at 4K output; `stat unit` after every big change, `bench.ts` per milestone | Fix slowness the round it appears |
 | Unique generated props | ~20-40 for a 5-10 min game | Each is ~25k tris + four 2K textures |
 | Textures per prop | 2K hero, 1K small/background (`--tex 1024`) | Texture memory is the real 8 GB limit |
 | Dynamic shadow-casting lights | Keep few (sun + a handful) | Each one re-renders shadows |
