@@ -67,8 +67,14 @@ Order of authority (highest first):
    - Python API reference: https://dev.epicgames.com/documentation/en-us/unreal-engine/python-api/?application_version=5.8
      Same content as the local stub (both come from the engine's reflection data). Grep the stub first;
      use the web reference for readable class pages and descriptions.
-   - C++ API reference: https://dev.epicgames.com/documentation/en-us/unreal-engine/API?application_version=5.8
-     (headers on disk are faster to grep; use this for readable class pages).
+   - C++ API reference: https://dev.epicgames.com/documentation/unreal-engine/API?application_version=5.8
+     (headers on disk are faster to grep; use this for readable class pages). Sections, matching the
+     folders under `Engine\Source\` and `Engine\Plugins\`:
+     - Runtime modules (gameplay, rendering, audio, ...): https://dev.epicgames.com/documentation/unreal-engine/API/Runtime?application_version=5.8
+     - Editor modules: https://dev.epicgames.com/documentation/unreal-engine/API/Editor?application_version=5.8
+     - Developer modules: https://dev.epicgames.com/documentation/unreal-engine/API/Developer?application_version=5.8
+     - Plugin modules, A-Z: https://dev.epicgames.com/documentation/unreal-engine/API/Plugins?application_version=5.8
+     - Plugins by category (AI, Audio, Rendering, ...): https://dev.epicgames.com/documentation/unreal-engine/API/PluginIndex?application_version=5.8
    - Unreal MCP: https://dev.epicgames.com/documentation/en-us/unreal-engine/unreal-mcp-in-unreal-editor?application_version=5.8
    - C++ coding standard: https://dev.epicgames.com/documentation/en-us/unreal-engine/epic-cplusplus-coding-standard-for-unreal-engine?application_version=5.8
    - Enhanced Input: https://dev.epicgames.com/documentation/en-us/unreal-engine/enhanced-input-in-unreal-engine?application_version=5.8
