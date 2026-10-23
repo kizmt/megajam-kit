@@ -1,0 +1,8 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Generated output from practice runs
+out/
+tripo-out/
