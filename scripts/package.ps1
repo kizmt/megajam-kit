@@ -1,0 +1,100 @@
+#Requires -Version 5.1
+<#
+.SYNOPSIS
+  Packages the Unreal project in the parent folder for Win64 (Development) and zips it for itch.io.
+#>
+[CmdletBinding()]
+param(
+    [string]$EngineRoot = 'C:\Program Files\Epic Games\UE_5.8',
+    [string]$BuildRoot  = 'C:\dev\Builds',
+    [string]$ZipName    = 'ScottManson'
+)
+
+$ErrorActionPreference = 'Stop'
+
+if (Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue) {
+    Write-Host 'FAIL: UnrealEditor.exe is running. Save your work and close the editor, then run this script again.'
+    Write-Host '      (An open editor with Live Coding active makes UnrealBuildTool refuse to build.)'
+    exit 1
+}
+
+$sw = [System.Diagnostics.Stopwatch]::StartNew()
+
+$projectDir = Split-Path -Parent $PSScriptRoot
+$uproject = Get-ChildItem -Path $projectDir -Filter *.uproject -File | Select-Object -First 1
+if (-not $uproject) { Write-Host "FAIL: no .uproject found in $projectDir"; exit 1 }
+$projectName = $uproject.BaseName
+
+$runUat = Join-Path $EngineRoot 'Engine\Build\BatchFiles\RunUAT.bat'
+if (-not (Test-Path $runUat)) { Write-Host "FAIL: RunUAT.bat not found at $runUat"; exit 1 }
+
+$archiveDir = Join-Path $BuildRoot $projectName
+$zipPath    = Join-Path $BuildRoot "${ZipName}_$projectName.zip"
+$logDir     = Join-Path $projectDir 'Saved\Logs'
+New-Item -ItemType Directory -Force -Path $logDir, $archiveDir | Out-Null
+$logPath = Join-Path $logDir ("package-{0:yyyyMMdd-HHmmss}.log" -f (Get-Date))
+
+$uatArgs = @(
+    'BuildCookRun',
+    "-project=`"$($uproject.FullName)`"",
+    '-platform=Win64',
+    '-clientconfig=Development',
+    '-build', '-cook', '-stage', '-pak', '-archive',
+    "-archivedirectory=`"$BuildRoot\$projectName`"",
+    '-utf8output',
+    '-unattended',
+    '-nop4',
+    '-NoCodeSign'
+)
+
+Write-Host "Packaging $projectName -> $archiveDir"
+Write-Host "Log: $logPath"
+
+# Run UAT with all output going to the log file only.
+& cmd.exe /c "`"$runUat`" $($uatArgs -join ' ') > `"$logPath`" 2>&1"
+$exit = $LASTEXITCODE
+
+$ok = ($exit -eq 0)
+$zipSize = $null
+$exePath = $null
+
+if ($ok) {
+    # BuildCookRun archives into <archive>\Windows (or WindowsClient/WindowsNoEditor on older layouts)
+    $exe = Get-ChildItem -Path $archiveDir -Filter "$projectName.exe" -Recurse -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.FullName -notmatch '\\Binaries\\Win64\\' } | Select-Object -First 1
+    if (-not $exe) { $exe = Get-ChildItem -Path $archiveDir -Filter '*.exe' -File -Recurse | Select-Object -First 1 }
+    $exePath = if ($exe) { $exe.FullName } else { $null }
+
+    try {
+        if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        # Include the top-level folder so the zip extracts into a single directory
+        [System.IO.Compression.ZipFile]::CreateFromDirectory($archiveDir, $zipPath,
+            [System.IO.Compression.CompressionLevel]::Optimal, $true)
+        $zipSize = (Get-Item $zipPath).Length
+    } catch {
+        Write-Host "Zip failed: $_"
+        $ok = $false
+    }
+}
+
+$sw.Stop()
+$elapsed = $sw.Elapsed.ToString('hh\:mm\:ss')
+
+Write-Host ''
+if ($ok) {
+    $mb = [math]::Round($zipSize / 1MB, 1)
+    Write-Host "PASS  $projectName packaged in $elapsed"
+    if ($exePath) { Write-Host "  Exe: $exePath" }
+    Write-Host "  Zip: $zipPath ($mb MB)"
+    if ($zipSize -ge 1GB) { Write-Host '  WARNING: zip is 1 GB or larger; itch.io requires under 1 GB.' }
+    else { Write-Host '  Under 1 GB itch.io limit: OK' }
+} else {
+    Write-Host "FAIL  $projectName (UAT exit code $exit) after $elapsed"
+    Write-Host '  Last errors from log:'
+    Select-String -Path $logPath -Pattern 'error' -SimpleMatch -ErrorAction SilentlyContinue |
+        Select-Object -Last 10 | ForEach-Object { Write-Host "    $($_.Line.Trim())" }
+}
+Write-Host "  Log: $logPath"
+
+exit $(if ($ok) { 0 } else { 1 })
