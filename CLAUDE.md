@@ -67,7 +67,17 @@ Order of authority (highest first):
    - Python API reference: https://dev.epicgames.com/documentation/en-us/unreal-engine/python-api/?application_version=5.8
      Same content as the local stub (both come from the engine's reflection data). Grep the stub first;
      use the web reference for readable class pages and descriptions.
+   - C++ API reference: https://dev.epicgames.com/documentation/en-us/unreal-engine/API?application_version=5.8
+     (headers on disk are faster to grep; use this for readable class pages).
+   - Unreal MCP: https://dev.epicgames.com/documentation/en-us/unreal-engine/unreal-mcp-in-unreal-editor?application_version=5.8
+   - C++ coding standard: https://dev.epicgames.com/documentation/en-us/unreal-engine/epic-cplusplus-coding-standard-for-unreal-engine?application_version=5.8
+   - Enhanced Input: https://dev.epicgames.com/documentation/en-us/unreal-engine/enhanced-input-in-unreal-engine?application_version=5.8
+   - IK Rig retargeting: https://dev.epicgames.com/documentation/en-us/unreal-engine/ik-rig-animation-retargeting-in-unreal-engine?application_version=5.8
+   - Packaging: https://dev.epicgames.com/documentation/en-us/unreal-engine/packaging-your-project?application_version=5.8
+     (hub: https://dev.epicgames.com/documentation/en-us/unreal-engine/packaging-and-cooking-games-in-unreal-engine?application_version=5.8)
+   - Console variables: https://dev.epicgames.com/documentation/en-us/unreal-engine/unreal-engine-console-variables-reference?application_version=5.8
    - Everything else: https://dev.epicgames.com/documentation/en-us/unreal-engine/ (check the version selector says 5.8).
+   All links above verified to resolve to 5.8 pages on 2026-10-24.
    Prefer these over forum posts and older-version tutorials.
 6. Memory, last, and only for things you then verify with (1).
 

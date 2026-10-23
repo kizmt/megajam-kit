@@ -58,6 +58,18 @@ Measured: SFX ~2 s end to end, 30 s music track ~6 s.
 | `gen/unreal/materials.mjs` | `M_PBR_Master` + per-asset material instances |
 | `unreal/Plugins/MegajamTools` | Project plugin: MCP tools `import_sound`, `import_any`, `run_console_command`, `get_sound_info` |
 
+## Tool references (check here when a generation step fails)
+
+- Tripo CLI: `tripo docs --llm` (full agent guide, offline), `tripo docs --topic commands/make`,
+  `tripo docs --topic examples/game-asset`, `tripo docs --topic examples/animation`.
+  API docs as raw markdown: https://developers.tripo3d.com/en/docs/<page>.md (index: https://developers.tripo3d.com/llms.txt).
+  The docs site serves binary to some fetchers; fetching the .md with curl/Invoke-WebRequest works.
+- ElevenLabs: sound effects https://elevenlabs.io/docs/api-reference/text-to-sound-effects/convert.md ,
+  music https://elevenlabs.io/docs/api-reference/music/compose.md ,
+  text to speech https://elevenlabs.io/docs/api-reference/text-to-speech/convert.md
+- Gemini images: https://ai.google.dev/gemini-api/docs/nanobanana (Interactions API, JPEG output only).
+- OpenAI images: Images API, model `gpt-image-2` (generations; edits when reference images are given).
+
 ## Hard-won facts (UE 5.8.4)
 
 - FBX from Blender must use `apply_scale_options=FBX_SCALE_NONE`; the other modes import 100x too small and UE drops triangles.
