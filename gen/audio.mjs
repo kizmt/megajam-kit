@@ -10,6 +10,7 @@
 // Output: out/audio/<Kind>_<Name>.mp3 (+ .json sidecar). --n 3 makes variants (_1, _2, _3).
 
 import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
@@ -79,6 +80,22 @@ async function one() {
   return { buf: Buffer.from(await res.arrayBuffer()), body };
 }
 
+// ffmpeg converts to 48 kHz 16-bit WAV for Unreal. winget's alias dir is checked in case PATH predates the install.
+function findFfmpeg() {
+  const links = join(process.env.LOCALAPPDATA ?? '', 'Microsoft', 'WinGet', 'Links', 'ffmpeg.exe');
+  for (const c of ['ffmpeg', links]) {
+    if (spawnSync(c, ['-version'], { stdio: 'ignore' }).status === 0) return c;
+  }
+  return null;
+}
+const FFMPEG = findFfmpeg();
+function toWav(file) {
+  if (!FFMPEG) return null;
+  const wav = file.replace(/\.[a-z0-9]+$/, '.wav');
+  const r = spawnSync(FFMPEG, ['-y', '-loglevel', 'error', '-i', file, '-ar', '48000', '-sample_fmt', 's16', wav]);
+  return r.status === 0 ? wav : null;
+}
+
 mkdirSync(o.out, { recursive: true });
 const count = Math.max(1, Math.min(6, parseInt(o.n, 10) || 1));
 const ext = o.format.startsWith('mp3') ? 'mp3' : o.format.startsWith('opus') ? 'opus' : o.format.startsWith('wav') ? 'wav' : 'pcm';
@@ -91,7 +108,8 @@ results.forEach((r, i) => {
   const file = join(o.out, `${KINDS[kind]}_${name}${count > 1 ? `_${i + 1}` : ''}.${ext}`);
   writeFileSync(file, r.value.buf);
   writeFileSync(file.replace(/\.[a-z0-9]+$/, '.json'), JSON.stringify({ kind, text, request: r.value.body, created: new Date().toISOString() }, null, 2));
-  console.log(`  [${i + 1}] ${file} (${(r.value.buf.length / 1024).toFixed(0)} KB)`);
+  const wav = ext === 'wav' ? file : toWav(file);
+  console.log(`  [${i + 1}] ${file} (${(r.value.buf.length / 1024).toFixed(0)} KB)${wav && wav !== file ? `\n      ${wav}` : FFMPEG ? '' : '  (no ffmpeg: WAV not made)'}`);
   ok++;
 });
 console.log(`${ok}/${count} succeeded in ${((Date.now() - t) / 1000).toFixed(1)}s`);
