@@ -7,7 +7,7 @@
 //   node gen/audio.mjs voice "The old map was right. It's here." --name Line01 [--voice <voice_id>]
 //   node gen/audio.mjs voices            (list available voice ids)
 //
-// Output: out/audio/<Kind>_<Name>.mp3 (+ .json sidecar). --n 3 makes variants (_1, _2, _3).
+// Output: <Project>/Generated/audio/<Kind>_<Name>.mp3 (+ .json sidecar). --n 3 makes variants (_1, _2, _3).
 
 import { writeFileSync, mkdirSync, existsSync, readdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
@@ -15,8 +15,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
-const KIT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-if (existsSync(join(KIT, '.env'))) process.loadEnvFile(join(KIT, '.env'));
+import { KIT, generatedDir } from './paths.mjs';
 
 const { values: o, positionals } = parseArgs({
   allowPositionals: true,
@@ -31,7 +30,7 @@ const { values: o, positionals } = parseArgs({
     model: { type: 'string' },
     format: { type: 'string', default: 'mp3_44100_128' },
     n: { type: 'string', default: '1' },
-    out: { type: 'string', default: join(KIT, 'out', 'audio') },
+    out: { type: 'string' },
     'no-unreal': { type: 'boolean', default: false },
     help: { type: 'boolean', short: 'h', default: false },
   },
@@ -104,6 +103,7 @@ function toWav(file) {
   return r.status === 0 ? wav : null;
 }
 
+o.out ??= generatedDir('audio');
 mkdirSync(o.out, { recursive: true });
 const count = Math.max(1, Math.min(6, parseInt(o.n, 10) || 1));
 const ext = o.format.startsWith('mp3') ? 'mp3' : o.format.startsWith('opus') ? 'opus' : o.format.startsWith('wav') ? 'wav' : 'pcm';

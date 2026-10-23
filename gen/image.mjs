@@ -13,8 +13,7 @@ import { dirname, join, resolve, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
-const KIT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-if (existsSync(join(KIT, '.env'))) process.loadEnvFile(join(KIT, '.env'));
+import { KIT, generatedDir } from './paths.mjs';
 
 const DEFAULT_MODELS = { gemini: 'gemini-3-pro-image', openai: 'gpt-image-2' };
 
@@ -34,7 +33,7 @@ const { values: opt, positionals } = parseArgs({
     asset: { type: 'boolean', default: false },
     style: { type: 'string' },
     ref: { type: 'string', multiple: true, default: [] },
-    out: { type: 'string', default: join(KIT, 'out', 'images') },
+    out: { type: 'string' },
     name: { type: 'string' },
     help: { type: 'boolean', short: 'h', default: false },
   },
@@ -66,6 +65,7 @@ const refs = opt.ref.map((p) => ({
 const slug = (opt.name ?? positionals.join(' ')).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'image';
 const d = new Date(); const pad = (v) => String(v).padStart(2, '0');
 const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+opt.out ??= generatedDir('images');
 mkdirSync(opt.out, { recursive: true });
 
 function fail(msg) { console.error(`FAIL: ${msg}`); process.exit(1); }

@@ -120,6 +120,8 @@ add a one-line entry to "Hard-won facts" in `PIPELINE.md` in the same round.
 - Only this kit (tools, agent configs, MCP settings, prompts, scripts) predates the jam. Game repo,
   assets, levels and gameplay code are created after 2026-11-12 14:00 JST.
 - Practice projects are throwaway. Nothing from them goes into the jam game.
+- The kit holds tools only. Every generated or scratch file (concepts, models, audio, screenshots, probe
+  scripts) goes in the project's `Generated\` folder (`MEGAJAM_PROJECT` in the kit's `.env`), never in the kit.
 - Log every sourced (non-generated, non-original) asset in `SOURCED_ASSETS.md` with its licence.
   Sourced assets are not scored, so hero visuals and audio should be generated or made.
 - Content must be Teen-appropriate, contain no third-party IP, and show no trademarks except the

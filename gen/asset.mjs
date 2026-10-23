@@ -3,11 +3,11 @@
 //
 //   node gen/asset.mjs "a brass lantern" --name Lantern --max 0.4
 //   node gen/asset.mjs "a brass lantern" --name Lantern --concepts 4      (stop after 4 concept images)
-//   node gen/asset.mjs --image out/assets/lantern/concept-2.png --name Lantern --max 0.4
+//   node gen/asset.mjs --image C:/dev/<Project>/Generated/assets/lantern/concept-2.png --name Lantern --max 0.4
 //
 // Steps: concept image -> Tripo image-to-3D (FBX) -> Blender prep (size, pivot, textures) ->
 //        Blender preview -> Unreal import + place + screenshot (if the editor is open).
-// Everything for one asset lands in out/assets/<name>/ with a manifest.json.
+// Everything for one asset lands in <Project>/Generated/assets/<name>/ with a manifest.json (see gen/paths.mjs).
 
 import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync, copyFileSync, readdirSync } from 'node:fs';
@@ -17,8 +17,7 @@ import { parseArgs } from 'node:util';
 import { mcpCall, captureViewport } from './unreal/mcp.mjs';
 import { applyPbr } from './unreal/materials.mjs';
 
-const KIT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-if (existsSync(join(KIT, '.env'))) process.loadEnvFile(join(KIT, '.env'));
+import { KIT, generatedDir } from './paths.mjs';
 process.env.TRIPO_NO_UPDATE_CHECK = '1';
 
 const { values: o, positionals } = parseArgs({
@@ -57,7 +56,7 @@ if (o.help || (!prompt && !o.image && !o.model)) {
 
 const pascal = (s) => s.replace(/[^a-zA-Z0-9]+/g, ' ').trim().split(' ').map((w) => w[0].toUpperCase() + w.slice(1)).join('');
 const name = o.name ? pascal(o.name) : pascal((prompt || basename(o.image)).split(' ').slice(-2).join(' '));
-const dir = join(KIT, 'out', 'assets', name.toLowerCase());
+const dir = join(generatedDir('assets'), name.toLowerCase());
 mkdirSync(dir, { recursive: true });
 const manifest = { name, prompt, created: new Date().toISOString(), steps: {} };
 const t0 = Date.now();

@@ -79,6 +79,9 @@ The Blank template opens a temporary Open World level (Landscape, World Partitio
    makes the first commit. Binaries/Intermediate/Saved/DerivedDataCache are ignored; `.uasset`/`.umap`,
    images, models and audio go through LFS.
 3. Commit at the end of every round. On jam day the first commit must be after 2026-11-12 14:00 JST.
+4. In the **kit's** `.env`, set `MEGAJAM_PROJECT=C:\dev\<ProjectName>`. All generators (images, props,
+   characters, audio, screenshots) write to `<Project>\Generated\`, which `init-repo.ps1` gitignores.
+   Never leave it pointing at a practice project on jam day.
 
 Verified 2026-10-24 on SmokeTest: 17 files tracked (0.07 MB), `Main.umap` via LFS, clean status.
 

@@ -52,6 +52,10 @@ Build/*/**
 *.VC.db
 *.VC.opendb
 
+# --- Raw generator output (concepts, Tripo/Blender files, audio sources); the imported .uasset files are
+#     what gets committed. Keep chosen concept images for the devlog in devlog/ instead. ---
+Generated/
+
 # --- Machine-local ---
 .claude/settings.local.json
 *.log
