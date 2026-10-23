@@ -9,8 +9,8 @@ Target: ~10 minutes on jam day. Do the steps in order.
 - Visual Studio 2026 (18.10.x) with the "Game development with C++" workload — verified compiling on 5.8.4
 - Git + Git LFS (`git lfs version` → 3.7.1)
 - Claude Code
-- Node 24+ (runs the kit's `.ts` scripts directly). Once per machine: `npm install` in the kit folder
-  (TypeScript + Node types for `npm run typecheck`; nothing is needed at runtime)
+- Node 24+ (runs the kit's `.ts` scripts directly). Once per machine: `pnpm install` in the kit folder
+  (TypeScript + Node types for `pnpm typecheck`; nothing is needed at runtime)
 
 ## 1. Create the project (2 min)
 
