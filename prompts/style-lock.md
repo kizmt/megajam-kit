@@ -8,8 +8,14 @@ Scott gives: the theme take, 3–5 mood words, 2–3 real-world or game referenc
 (no copying), and one sentence on what the player should feel in the first 10 seconds.
 
 ## 2. Key art (Claude, 30 min)
-Generate 6–8 key frames of the same scene in 2–3 distinct directions (image model).
-Present side by side. Scott picks one direction or merges two. Repeat once at most.
+1. **Directions in words first (free).** Write 2–3 distinct directions as short paragraphs (setting, light,
+   palette, material feel, character idea), all for the same scene. Scott often picks or merges from the text
+   alone; then only that direction gets images. (Practice run 2026-10-24: Scott picked from the text.)
+2. **Images for the chosen direction(s)** (image model, cost stated first): per direction, 2 key frames of the
+   game's main view (different parts of the level) + **1 character sheet** (the player character in a few
+   colour variants). The character sheet becomes the reference for `gen/character.ts` concepts.
+3. Present side by side. Scott picks or asks for changes. Repeat once at most.
+4. Copy the approved images into `art/reference/` (the screenshots in step 4 are compared against them).
 
 ## 3. Write `art/style-lock.md`
 Concrete and checkable, never vague adjectives:
