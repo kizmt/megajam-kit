@@ -37,6 +37,9 @@ Scott is the director: he owns concept, feel, art direction and sign-off. Claude
 - Fix compile errors before anything else. Never work around a broken build.
 - Target the RTX 4060 (8 GB VRAM): 1440p internal at 60 fps in a packaged build. Prefer a stylized
   look; check `stat unit` and `stat gpu` after big visual changes.
+- C++ must compile with **zero UHT warnings** (UHT treats warnings as errors). `.generated.h` is the last
+  include; a delegates-only header needs `UDELEGATE`. See `docs/ue/production.md`.
+- **Name assets per `docs/ue/naming.md`** (Epic prefixes + kit extensions) and keep the folder layout there.
 - **Follow `docs/ue/performance.md`** (budgets, Nanite, one master material, tick off by default, pooling,
   instancing). Read it before adding content or gameplay systems.
 
