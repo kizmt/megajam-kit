@@ -120,6 +120,9 @@ add a one-line entry to "Hard-won facts" in `PIPELINE.md` in the same round.
 - Only this kit (tools, agent configs, MCP settings, prompts, scripts) predates the jam. Game repo,
   assets, levels and gameplay code are created after 2026-11-12 14:00 JST.
 - Practice projects are throwaway. Nothing from them goes into the jam game.
+- The kit is version-controlled at github.com/kizmt/megajam-kit (private). Push after every kit commit:
+  GitHub's push time is the server-side proof of what existed before the jam. Kit changes made during the
+  jam are allowed but get their own commits, so pre-jam and in-jam work stay distinguishable.
 - The kit holds tools only. Every generated or scratch file (concepts, models, audio, screenshots, probe
   scripts) goes in the project's `Generated\` folder (`MEGAJAM_PROJECT` in the kit's `.env`), never in the kit.
 - Log every sourced (non-generated, non-original) asset in `SOURCED_ASSETS.md` with its licence.
