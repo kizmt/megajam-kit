@@ -66,11 +66,15 @@ The Blank template opens a temporary Open World level (Landscape, World Partitio
      "allowedMcpServers": [{ "serverUrl": "http://127.0.0.1:8000/mcp" }],
      "disableClaudeAiConnectors": true,
      "autoCompactWindow": 300000,
-     "permissions": { "additionalDirectories": ["C:\\dev\\megajam-kit"] }
+     "permissions": {
+       "additionalDirectories": ["C:\\dev\\megajam-kit"],
+       "deny": ["Edit(//c/dev/megajam-kit/**)"]
+     }
    }
    ```
 
-   `additionalDirectories` gives the session the kit (scripts, `PIPELINE.md`, `docs/ue/`) without leaving the project.
+   `additionalDirectories` gives the session the kit (scripts, `PIPELINE.md`, `docs/ue/`) without leaving the project;
+   the `deny` rule keeps it read-only (Windows paths match as `//c/...`). Kit suggestions go to the project's `KIT_NOTES.md`.
    `autoCompactWindow` compacts at 300K tokens instead of ~967K (Opus 5.5 has a 1M window): faster, cheaper turns.
    Keep `PROGRESS.md` current so nothing important lives only in the conversation when it compacts.
 

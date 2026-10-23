@@ -12,6 +12,10 @@ Scott is the director: he owns concept, feel, art direction and sign-off. Claude
   project (`<Project>\Generated\`) via `MEGAJAM_PROJECT` in the kit's `.env`. Check it names this project first.
 - Project paths (`scripts/`, `PROGRESS.md`, `art/`, `devlog/`, `Source/`, `Config/`) are relative to the project.
 - At the start of a session: read `PROGRESS.md` if it exists, then `C:\dev\megajam-kit\docs\ue\README.md`.
+- **The kit is read-only for game sessions.** Read it and run its scripts, but never edit, commit or push
+  anything in `C:\dev\megajam-kit` (the project's settings deny edits there). Kit suggestions go in the project's
+  **`KIT_NOTES.md`**: one entry per finding (what happened, which kit file, the suggested change). Scott reviews
+  them and decides what goes into the kit. If a kit bug blocks the work, write the note and tell Scott.
 
 ## The two rules that matter most
 
@@ -45,8 +49,8 @@ Scott is the director: he owns concept, feel, art direction and sign-off. Claude
 - **Never re-roll a paid generation to fix a problem you haven't diagnosed.** Find the cause first (inspect
   the files, check `PIPELINE.md` hard-won facts). Rebuild from downloaded files (`--rig/--pbr/--model`, no
   credits) wherever possible. Concept images that Scott approved are not the problem by default.
-- **API keys live in the kit's `.env`.** Never print, read aloud, log or commit key values; edit only the
-  `MEGAJAM_PROJECT` line if needed.
+- **API keys live in the kit's `.env`.** Never print, read aloud, log or commit key values. If
+  `MEGAJAM_PROJECT` names the wrong project, tell Scott (the kit is read-only for game sessions).
 - **Ask before installing software, updating tools, or accepting terms/licences.** Say what and why.
 
 ## Engine conventions
@@ -122,7 +126,7 @@ Order of authority (highest first):
 6. Memory, last, and only for things you then verify with (1).
 
 When something behaves differently from what a source said, or a tool needs an undocumented argument,
-add a one-line entry to "Hard-won facts" in `PIPELINE.md` in the same round.
+add an entry to the project's `KIT_NOTES.md` in the same round (not to the kit itself).
 
 ## Verification ("done" means seen)
 
@@ -131,8 +135,8 @@ add a one-line entry to "Hard-won facts" in `PIPELINE.md` in the same round.
 - After gameplay changes: run PIE, capture a short clip or screenshot sequence, check the Output
   Log for errors and warnings.
 - Never claim something works without a capture or a log line proving it.
-- Kit scripts (`gen/**/*.ts`) are strict TypeScript run directly by Node 24 (type stripping: no enums,
-  namespaces or parameter properties; `import type`; `.ts` in import paths). After changing one, run
+- Kit maintenance only (not game sessions): kit scripts (`gen/**/*.ts`) are strict TypeScript run directly
+  by Node 24 (type stripping: no enums, namespaces or parameter properties; `import type`; `.ts` in import paths). After changing one, run
   `pnpm typecheck` in the kit (must pass) and run the script for real. Type external results at the
   boundary (`callTool<T>`, typed parse functions) only after seeing the real shape.
 
@@ -147,7 +151,8 @@ add a one-line entry to "Hard-won facts" in `PIPELINE.md` in the same round.
 - Only this kit (tools, agent configs, MCP settings, prompts, scripts) predates the jam. Game repo,
   assets, levels and gameplay code are created after 2026-11-12 14:00 JST.
 - Practice projects are throwaway. Nothing from them goes into the jam game.
-- The kit is version-controlled at github.com/kizmt/megajam-kit (private). Push after every kit commit:
+- The kit is version-controlled at github.com/kizmt/megajam-kit (private). Only kit maintenance sessions
+  change it, never a game session (`KIT_NOTES.md` instead). Push after every kit commit:
   GitHub's push time is the server-side proof of what existed before the jam. Kit changes made during the
   jam are allowed but get their own commits, so pre-jam and in-jam work stay distinguishable.
 - The kit holds tools only. Every generated or scratch file (concepts, models, audio, screenshots, probe
