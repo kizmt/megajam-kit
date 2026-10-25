@@ -23,6 +23,7 @@ If a note and the engine disagree, the engine wins: fix the note and add the fac
 | Write or build C++, change Build.cs, fix a compile/link error, package | [cpp.md](cpp.md) |
 | Make the player, camera, input, interaction, damage, spawning, save, level changes | [gameplay.md](gameplay.md) |
 | Bring in a character, rig, retarget, animate | [characters.md](characters.md) |
+| Give a character combat or rich animation (sources, jam rules, library retarget, combat pattern) | [animation-library.md](animation-library.md) |
 | Add enemies/NPCs, navigation, perception, StateTree | [ai.md](ai.md) |
 | Light a scene, set exposure/post, fix Lumen or shadow artefacts, the no-Lumen stylized look | [lighting.md](lighting.md) |
 | Build or change materials (master, glass, decals, emissive, hit flash) | [materials.md](materials.md) |

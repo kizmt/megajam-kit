@@ -174,7 +174,13 @@ add an entry to the project's `KIT_NOTES.md` in the same round (not to the kit i
 - The kit holds tools only. Every generated or scratch file (concepts, models, audio, screenshots, probe
   scripts) goes in the project's `Generated\` folder (`MEGAJAM_PROJECT` in the kit's `.env`), never in the kit.
 - Log every sourced (non-generated, non-original) asset in `SOURCED_ASSETS.md` with its licence.
-  Sourced assets are not scored, so hero visuals and audio should be generated or made.
+  Official rules 15(c): sourced assets "will not be reviewed or scored"; content generated with AI tools is not a
+  sourced asset. So hero visuals and audio should be generated or made. Animation libraries (`docs/ue/animation-library.md`)
+  are sourced: download before the jam, retarget onto the game's characters during it.
+- Judging (rules 9): Ambition and Innovation, Use of Theme, Fun Factor, Gameplay, Visuals, Level Design, Audio (up to
+  5 points each; ties re-scored with Fun Factor doubled). The amount of AI used doesn't change the score.
+- Rules 7(h): Epic may ask for the kit or its version control history to verify what predates the jam. The Glass Box
+  devlog must be submitted with the game, during the contest.
 - Content must be Teen-appropriate, contain no third-party IP, and show no trademarks except the
   Unreal Engine logo. All in-game text and audio in English.
 

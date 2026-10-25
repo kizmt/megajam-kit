@@ -192,3 +192,17 @@ Do this before jam day so the first real upload isn't on the final night.
    App & browser control)."* Code signing (Microsoft Artifact Signing, or an OV certificate) removes this but needs
    identity verification of 1-20 business days; see `docs/ue/production.md`.
 6. Trailer: the jam wants a link (YouTube, unlisted is fine), not an upload. Recipes in `docs/ue/cinematics-video.md`.
+
+## 10. Animation library (once per machine, before the jam; you do the Fab steps)
+
+Sources and reasons: `docs/ue/animation-library.md`. These are **sourced assets** (allowed, listed on submission, not
+scored); download them now, retarget them onto the game's characters during the jam.
+
+1. Fab (in the browser or the Epic launcher): add the free **Game Animation Sample** and the Paragon heroes
+   **Kwang**, **Greystone** and **Feng Mao** to your library. Adding them accepts their licences.
+2. Create a library project `C:\dev\AnimLibrary` (Blank, UE 5.8.4) and add those packs to it from the launcher's
+   Library tab ("Add to Project"; the Game Animation Sample is its own sample project: create it as
+   `C:\dev\AnimLibrary_GASP` instead). Not tracked in any game repo.
+3. Optional: an Adobe ID for Mixamo (rolls, knockdowns, get-ups, extra deaths); a paid melee pack for parries.
+4. During the jam, migrate only the folders you need into the game (`/Game/AnimLibrary/<Source>/`) and run
+   `node gen/unreal/retarget_library.ts`.

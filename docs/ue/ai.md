@@ -186,6 +186,14 @@ UEFN has AI-powered NPC conversations (Personas, Apr 2026, Epic-hosted models). 
 a runtime LLM call would need our own backend + API key in the build, and the jam rules forbid requiring extra
 software to run. Use pre-written dialogue (optionally LLM-generated **offline** during development) instead.
 
+## AI characters slide without walk/run animation
+
+Epic's template ABP plays locomotion only when the movement component reports **acceleration**, and path following
+sets velocity directly by default, so AI-driven characters glide in their idle pose. Fix in the AI character's
+constructor: `GetCharacterMovement()->NavMovementProperties.bUseAccelerationForPaths = true;` (5.8 moved the flag into
+`FNavMovementProperties`). Alternative: base the ABP's ShouldMove on speed only. Seen on a prototype; confirmed in the
+5.8 API reference and Epic forum threads.
+
 ## Verified against
 
 - `Engine/Source/Runtime/AIModule/Classes/AIController.h` (MoveToActor/MoveToLocation signatures, OnMoveCompleted,
