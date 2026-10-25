@@ -194,6 +194,44 @@ registers itself on import, and a reload is needed after edits. Epic's rules (`u
 Keep long-lived knowledge in these `docs/ue/*.md` files; use editor skills only for short rules every editor
 session must follow.
 
+## E. Gotchas found on a prototype (5.8.4)
+
+- **Scripted asset edits may not mark the asset dirty, so the save silently skips it.** `map_key()` / `unmap_all()` on
+  an InputMappingContext didn't dirty it: `EditorAssetLibrary.save_loaded_asset(imc)` (default
+  `only_if_is_dirty=True`) skipped it, and the packaged game had no bindings for the new actions. Always save scripted
+  edits with `save_loaded_asset(x, only_if_is_dirty=False)`, and verify by reading the asset back after an editor
+  restart. `duplicate_asset()` of an InputAction copies its triggers: clear `triggers` on the copy.
+- **A struct read from an array property is a copy.** `path.waypoints[i].anchor = a` changes nothing. Rebuild the
+  list and set the whole property: `set_editor_property('waypoints', new_list)`.
+- **Scripted level rebuilds silently break references** held by other actors (e.g. path points anchored to rebuilt
+  actors keep their offsets but lose the anchor, so the offsets become world positions). Re-link by actor label from
+  a layout file, have components warn on a null reference at BeginPlay, and run a full autoplay playthrough after
+  any rebuild.
+- **The asset registry is stale after Python edits.** `find_package_referencers_for_asset` kept listing removed
+  references until `AssetRegistry.scan_files_synchronous([...], force_rescan=True)`. For "is this dependency really
+  gone", grepping the saved `.uasset` is the reliable check.
+- `EditorAssetLibrary.delete_asset` can return True while the file stays on disk until the editor closes.
+- **Nanite triangle counts:** `StaticMesh.get_num_triangles(0)` returns the fallback mesh, not the source. Copy to a
+  DynamicMesh with `copy_mesh_from_static_mesh` (read LOD `MAX_AVAILABLE`) and use `get_triangle_count()`.
+- **Python odds and ends:** `unreal.Color(...)` positional order is (b, g, r, a): use keywords.
+  `EditorPerformanceSettings` is reachable only via `unreal.find_object(None,
+  "/Script/UnrealEd.Default__EditorPerformanceSettings")`, and its throttle flag only by the C++ name
+  `bThrottleCPUWhenNotForeground`. Turn it off for scripted PIE, or PIE runs at ~3 fps with the editor in the background.
+- **MCP `call_tool` shape:** `toolset_name` + `tool_name` (the short name) + `arguments`; `toolset` / `tool` keys fail
+  with "Missing required parameter".
+- **AnimGraphs can be edited with BlueprintTools** (`find_nodes`, `delete_node`, `connect_pins`, `compile_blueprint`),
+  although `read_graph_dsl` returns empty for an AnimGraph.
+- **AnimBlueprint parent class:** `get_editor_property("parent_class")` fails; use
+  `BlueprintEditorLibrary.get_blueprint_parent_class`, and `reparent_blueprint` to change it.
+
+### Recipe: rounded track pieces and props from Geometry Script (free, no generation)
+
+`append_box` with PER_FACE polygroups, then `apply_mesh_polygroup_bevel` (subdivisions 3, round weight 1),
+`compute_split_normals` at 50 degrees. Multi-material meshes: `copy_mesh_to_static_mesh` with `replace_materials`.
+**Collision:** a new Geometry Script static mesh asset has **no simple collision**, and character movement only sweeps
+simple shapes, so characters fall through it. For a few low-poly walkable pieces set
+`body_setup.collision_trace_flag = CTF_USE_COMPLEX_AS_SIMPLE` when saving; decoration gets `NoCollision`.
+
 ## Kit issues found while writing this
 
 - `MegajamTools.run_console_command` calls deprecated `unreal.EditorLevelLibrary.get_editor_world()`. Switch to
@@ -205,7 +243,7 @@ session must follow.
 
 ## Verified against
 
-- Stub `C:\dev\SmokeTest\Intermediate\PythonStub\unreal.py` (2026-10-24): `get_editor_subsystem`,
+- Stub `<Project>\Intermediate\PythonStub\unreal.py` (2026-10-24): `get_editor_subsystem`,
   `EditorActorSubsystem` (spawn_actor_from_object/_from_class, get_all_level_actors, get/set_selected_level_actors,
   destroy_actor, duplicate_actor), `UnrealEditorSubsystem` (get_editor_world, get/set_level_viewport_camera_info),
   `LevelEditorSubsystem` (load_level, new_level, save_current_level, save_all_dirty_levels, editor_play_simulate,

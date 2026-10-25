@@ -38,7 +38,7 @@ Naming: Epic's 5.8 list has `PPM_` for post-process materials; `MPC_` is not in 
 - Metallic is binary (0/1) except rust/dust; very matte = high Roughness, not Specular 0; leave Specular at 0.5
   (Epic PBR page). AI textures often have grey "metallic" noise: clamp or override per MI if props look dirty-chrome.
 
-## Master material v2 (built 2026-10-24)
+## Master material v2 (built 2026-10-24; v3 on 2026-10-25 adds the `UseTintMask` switch, below)
 
 **Built:** items 1, 3, 4, 5, 6, 7, 9 below, by `gen/unreal/py/build_master_material.py` (34 expressions, 0 errors),
 called from `materials.ts ensureMaster()`. Parameters by group:
@@ -108,7 +108,7 @@ in a packaged build = default material.
 ## Substrate (on by default in our 5.8 project)
 
 - Epic's 5.8 hub labels Substrate **Beta** ("use caution when shipping"). But it's **enabled by default for new
-  projects**, and our `SmokeTest/Config/DefaultEngine.ini` has `r.Substrate=True`, `r.Substrate.ProjectGBufferFormat=0`
+  projects**, and a test project's `<Project>/Config/DefaultEngine.ini` has `r.Substrate=True`, `r.Substrate.ProjectGBufferFormat=0`
   (Blendable GBuffer: "performance in parity with the non-Substrate path", no cook overhead, meant for 60 Hz).
 - Decision: **leave it on, author with legacy inputs.** Non-Substrate materials (our master: BaseColor/Normal/
   Roughness/Metallic pins) "work out-of-the-box" and are converted at compile time. Don't toggle `r.Substrate` mid-jam
@@ -204,15 +204,28 @@ Epic: use PP materials sparingly, prefer built-in volume settings (color grading
 - Setting `material_function` on a FunctionCall through generic `set_properties` may not refresh its pins; check with
   `get_expression_input_names` and recompile (unverified).
 
+## Lessons from a prototype
+
+- **`M_PBR_Master`'s default BaseColor texture is mid-grey**, so an untextured MI that only sets `Tint` comes out dark.
+  Override BaseColor with `/Engine/EngineResources/WhiteSquareTexture` for flat-colour pieces.
+- **Generated textures drift from a hex palette in the prompt.** Two generated props came back redder and glossier
+  than the palette (coral F66F5A vs FEA192, roughness ~0.21 vs the level's 0.38). Don't re-roll: the master applies
+  `BaseColor * Tint` then `Desaturation(1 - Saturation)`, so a small least-squares fit of (Saturation, Tint RGB) over
+  the texture's two main colours brings it onto the palette, plus `RoughnessOffset` for gloss. No credits.
+- **Tint mask (master v3):** the `UseTintMask` static switch lerps between the untinted texel and `BaseColor * Tint`
+  by the base colour's alpha (alpha 1 = tint). Off by default, so existing instances render unchanged. Masked base
+  colour textures compress as BC3 instead of BC1 (2x memory, masked textures only). Make one `MI_<Name>_Tintable`
+  with the masked texture and the switch on, then per-variant children that change only `Tint` (they share shaders).
+
 ## Verified against
 
 - `editor_toolset/skills/material_basics.py` and `editor_toolset/toolsets/material.py` (UE 5.8 install), read 2026-10-24.
 - `Engine/Source/Runtime/Engine/Public/Materials/Material.h` (bUsedWith* flags), `MaterialInstanceDynamic.h`,
   `Classes/Components/PrimitiveComponent.h`, `MeshComponent.h`, `Classes/Kismet/KismetMaterialLibrary.h`.
-- `SmokeTest/Intermediate/PythonStub/unreal.py`: all expression classes named above exist except
+- `<Project>/Intermediate/PythonStub/unreal.py`: all expression classes named above exist except
   WorldAlignedTexture/HueShift/DitherTemporalAA, which are Material Functions (assets found under `Engine/Content/Functions`).
   `MaterialExpressionSubstrateToonBSDF` and `ToonProfile` exist. Blend modes / shading models from the stub enums.
-- `SmokeTest/Config/DefaultEngine.ini`: `r.Substrate=True`, `ProjectGBufferFormat=0`.
+- `<Project>/Config/DefaultEngine.ini`: `r.Substrate=True`, `ProjectGBufferFormat=0`.
 - Unverified: HueShift instruction count; FunctionCall pin refresh via set_properties; Substrate Toon artifacts (forum only).
 
 ## Sources (5.8)

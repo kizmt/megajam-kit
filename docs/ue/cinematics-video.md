@@ -12,12 +12,12 @@ Queue are extras for an intro/ending or one or two hero shots, never the critica
 | 1 | **NVIDIA App (ShadowPlay) recording of the packaged build** | The whole video | Installed on GIZMO (NVIDIA App 11.0.9). NVENC, near-zero fps cost. Default |
 | 2 | OBS Studio, Game Capture or Display Capture | Same, more control (scenes, audio tracks) | **Not installed.** Install before the jam if wanted (it's a kit tool) |
 | 3 | Windows Game Bar (Win+Alt+R) | Emergency fallback | Lower quality control (unverified settings) |
-| 4 | Movie Render Queue/Graph from a Level Sequence | Pre-authored trailer shots, intro/ending | Renders **Sequencer**, not live gameplay. Offline, slow, plugin off by default |
+| 4 | Movie Render Queue/Graph from a Level Sequence | Pre-authored trailer shots, intro/ending | Renders a Sequence; with an autoplay mode the game plays itself inside the render (D3). Offline, slow, plugin off by default |
 | 5 | Take Recorder -> re-render with MRQ | "Gameplay with nicer cameras" | Too fragile for a jam (see B). Skip |
 | - | `HighResShot` / legacy "Render Movie" capture | Stills only / legacy | Not for the video |
 
 Why live capture wins: it shows exactly what judges will play, costs zero engine work, and works on the
-packaged build we make daily anyway. MRQ cannot record a player playing; it only renders a sequence.
+packaged build we make daily anyway. For a polished trailer, MRQ can render gameplay if the game has an autoplay mode (section D3).
 
 ### Capture settings (NVIDIA App / OBS)
 
@@ -158,7 +158,7 @@ Run `describe_toolset` first; schemas are strict.
   **SequencerCustomBindingTools** (`convert_to_spawnable/possessable`), **SequencerImportExportTools**
   (FBX in/out), **SequencerControlRigTools**; separate plugin **SequencerAnimMixerToolset**.
 - **No MRQ toolset.** Rendering must go through Python (`MoviePipelineQueueSubsystem`, editor) once the MRQ
-  plugin is enabled; its classes are absent from the SmokeTest stub because the plugin is off there.
+  plugin is enabled; its classes are absent from a test project's stub because the plugin is off there.
 - Typical scripted intro: create sequence -> create_camera -> add Transform track + section -> add_key_float on
   Location/Rotation at frames 0 and N -> add Camera Cut track -> set_camera_cut_binding -> screenshot to verify.
 
@@ -183,14 +183,86 @@ Run `describe_toolset` first; schemas are strict.
   - Console Variables setting applies cvars only during the render and reverts after.
 - Resolution 1920x1080 (or 2560x1440 and let ffmpeg scale). Output frame rate 60 to match gameplay footage.
 
+## D. Trailer recipes (verified on a prototype, 5.8.4)
+
+Routes D2-D3 work best when the game has an **autoplay mode** (the player driven by AI, switched on by a cvar) so it
+can play itself during a capture or render; worth adding early if the genre allows it. D1 and D4 apply to any game.
+
+### D1. Game audio: record the engine's own mix
+
+Screen recorders don't reliably hear the game. Record the master submix in the engine instead:
+- `UAudioMixerBlueprintLibrary::StartRecordingOutput(World, MaxSeconds, nullptr)` when the capture starts,
+  `StopRecordingOutput(World, EAudioRecordingExportType::WavFile, Name, Path)` at the end (runtime code, module
+  `AudioMixer`; works in a packaged build). The WAV (48 kHz stereo) lands in `Saved/BouncedWavFiles/`. Trigger it from
+  a cvar in the game mode and log start/stop lines.
+- **Must do:** `au.NeverDisableSubmixes 1` before recording. Silent submixes auto-disable and skip the recording
+  append (`AudioMixerSubmix.cpp`), so silence is dropped, not written: without it a 182 s recording came out 6.3 s
+  short and the audio drifted out of sync.
+- **Sync:** take one anchor from each side for the same moment: a distinctive frame (e.g. a countdown number
+  appearing) and the onsets of SFX logged at known times. The first play of a sound is ~0.1 s late (loading), later
+  ones a steady ~27 ms, so use the median of the later ones. Checked result: GO beep within 5 ms of the GO frame,
+  no drift over 135 s.
+
+### D2. Live screen capture (raw footage)
+
+- ffmpeg `ddagrab` + NVENC, or the NVIDIA App. **At 4K the capture drops frames on an RTX 4060** (~38-56 fps captured
+  while the game ran at 110+): gaps padded with duplicates read as stutter. Capture at 1440p or 1080p, and count frames
+  and gaps (`ffprobe -count_frames`) before cutting.
+- Fixed frame rate for captures of a Development build:
+  `-ini:Engine:[/Script/Engine.Engine]:bUseFixedFrameRate=True,[/Script/Engine.Engine]:FixedFrameRate=60`
+  (works because Development allows ini overrides from the command line; not Shipping).
+
+### D3. MRQ gameplay trailer (best quality, offline)
+
+MRQ renders a Level Sequence, but **the game can play itself inside the MRQ PIE session**, so the sequence only has
+to supply the cameras. This overturns the older "MRQ can't record gameplay" verdict above.
+- **Game mode:** MRQ's default override is `AMoviePipelineGameMode` (no pawn, no game). Set
+  `MoviePipelineGameOverrideSetting.soft_game_mode_override` to the game's own mode. Autoplay cvars set before
+  `render_queue_with_executor(MoviePipelinePIEExecutor)` carry into the PIE world.
+- **No warm-up:** set `RenderWarmUpCount` and `EngineWarmUpCount` to 0 and `use_camera_cut_for_warm_up` False, or game
+  time drifts ahead of sequence time at every cut. Then sequence frame f = world time f/60, so log event times map
+  1:1 to frames.
+- **Cameras on runtime-spawned actors:** a sequence can't bind actors spawned at runtime. Make a small C++ rig actor
+  (follows the leader / pack / player with smoothing, never rotates) as a sequence spawnable, and attach cine cameras
+  to it (`MovieScene3DAttachTrack`, keep relative). Keyed offsets are then world-aligned offsets from the action.
+- **Sequencer Python (5.8):** spawnables are custom bindings and `get_object_template()` returns None. Spawn a temp
+  actor, configure it, `seq.add_spawnable_from_instance(actor)`, destroy the temp (deprecated in favour of
+  `LevelSequenceEditorSubsystem.add_spawnable_from_instance(seq, actor)`). Channel names are `unreal.Name` (use
+  `str()`); `Rotation.X` = roll, `.Y` = pitch, `.Z` = yaw. Attach: `section.set_constraint_binding_id(
+  seq.get_binding_id(rig))`. Camera cut: `add_section()` + `set_camera_binding_id`.
+- **Gotcha:** deleting a loaded Level Sequence fails ("Failed to unload all packages") and the following
+  `create_asset` opens a modal "Overwrite?" dialog that freezes MCP. Reuse the asset and clear its bindings and tracks.
+- **Races aren't deterministic between renders**, even with fixed 1/60 steps. Lay out shots from a cheap 960x540
+  preview, keep fixed world shots with margins, then pick in-points from the final render's frames and log.
+- AA: 8 temporal samples with Override AA = None gave clean, settled frames with no warm-up.
+- Cost: 4K, 8 temporal samples, PNG: ~3 frames/s on an RTX 4060 (160 s of footage in ~52 min) and ~7 MB per frame
+  (66 GB): plan the disk. The MRQ render has no game audio (that needs the deterministic audio mixer): add music
+  and SFX in the edit, placing hits from the log's event times. MRQ doesn't render the Canvas HUD: draw titles in
+  the edit.
+
+### D4. The edit
+
+- Cut on the music's beat grid: find bpm and the first downbeat (onset autocorrelation), express clips as in-points
+  plus a length in beats, round cut frames from the grid so cuts never drift.
+- Titles that match the in-game HUD: same font (Roboto Bold ships in `Engine/Content/Slate/Fonts`), outline and
+  shadow, the same pop animation, drawn onto frames with PIL.
+- Audio mix: music + SFX (`adelay`/`amix normalize=0`), a limiter (`alimiter=limit=0.79`) on a float pre-mix, then
+  two-pass `loudnorm` to -14 LUFS, TP -1.5. Generated music can already peak near 0 dBFS, so SFX on top clip without
+  the limiter and single-pass loudnorm falls back to dynamic mode.
+- **Deliver 4K60 as HEVC (or AV1), never H.264.** H.264 4K60 is Level 5.2 and stuttered in the Windows player on an
+  RTX 4060 PC while 1080p played clean. HEVC: `hevc_nvenc -preset p7 -cq 18 -profile main -level 5.1 -maxrate 38M
+  -tag:v hvc1` (NVENC refuses Level 5.1 with a max rate above 40 Mbps). 1080p60: libx264 CRF 16-20, AAC 192k,
+  `+faststart`.
+- Check the final file against the submission checklist above (ffprobe), then watch it once **with sound**.
+
 ## Kit decisions: fit and contradictions
 
 - C++ gameplay: fine. Sequences are assets; playback from C++ as above. Event-track endpoints are Blueprint
   (flag: keep them as thin calls into C++).
-- Lumen-only: live capture inherits Lumen ghosting/settling; MRQ warm-up/temporal samples fix it offline.
+- Lumen path: live capture inherits Lumen ghosting/settling; MRQ temporal samples fix it offline.
 - **features.md rule "never first used on jam day"**: MRQ and Take Recorder plugins are off by default, so try
-  them in SmokeTest **before** 2026-11-12 or don't use them. The video route (NVIDIA App + ffmpeg) needs no plugin.
-- "1440p internal at 60 fps": capture at 1440p and downscale; >= 1080p rule satisfied.
+  them in a practice project **before** 2026-11-12 or don't use them. The video route (NVIDIA App + ffmpeg) needs no plugin.
+- Capture live footage at 1440p or 1080p (4K live capture drops frames on an RTX 4060, D2); >= 1080p rule satisfied.
 - Package daily: also record a 20 s test capture from each daily build (doubles as devlog footage).
 
 ## Verified against

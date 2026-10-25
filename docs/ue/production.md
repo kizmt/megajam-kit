@@ -38,6 +38,30 @@
   (`scripts/init-repo.ps1`) is our own and tested. Binary assets (.uasset/.umap) can't be merged: one writer at a time
   (only one session edits the editor anyway).
 
+## Build stamp (game side)
+
+`scripts/package.ps1` writes `<Build>\Windows\<Project>\BuildStamp.txt` (`<short commit>[+dirty] <time>`). In the game,
+read `FPaths::ProjectDir() / "BuildStamp.txt"` once into a static `FString` (fallback `"editor"` when missing, i.e. PIE),
+log it from the game mode's `InitGame`, and draw it small in a HUD corner. When someone reports a bug, the stamp says
+which build they played (a stale unzipped copy fooled a prototype test).
+
+## Known engine warnings (5.8.4)
+
+- `Character.h:798` raises C4996 (`APawn::GetMovementBase` deprecated) in every `ACharacter` subclass. Engine noise;
+  `scripts/build.ps1` already treats it as not ours.
+
+## Unsigned builds and Windows Smart App Control
+
+- On the dev PC, SAC blocks freshly compiled editor DLLs at random ("Bad Image ... 0xc0e90002", then "The game module
+  could not be loaded"; log `GetLastError=4551`; Event Viewer CodeIntegrity 3033/3077). Keep SAC off (`SETUP.md`).
+- For players: SAC checks every executable, zip-extracted ones too, with no per-file "Run anyway"; the only fix is
+  turning SAC off machine-wide. New Windows 11 installs start in evaluation mode and many switch it off, so expect a
+  minority of players. Only the two `<Game>.exe` files are unsigned; staged third-party DLLs are already signed.
+- Mitigations: **Microsoft Artifact Signing** (~$10/month; identity check 1-20 business days; individuals must be in
+  the US or Canada, organisations qualify in more countries), an **OV certificate** (~$120-220/yr, key on a hardware
+  token or cloud HSM), or no signing plus a note on the game page (`SETUP.md` section 9). Self-signing doesn't help.
+  Sign after packaging (any later change breaks the signature) and check with `Get-AuthenticodeSignature`.
+
 ## Sources (5.8)
 
 - Naming: https://dev.epicgames.com/documentation/en-us/unreal-engine/recommended-asset-naming-conventions-in-unreal-engine-projects?application_version=5.8

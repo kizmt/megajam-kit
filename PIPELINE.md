@@ -36,12 +36,12 @@ With `--model`: ~14 s.
 
 Known limits: master material is opaque (glass renders dark).
 
-## Characters: concept to playable (tested 2026-10-24: Explorer, Mechanic in SmokeTest)
+## Characters: concept to playable (tested 2026-10-24: Explorer, Mechanic in a test project)
 
 ```powershell
 # 1. Three T-pose concepts, then STOP for Scott to pick (art direction; also catches A-poses)
 node gen/character.ts "a young mechanic in blue work overalls, brown work boots" --name Mechanic --concepts 3
-# 2. Everything else, then the one manual step it prints
+# 2. Everything else (no manual steps)
 node gen/character.ts --image <picked concept> --name Mechanic --parent /Script/<Module>.PlayerCharacter
 ```
 
@@ -66,9 +66,9 @@ Needs the Third Person content pack in the project (Manny + `ABP_Unarmed`). Reru
 folder (`clean_character.py`); if anything outside it still references the character (game mode pawn, placed
 actors), the run stops and lists them instead of triggering an Unreal dialog. Point those elsewhere first.
 
-**Manual step (2 min, UI):** open `ABP_Unarmed_<Name>` > AnimGraph, delete the **Control Rig** node
-(`CR_Mannequin_FootIK`) between `Slot 'DefaultSlot'` and `Output Pose` plus the orphaned NOT / Is Falling nodes,
-wire Slot -> Output Pose, Compile, Save. Without it the feet twist outwards.
+**Foot IK (automatic, step 6b):** the retargeted `ABP_Unarmed_<Name>` keeps Epic's `CR_Mannequin_FootIK` Control Rig
+node, which twists non-Manny feet. `gen/unreal/abp.ts strip-footik <ABP>` deletes it and its NOT / Is Falling inputs,
+wires Slot -> Output Pose, compiles and force-saves (idempotent; character.ts runs it).
 
 Blend space speeds: idle 0, walk 300, jog 600 (the C++ player recipe in `docs/ue/gameplay.md` matches these).
 
@@ -138,7 +138,7 @@ Measured: SFX ~2 s end to end, 30 s music track ~6 s.
   reject `convert_model` tasks (API 2006): pass the `image_to_model` task id. The `tripo` CLI only reads
   `TRIPO_API_KEY` from the environment (asset.ts loads `.env`; manual runs must too).
 - Retargeted `ABP_Unarmed` keeps the `CR_Mannequin_FootIK` Control Rig node: compile warnings "Hierarchy
-  discrepancy" and twisted feet on non-Manny skeletons. Delete it (UI; AnimGraph nodes can't be edited from Python).
+  discrepancy" and twisted feet on non-Manny skeletons. `gen/unreal/abp.ts` removes it (BlueprintTools edits AnimGraphs via MCP).
 - Placed SkeletalMeshActors don't evaluate animation in the editor viewport (even with `set_update_animation_in_editor`).
   Verify animation in PIE: start with `LevelEditorSubsystem.editor_request_begin_play()`, screenshot with
   `HighResShot WxH filename=...` on the PIE world, read bone positions with `get_socket_location`.
@@ -168,3 +168,22 @@ Measured: SFX ~2 s end to end, 30 s music track ~6 s.
   `character.ts --rig --pbr`: free). Details: `docs/ue/materials.md` "Master material v2".
 - `asset.ts` reruns used to stack a new actor each time while the old ones pointed at the deleted mesh; it now
   removes same-label actors first. Editor scripts that run user code: catch `SystemExit` too (`run_python` does).
+- **Imported props get one auto convex hull, which fills openings** (arches, gates, tunnels): an arch walled off a
+  finish line. Use complex-as-simple (low-poly only) or authored boxes for anything passed through, and line-trace it.
+- **Generated textures drift off the palette** given in the prompt (redder, glossier). Fit the MI's Tint/Saturation/
+  RoughnessOffset to the palette instead of re-rolling (`docs/ue/materials.md`). No credits.
+- **Tripo's auto-rig on non-human proportions** (short arms, round body) can put the shoulder joint well above the
+  arm, end the arm chain early and weight the outer arm to finger bones: arms shear and crumple. Diagnose in Blender
+  and fix the rig and weights from the downloaded files, then always smooth the weights (`docs/ue/characters.md`).
+- **`character.ts` replaces the whole character folder.** Anything else you created inside it (extra MIs, tint
+  variants) is deleted, and it refuses while assets outside the folder reference the character: clear those
+  references first, rerun, then reattach. Keep project-made assets for a character in a separate folder.
+- **Re-running a batch retarget with overwrite breaks the cook** (blend space samples point at temporary
+  `_<Suffix>1` packages). Repair the blend space samples and delete the orphan ABP (`docs/ue/characters.md`).
+- **The first `bench.ts` run right after packaging reads low** (~13%: shader/PSO cache warm-up) and the very first
+  launch of a fresh exe can fail to start (likely the exe being scanned). `bench.ts` runs a warm-up launch and
+  relaunches once if the game doesn't start.
+- **ElevenLabs pricing** differs by product (per generation vs per second for SFX; music per minute). Check the
+  current price on the account page before a batch and quote it; one prototype batch (1 music track, 4 SFX) was ~$0.70.
+- **Uploads:** `scripts/upload.ps1` (butler) pushes the zip, never the build folder; set butler up before the jam
+  (`SETUP.md` section 9).

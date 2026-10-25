@@ -2,7 +2,7 @@
 
 The goal: the agent proves every fix with a log line or a screenshot ("done means seen") and finds the
 cause of a problem from evidence, not guesses. Budgets live in `performance.md`; this note is the *how*.
-Facts marked "verified" were checked on GIZMO (SmokeTest project + its packaged build) on 2026-10-24.
+Facts marked "verified" were checked on GIZMO (the kit's test project + its packaged build) on 2026-10-24.
 
 ## Triage: when X happens, do Y
 
@@ -28,8 +28,8 @@ Facts marked "verified" were checked on GIZMO (SmokeTest project + its packaged 
   Older runs are renamed `<Project>-backup-YYYY.MM.DD-HH.MM.SS.log`. Engine keeps 10 files / 5 days
   (`[LogFiles] MaxLogFilesOnDisk=10, PurgeLogsDays=5` in BaseEngine.ini).
 - Packaged Development build: next to the build, `<Build>\Windows\<Game>\Saved\Logs\<Game>.log`
-  (verified: `C:\dev\Builds\SmokeTest\Windows\SmokeTest\Saved\Logs\SmokeTest.log`). Not in %LOCALAPPDATA%.
-- Packaging (BuildCookRun) log: wherever our package script writes it (SmokeTest: `Saved\Logs\package-*.log`).
+  (verified: `<Build>\Windows\<Project>\Saved\Logs\<Project>.log`). Not in %LOCALAPPDATA%.
+- Packaging (BuildCookRun) log: wherever our package script writes it (test project: `Saved\Logs\package-*.log`).
   Success marker: `BUILD SUCCESSFUL` and `AutomationTool exiting with ExitCode=0 (Success)`.
 - Epic docs say "`.txt`"; on 5.8.4 the files are `.log`. Trust disk.
 - **Timestamps inside the log are UTC** (`[2026.10.23-17.21.26:334][752]` = UTC time, frame number);
@@ -64,7 +64,7 @@ UE_LOG(LogMegajam, Display, TEXT("Door %s opened by %s"), *GetName(), *GetNameSa
 - Packaging: `Warning: Visual Studio compiler 14.51.x is not a preferred version` - builds fine.
 
 **Real problems (act on these):**
-- `LogMaterial: Warning: ... Failed to compile Material for platform PCD3D_SM6` (seen on SmokeTest
+- `LogMaterial: Warning: ... Failed to compile Material for platform PCD3D_SM6` (seen on a test project
   `M_Chest`, the FBX importer's auto material, since replaced by `MI_Chest` from `M_PBR_Master` and deleted by the
   pipeline): renders default material. Open the material, fix the error, re-save.
 - `EnsureFailed: Error: Ensure condition failed: ...` followed by many `LogOutputDevice: Error: [Callstack]`
@@ -88,10 +88,10 @@ UE_LOG(LogMegajam, Display, TEXT("Door %s opened by %s"), *GetName(), *GetNameSa
   *UE 5.8 > Options > "Editor symbols for debugging"* (large download, (unverified) tens of GB) - only
   install it if a crash is inside the engine and you can't tell why.
 - **Packaged Development PDBs (verified):** BuildCookRun stages them by default ("Copying DebugFiles"):
-  `<Build>\<Game>\Binaries\Win64\<Game>.pdb` (SmokeTest: 370 MB, bigger than the 337 MB exe).
+  `<Build>\<Game>\Binaries\Win64\<Game>.pdb` (test project: 370 MB, bigger than the 337 MB exe).
   Rule: **keep the PDB next to the exe it was built with**; a PDB from another build is useless.
   (`IncludeDebugFiles` in Project Settings only matters for Shipping.)
-- Packaged builds have **no crash reporter UI** (`IncludeCrashReporter=False` in BaseGame.ini; SmokeTest's
+- Packaged builds have **no crash reporter UI** (`IncludeCrashReporter=False` in BaseGame.ini; the test project's
   build has no CrashReportClient.exe). The crash stack goes into `<Game>\Saved\Logs\<Game>.log`.
 - Debugging live: attach Visual Studio/Rider to `UnrealEditor.exe` (Debug > Attach) and break on the
   exception; Live Coding (Ctrl+Alt+F11) for body-only C++ changes, full rebuild for header/UPROPERTY changes.
@@ -166,7 +166,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FScoreTest, "Megajam.Score.Combo",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
 bool FScoreTest::RunTest(const FString&) { TestEqual(TEXT("x3 combo"), ScoreFor(3), 300); return true; }
 ```
-- **AutomationTestToolset MCP** (editor-only, experimental; enabled via `AllToolsets` in SmokeTest):
+- **AutomationTestToolset MCP** (editor-only, experimental; enabled via `AllToolsets` in a test project):
   `DiscoverTests()` first (async, several seconds) > `ListTests(NameFilter="Megajam")` >
   `RunTests([...])` or `RunTestsByFilter("StartsWith:Megajam")` (also `^Foo`, `Bar$`, `Group:Name`) >
   `GetTestStatus()` / `GetTestResults()` (JSON with per-test errors) > `StopTests()`.
@@ -185,9 +185,50 @@ Select-String $log -Pattern ': Error:|Fatal|Ensure condition failed|Assertion fa
 Select-String $log -Pattern '\[PROOF\]|Log file closed'   # proof lines + clean exit marker
 ```
   Pass = no error matches, our `[PROOF]` lines present, and `Log file closed` at the end (clean exit;
-  verified as the last line of SmokeTest's packaged log). Keep a real RHI (no `-nullrhi`) so
+  verified as the last line of the test project's packaged log). Keep a real RHI (no `-nullrhi`) so
   rendering/material errors surface. `-unattended` suppresses blocking dialogs. To drive gameplay,
   add `-ExecCmds="teleport, slomo 2"` or a level that auto-plays.
+
+## F. Capture and test patterns (from a prototype)
+
+- **Scripted PIE captures:** `register_slate_post_tick_callback` + `LevelEditorSubsystem.editor_request_begin_play()`,
+  then each tick `UnrealEditorSubsystem.get_game_world()` and `SystemLibrary.execute_console_command(world,
+  "HighResShot 1920x1080 filename=<abs path>")` on a timeline; write a result JSON at the end and poll for it. The
+  first PIE start can take 2+ minutes (shaders). Turn off editor background throttling first (`editor-scripting.md`).
+- `HighResShot` drops stat text and debug strings. For proof shots of stats use `Shot showui filename=<abs path>`,
+  but in PIE that captures the whole editor window; use the packaged game for HUD shots.
+- An uncooked `-game` launch (`UnrealEditor.exe <project> -game`) was unreliable for captures (missing actors, wrong
+  camera). Use scripted PIE or the packaged exe.
+- **Screen captures of a packaged build** (look comparisons per render variant): launch the exe with the variant's
+  `-DPCVars`, wait for a known log line, call `SetProcessDPIAware()` first (otherwise a 150%-scaled 4K desktop captures
+  as 2560x1440), then grab the screen. Before every grab, check the foreground window belongs to the game **by process
+  name**: the root `<Game>.exe` is a launcher that starts `<Game>\Binaries\Win64\<Game>.exe`, so the launcher's PID
+  never owns the window. Abort or retry if another window (tray popup, Explorer) is in front.
+- **Key-injection tests** (`gen/test/keytest.ps1`): injected keys go to whatever window has focus, and
+  `SetForegroundWindow` from a background script silently fails while the user works in another app. One test typed
+  into a chat window. The helper finds the game window by process, brings it forward with `AttachThreadInput`, checks
+  `GetForegroundWindow()` before every key down, and releases everything and aborts on any change. It refuses to run
+  without `-Approved`: ask the director before every run.
+- **Image comparison pages lie on a scaled desktop.** A "1:1" page at 150% Windows scaling enlarged every crop 1.5x
+  with nearest-neighbour, which looked pixelated and was mistaken for the game's quality. Size images to
+  `naturalWidth / devicePixelRatio` in a small script and say on the page that it is true 1:1.
+- **Logging timed states:** when a timed state ends (a grab, a stun), log how long it lasted and why it ended. It turns
+  "it doesn't work" into a measurable report.
+
+## G. Rare launch crashes: method (from a prototype)
+
+A packaged build hung the GPU (`DXGI_ERROR_DEVICE_HUNG`) at frames 40-57 of ~2.5% of launches, never mid-game.
+1. **Reproduce it the way it happens:** a real full-screen window at the real resolution, plus any capture tool that
+   was running. 40 offscreen launches (`-RenderOffScreen`) were all clean: a different present path.
+2. **Read the faulting shader first.** With NVIDIA Aftermath, the decode's `Active Shaders > Function` named the same
+   shader every time (`CullPerPageDrawCommandsCs`, virtual shadow map culling for non-Nanite meshes), while the last
+   breadcrumbs pointed at an innocent async compute pass.
+3. **Size the run count to the rate:** zero crashes in N runs means 95% confidence only when (1 - rate)^N < 0.05,
+   about 120 runs at 2.5%. 60 clean runs happen by chance ~22% of the time at that rate; a "fix" committed on 60 runs
+   then crashed 2/60 in the shipped build.
+4. **Confirm on the shipped build**, not only with a command-line cvar.
+Unresolved on the prototype; candidates were VSM off (the faulting shader never runs) or delaying VSM after load.
+Test whether players see it at all: every recorded crash had a screen recorder running.
 
 ## Kit decisions: fit and conflicts
 
@@ -200,9 +241,9 @@ Select-String $log -Pattern '\[PROOF\]|Log file closed'   # proof lines + clean 
 
 ## Verified against
 
-- GIZMO 2026-10-24: `C:\dev\SmokeTest\Saved\Logs\` (names, backups, `_2` instance, UTC timestamps),
+- GIZMO 2026-10-24: `<Project>\Saved\Logs\` (names, backups, `_2` instance, UTC timestamps),
   `Saved\Crashes\UECC-*` (an ensure in `AssetManagerTypes.cpp`, `UnknownFunction` frames, no engine PDBs),
-  packaged `C:\dev\Builds\SmokeTest\Windows\` (log path, staged PDB, no CrashReportClient, 0 errors).
+  packaged `<Build>\Windows\` (log path, staged PDB, no CrashReportClient, 0 errors).
 - Engine source/config 5.8: `DrawDebugHelpers.h`, `EngineDefines.h`, `AssertionMacros.h`, `VisualLogger.h`,
   `Engine.h` (AddOnScreenDebugMessage), `CheatManager.h`, `GameplayDebuggerConfig.cpp` (keys),
   `LaunchEngineLoop.cpp` (`-seconds`), `GenericPlatformOutputDevices.cpp` (`-LOG=`/`-ABSLOG=`),

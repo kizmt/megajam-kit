@@ -18,7 +18,7 @@ our Nanite props. Use PCG for rule-based placement only; hero props are placed b
 - **Gotcha:** `PCGToolset` defaults its example/primitive/instant folders to `/PCGPrimitives/Examples`,
   `/PCGPrimitives/Primitives`, `/PCGPrimitives/Instants` (`PCGToolsetSettings.cpp`). If **PCGPrimitives is not
   enabled**, `Skill_PCGGraphGeneration` gets empty example/primitive lists and the agent falls back to raw native
-  nodes. Enable PCGPrimitives in the jam project (Edit > Plugins, restart) before any PCG work. The SmokeTest
+  nodes. Enable PCGPrimitives in the jam project (Edit > Plugins, restart) before any PCG work. The kit's test project
   project currently enables only `ModelContextProtocol`, `AllToolsets`, `ModelingToolsEditorMode`.
 - Folders are configurable: Project Settings > Plugins > PCG Toolset (Subgraph / Example Graph / Instant Graph
   Directories). Add `/Game/PCG` to Example Graph Directories once we have our own graphs worth reusing.
@@ -210,7 +210,7 @@ for Scott to review a batch of generated props side by side.
 
 - Plugin status/defaults: `.uplugin` files under `C:\Program Files\Epic Games\UE_5.8\Engine\Plugins\` (`PCG\`,
   `PCGInterops\PCGGeometryScriptInterop\`, `Experimental\PCGPrimitives\`, `Experimental\Toolsets\PCGToolset\`,
-  `Experimental\Toolsets\AllToolsets\`); `C:\dev\SmokeTest\SmokeTest.uproject`.
+  `Experimental\Toolsets\AllToolsets\`); `<Project>.uproject`.
 - Toolset tools/defaults: `...\PCGToolset\Source\PCGToolset\Public\PCGToolset.h`, `PCGSpatialToolset.h`,
   `PCGToolsetSkills.h`, `Private\PCGToolsetSettings.cpp`.
 - Skill rules: UTF-16 text inside `...\PCGToolset\Content\Skills\Skill_*.uasset`.

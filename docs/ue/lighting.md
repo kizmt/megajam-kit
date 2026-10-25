@@ -40,7 +40,7 @@ no Lightmass/baking, Nanite on static props, one opaque master material, few sha
 | Extend default luminance range in Auto Exposure (`r.DefaultFeature.AutoExposure.ExtendDefaultLuminanceRange`) | True | Needed for physical lux; PPV fields become EV100 |
 | MegaLights (`r.MegaLights.EnableForProject`) | 0 (default) | See MegaLights below |
 
-- SmokeTest (5.8 project on GIZMO) already has all of the above, plus `r.Substrate=True` and local-exposure
+- The kit's test project (5.8, Blank C++) already has all of the above, plus `r.Substrate=True` and local-exposure
   contrast 0.8. Check `Config/DefaultEngine.ini` `[/Script/Engine.RendererSettings]` on the jam project.
 
 ## Lumen: how it works (just enough)
@@ -162,7 +162,7 @@ Groups: `sg.ResolutionQuality` (= screen percentage), `sg.ViewDistanceQuality`, 
 
 - Decide one mode per level and write it down. Read the PPV first (skill rule).
 - **Auto** (`AutoExposureMethod` = Auto Exposure Histogram, default): set `AutoExposureMinBrightness` and
-  `AutoExposureMaxBrightness` (EV100 when Extend range is on) to a narrow range (e.g. 8-12 outdoors) so it can't
+  `AutoExposureMaxBrightness` (EV100 when Extend range is on) to a narrow range (e.g. 8-12 outdoors with a non-physical sun; with a physical ~100,000 lux sun the scene sits near EV100 14, so clamp around it) so it can't
   wander; `AutoExposureBias` (Exposure Compensation) only -2..+2. Speed Up high, Speed Down low.
 - **Fixed**: Min = Max (disables adaptation) or Method = Manual. With physical sun lux and no auto range, large
   negative bias is needed (direct sun -10 to -14 EV, sunset -1 to -3; table in the skill).
@@ -186,6 +186,56 @@ Groups: `sg.ResolutionQuality` (= screen percentage), `sg.ViewDistanceQuality`, 
   saturated LUT; post-process material (Domain = Post Process) for outlines/posterize - one material, keep cheap.
 - Don't use Lumen `Diffuse Color Boost` above 2 to fake vibrancy (brightens reflections too).
 
+## No-Lumen look (stylized render path)
+
+Only relevant if the game uses the no-Lumen path. Learned on a stylized 3D platformer race prototype (12 characters running an obstacle course, glossy pastel look), on a bright
+floor. What went wrong without Lumen and the fixes that worked:
+
+- **Shadows turn sky-blue**, because nothing bounces the warm floor into them. Fix: tint the Sky Light warm
+  (`light_color` about (1, 0.82, 0.88)) and use a neutral post-process shadow gain (about (0.98, 0.94, 0.98)), not a
+  blue-boosting one. That moved shadows from blue (hue ~240) back to lilac (~292).
+- **Undersides, legs and sides of glossy characters go dark and "dirty"**: no floor bounce, and surfaces facing
+  sideways or down reflect a black lower hemisphere.
+  - **Sky Light lower hemisphere as the bounce stand-in.** Turn on "Lower Hemisphere Is Solid Color"
+    (`bLowerHemisphereIsBlack`), Real Time Capture on, and set `LowerHemisphereColor` to the floor colour scaled to
+    radiance. The capture shader does `lerp(SceneColor, LowerHemisphereColor.rgb, LowerHemisphereColor.a)`
+    (`ReflectionEnvironmentShaders.usf`), so the RGB is raw radiance in nits (~8000 looked right with a 100,000 lux
+    sun) and **alpha is the blend weight: set A = 1** (`FLinearColor * float` also scales alpha, so set A after
+    scaling). Call `RecaptureSky()` after changing it at runtime. Too strong flattens characters; tune by capture.
+  - **Sphere Reflection Captures** over the play area so glossy surfaces reflect the real floor and props.
+  - Slightly higher roughness on glossy characters (+0.1) hides what is left.
+  - An upward-facing, non-shadowing directional fill only lights faces pointing straight down; it does little for
+    vertical faces (the lower hemisphere does that). If you add one, set the sun's `forward_shading_priority = 1`,
+    or the editor shows "Multiple directional lights are competing" (editor-only message, ties go to intensity).
+- **Reflection captures without baking:** with no precomputed lighting, `LevelEditorSubsystem.build_light_maps(
+  QUALITY_PREVIEW, True)` returns False ("Skipping Lighting Build") but still builds the reflection captures and writes
+  `<Map>_BuiltData`. **Save the level afterwards**, or the captures are black in a packaged build.
+- Turning Lumen GI off switches **SSAO** on (it was skipped under Lumen): `r.AmbientOcclusionLevels=0`, and
+  `r.DistanceFieldAO=0`, unless you want the look.
+
+## Lighting gotchas (found on a prototype; general UE behaviour)
+
+- **Huge or very thin meshes break Lumen's sky occlusion.** A 40 km x 4 m backdrop disc got a distance field far
+  coarser than the mesh, so Lumen treated the space above it as blocked and every shadow on it was black. Backdrop
+  shapes made from overlapping spheres (interior faces, e.g. cloud puffs) do the same. Fix: Affect Distance Field
+  Lighting off on those components (`affect_distance_field_lighting=False`).
+- **The Basic level's height fog has black inscattering**, which draws a dark band at the horizon behind bright
+  backdrops. For a bright pastel sky: fog `sky_atmosphere_ambient_contribution_color_scale` ~2.5 and SkyAtmosphere
+  `sky_luminance_factor` ~2.5.
+- **Aerial perspective view distance scale** (SkyAtmosphere): UI range up to 3, default 1. Higher values wash the far
+  end of a level out to grey; keep 1-2 for a crisp stylized look and judge it at the far end, not at the start camera.
+  Height fog density and bloom have the same effect; a prototype got its far colours back with fog x0.3 and bloom off.
+- **Physical sun and Lumen cached lighting:** with a ~100,000 lux sun the scene settles near EV100 14. The default
+  `r.EyeAdaptation.CachedLightingPreExposure=4` covers only about EV -8..12, so Lumen's cached lighting and the sky
+  capture clip (black shadows, on-screen "Cached lighting in Lumen ... clipped"). `=8` (about -4..16) fixes it.
+- **Lumen reflection cap:** `LumenMaxRoughnessToTraceReflections` in the post-process volume and the cvar
+  `r.Lumen.Reflections.MaxRoughnessToTrace` do the same thing, but the cvar wins whenever it is >= 0
+  (`LumenReflections.cpp`). Prefer the PPV (per level, visible in the editor) and don't put the cvar in an ini.
+  0.25 saved ~1 ms on a glossy scene with no visible loss of gloss.
+- **Re-running a lighting script changes captures on its own** (sky recapture), by more than many real changes
+  (11% of pixels vs 0.4-2.7% for the change being tested). A/B captures need identical steps and a control run.
+- `unreal.Color(...)` positional order is (b, g, r, a) in 5.8 Python: always pass keywords.
+
 ## Measuring
 
 - `stat unit` first, then `stat gpu`. Lumen shows as **Lumen Scene Lighting**, **Lumen Screen Probe Gather**,
@@ -203,7 +253,7 @@ Groups: `sg.ResolutionQuality` (= screen percentage), `sg.ViewDistanceQuality`, 
 - Code defaults (`r.DynamicGlobalIlluminationMethod` 0, `r.ReflectionMethod` 2, `r.Shadow.Virtual.Enable` 0,
   `r.Lumen.HardwareRayTracing` 1, `r.MegaLights.EnableForProject` 0 "Experimental"): `Engine\Source\Runtime\Renderer\Private\`
   `IndirectLightRendering.cpp`, `VirtualShadowMaps\VirtualShadowMapArray.cpp`, `Lumen\LumenHardwareRayTracingCommon.cpp`, `MegaLights\MegaLights.cpp`.
-- Template defaults: `C:\Program Files\Epic Games\UE_5.8\Templates\TP_Blank\Config\DefaultEngine.ini`; project values: `C:\dev\SmokeTest\Config\DefaultEngine.ini`.
+- Template defaults: `C:\Program Files\Epic Games\UE_5.8\Templates\TP_Blank\Config\DefaultEngine.ini`; project values: `<Project>\Config\DefaultEngine.ini`.
 - Scalability table: `C:\Program Files\Epic Games\UE_5.8\Engine\Config\BaseScalability.ini`.
 - PPV field names: `C:\Program Files\Epic Games\UE_5.8\Engine\Source\Runtime\Engine\Classes\Engine\Scene.h`.
 - Light property names: `Engine\Source\Runtime\Engine\Classes\Components\` `SkyLightComponent.h`, `DirectionalLightComponent.h`, `LightComponent.h`.

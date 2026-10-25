@@ -3,9 +3,10 @@
 Most of Epic's world-building pages are hubs; detail lives one level down (to be distilled in the knowledge-base
 session). The decisions below already apply.
 
-## Lighting: Lumen only, no baking
+## Lighting: dynamic only, no baking (Lumen or not by art style)
 
-- **Decision:** dynamic lighting with **Lumen** (global illumination + reflections) and **Virtual Shadow Maps**.
+- **Decision:** dynamic lighting and **Virtual Shadow Maps**. Lumen GI + reflections for realistic looks; for stylized
+  looks no Lumen, with the stand-ins in `lighting.md` "No-Lumen look" (render paths: `performance.md`, SETUP 7b).
   All lights **Movable**. No Lightmass, no "Build Lighting", no Lightmass Importance Volume.
 - Why: no bake time, lighting changes show instantly in screenshots (our verification loop), and Epic's Nanite page says
   to disable lightmap UV generation when not baking.

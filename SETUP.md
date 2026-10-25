@@ -1,6 +1,6 @@
 # New project setup — UE 5.8.4 + Claude Code
 
-Verified on GIZMO (Windows 11, i5-14500, RTX 4060 8 GB, 32 GB) on 2026-10-24 with the SmokeTest project.
+Verified on GIZMO (Windows 11, i5-14500, RTX 4060 8 GB, 32 GB) on 2026-10-24 with the kit's test project.
 Target: ~10 minutes on jam day. Do the steps in order.
 
 ## Machine prerequisites (already done, re-check only)
@@ -9,6 +9,10 @@ Target: ~10 minutes on jam day. Do the steps in order.
 - Visual Studio 2026 (18.10.x) with the "Game development with C++" workload — verified compiling on 5.8.4
 - Git + Git LFS (`git lfs version` → 3.7.1)
 - Claude Code
+- **Windows Smart App Control off** (Windows Security > App & browser control > Smart App Control settings).
+  With it on, freshly compiled editor DLLs get blocked at random ("Bad Image ... 0xc0e90002", then "The game module
+  could not be loaded"). Check: `VerifiedAndReputablePolicyState` under
+  `HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy` is 0. Since the April 2026 update it can be turned back on.
 - Node 24+ (runs the kit's `.ts` scripts directly). Once per machine: `pnpm install` in the kit folder
   (TypeScript + Node types for `pnpm typecheck`; nothing is needed at runtime)
 
@@ -39,7 +43,7 @@ Target: ~10 minutes on jam day. Do the steps in order.
    `Config\DefaultEngine.ini` and confirm:
    `r.DynamicGlobalIlluminationMethod=1` (Lumen), `r.ReflectionMethod=1` (Lumen),
    `r.Shadow.Virtual.Enable=1` (Virtual Shadow Maps), `r.Substrate=True`.
-   Verified on SmokeTest 2026-10-24. If one is missing, ask Claude to fix it rather than changing it by hand.
+   Verified on a test project 2026-10-24. If one is missing, ask Claude to fix it rather than changing it by hand.
 
 ## 3. MCP server (1 min)
 
@@ -100,7 +104,7 @@ The Blank template opens a temporary Open World level (Landscape, World Partitio
    characters, audio, screenshots) write to `<Project>\Generated\`, which `init-repo.ps1` gitignores.
    Never leave it pointing at a practice project on jam day.
 
-Verified 2026-10-24 on SmokeTest: 17 files tracked (0.07 MB), `Main.umap` via LFS, clean status.
+Verified 2026-10-24 on a test project: 17 files tracked (0.07 MB), `Main.umap` via LFS, clean status.
 
 ## 6b. C++ build loop (verified 2026-10-24)
 
@@ -116,19 +120,44 @@ Verified 2026-10-24 on SmokeTest: 17 files tracked (0.07 MB), `Main.umap` via LF
   symbols (they stay in the build folder for crash debugging), so the empty-project zip is 401 MB.
   That is engine baseline: the game's own content has about 600 MB before itch's 1 GB zip limit.
 
-## 7b. Game display + render defaults (Claude applies, 1 min; editor closed)
+## 7b. Game display + render path (Claude applies, 5 min; editor closed)
 
-Measured in `docs/ue/performance.md` (UE defaults 64 fps -> these 120 fps at 4K on the RTX 4060).
+Decide the render path **with the style lock**, before gameplay. Switching later costs a look re-tune. The
+numbers below come from one game, a stylized 3D platformer race prototype (12 characters running an obstacle course, glossy pastel look), and an empty test level: re-measure with `bench.ts` for yours.
+Rule of thumb: try the no-Lumen path for flat/stylized looks and many moving characters; keep Lumen when the look
+depends on bounce light (interiors, realism, mood lighting).
 
+**Both paths**
 - `Config/DefaultEngine.ini`:
   - under the existing `[/Script/Engine.RendererSettings]`: `r.DefaultFeature.MotionBlur=False`
   - under the existing `[/Script/Engine.UserInterfaceSettings]`: `bAllowHighDPIInGameMode=True` (true 4K, not 2560x1440 stretched)
+  - `[SystemSettings]`: `r.Tonemapper.Sharpen=0` (sharpening an upscaled image adds halos, not detail)
 - `Config/DefaultScalability.ini`: `[AntiAliasingQuality@3]` and `[AntiAliasingQuality@Cine]` each `r.TSR.History.ScreenPercentage=100`
-- `Config/DefaultGameUserSettings.ini`: `[ScalabilityGroups]` with `sg.GlobalIlluminationQuality=2`,
-  `sg.ReflectionQuality=2`, `sg.ShadowQuality=2`
-- `Config/DefaultInput.ini`: add `+ConsoleKeys=F10` after `+ConsoleKeys=Tilde` (backtick is a dead key on the NZ layout)
-- Level: delete the template's **VolumetricCloud** actor (~2.5 ms at 4K).
-- Check: package, then `node gen/perf/bench.ts --res native --variant "check:"` -> expect ~120 fps on the starting level.
+  (200% costs ~3 ms at 4K and is only marginally cleaner)
+- `Config/DefaultInput.ini`: add `+ConsoleKeys=F10` after `+ConsoleKeys=Tilde` (backtick is a dead key on some layouts, e.g. NZ)
+- Level: delete the template's **VolumetricCloud** actor (~2.5 ms at 4K). Keep SkyAtmosphere's aerial perspective view
+  distance scale at 1-2 (higher washes out the far end).
+
+**No-Lumen path (stylized looks)**
+- `[/Script/Engine.RendererSettings]`: `r.DynamicGlobalIlluminationMethod=0`, `r.ReflectionMethod=2` (SSR),
+  `r.AntiAliasingMethod=4` (TSR)
+- `[SystemSettings]`: `r.ScreenPercentage.Default.Desktop.Mode=0`, `r.ScreenPercentage.Default=58.33` (1260p internal on
+  4K), `r.AmbientOcclusionLevels=0` (SSAO switches on without Lumen), `r.DistanceFieldAO=0`, `r.AllowOcclusionQueries=0`
+  (small open scenes: frees ~1 ms of render thread)
+- Lighting stand-ins for the missing bounce (`docs/ue/lighting.md` "No-Lumen look"): sky light lower hemisphere in the
+  floor colour, Sphere Reflection Captures over the play area, a warm sky light tint for lilac rather than blue shadows.
+- On the prototype: 122 fps avg / 117 p95 at 4K, vs ~101 / 95 with Lumen, and smoother ground under moving characters.
+
+**Lumen path (looks that need bounce light)**
+- Keep the template's Lumen GI and reflections. `Config/DefaultGameUserSettings.ini`: `[ScalabilityGroups]` with
+  `sg.GlobalIlluminationQuality=2`, `sg.ReflectionQuality=2`, `sg.ShadowQuality=2` (High: ~+20 fps vs Epic).
+- With a physically bright sun (~100,000 lux) add `r.EyeAdaptation.CachedLightingPreExposure=8` under
+  `[/Script/Engine.RendererSettings]`, or Lumen's cached lighting clips (black shadows, on-screen "clipped" warning).
+- Cap traced reflections in the post-process volume (`LumenMaxRoughnessToTraceReflections` 0.25): ~1 ms saved on
+  glossy scenes. Don't also set the cvar in an ini, or it silently overrides the level.
+
+**Check (both):** package, then `node gen/perf/bench.ts --res native --variant "check:"`. Expect 120+ fps (avg) on a
+light level with either path; the gap opens up with content.
 
 ## 8. Editor performance (re-check, 1 min)
 
@@ -138,7 +167,28 @@ Most are per-user and carry over between projects; confirm on jam day.
 1. Edit → Editor Preferences → Performance → Viewport Resolution:
    - "Override project's default screen percentage mode for realtime editor viewports using desktop rendering" = **Manual**
    - Tick "Override project's manual screen percentage", set "Editor viewport screen percentage" = **60** (75 if too soft)
-2. Same page: "Use Less CPU when in Background" on.
+2. Same page: "Use Less CPU when in Background" on. Scripted PIE runs need it off (the editor drops to ~3 fps in the
+   background): Claude turns `bThrottleCPUWhenNotForeground` off for the run (`docs/ue/editor-scripting.md`).
 3. Viewport toolbar → speedometer icon (Performance & Scalability) → **Viewport Scalability → High**.
    Switch to Epic only when judging final visuals. Untick **Realtime Viewport** (Ctrl+R) when idle.
 4. Edit → Editor Preferences → Loading & Saving → **Auto Save** on (10 min).
+
+## 9. Shipping: itch.io upload (once per machine, before the jam)
+
+Do this before jam day so the first real upload isn't on the final night.
+
+1. **butler** (itch.io's upload tool): download the Windows build from https://itchio.itch.io/butler
+   (direct channel: `https://broth.itch.zone/butler/windows-amd64/LATEST/archive/default`), unzip to `C:\butler`,
+   add it to the **user** PATH, check `butler version`. Shells that were already open (including Claude's) don't see
+   the new PATH: call `C:\butler\butler.exe` directly or restart them.
+2. `butler login` once (opens a browser). The credentials file `%USERPROFILE%\.config\itch\butler_creds` is a secret;
+   revoke at itch.io/user/settings/api-keys.
+3. Create the game page as a **draft** early (itch.io/game/new). butler can't push to a page that doesn't exist.
+4. Copy the kit's `scripts\upload.ps1` into the project's `scripts\`. `.\scripts\upload.ps1 -Target user/game` is a dry
+   run (checks the zip, build stamp, butler, login, no `Saved/` in the zip, and prints the commands);
+   `-Push` uploads. It pushes the **zip**, never the build folder. A channel name containing `windows` tags the platform.
+5. Game page text: the exe is unsigned. Add a line like *"Unsigned build: Windows SmartScreen may need More info > Run
+   anyway. If Smart App Control is on, Windows blocks the game; it can only be turned off machine-wide (Windows Security >
+   App & browser control)."* Code signing (Microsoft Artifact Signing, or an OV certificate) removes this but needs
+   identity verification of 1-20 business days; see `docs/ue/production.md`.
+6. Trailer: the jam wants a link (YouTube, unlisted is fine), not an upload. Recipes in `docs/ue/cinematics-video.md`.

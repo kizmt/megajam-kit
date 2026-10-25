@@ -94,7 +94,7 @@ and Tripo's API docs (list at the bottom). Anything not checked is marked (unver
 - **UI alternative:** right-click an animation > *Retarget Animation Assets*. With "Auto Generate Retargeter" (default on)
   it builds both IK Rigs + retargeter, and *Export Retarget Assets* saves them.
 
-Script outline (API names from `C:\dev\SmokeTest\Intermediate\PythonStub\unreal.py`; end-to-end run unverified):
+Script outline (API names from `<Project>\Intermediate\PythonStub\unreal.py`; end-to-end run unverified):
 
 ```python
 at = unreal.AssetToolsHelpers.get_asset_tools(); F = "/Game/Characters/Hero"
@@ -222,7 +222,7 @@ and a 93-hour budget. **Skip.** At most, migrate a few of its AnimSequences and 
 ## Recommended path for a generated character
 
 **Automated (2026-10-24):** `gen/character.ts` runs steps 1-9 below in one command (~4 min, 90 Tripo credits) and
-prints the one manual step (8). Usage, options and the failure modes found while building it: `PIPELINE.md`
+includes step 8 (scripted since 2026-10-25: `gen/unreal/abp.ts`). Usage, options and the failure modes found while building it: `PIPELINE.md`
 "Characters" and "Hard-won facts". Material differs from step 4 below: PBR maps come from the textured model,
 not the rig (the rig FBX wires its colour image as the normal map). The steps stay here as the explanation.
 
@@ -243,7 +243,7 @@ not the rig (the rig FBX wires its colour image as the normal map). The steps st
    play `MM_Idle` and a jog, fix the retarget pose/root scale if arms clip or feet float.
 7. `[S]` `run_batch_retarget` on `ABP_Unarmed` + `AM_ComboAttack` (+ any extra montages/anims), referenced assets on,
    suffix `_<Name>`.
-8. `[UI]` Open the new ABP: delete the `CR_Mannequin_FootIK` Control Rig node (confirmed needed for Tripo
+8. `[S]` In the new ABP, delete the `CR_Mannequin_FootIK` Control Rig node (confirmed needed for Tripo
    `--spec unreal` rigs: without it the feet twist). Wire Slot 'DefaultSlot' → Output Pose. Compile.
    Optional `[S]`: reparent to the C++ `UAnimInstance` parent.
 9. `[S]` BP subclass of the C++ Character: mesh = `SK_<Name>`, Anim Class = new ABP, mesh offset (Z = -capsule
@@ -255,6 +255,49 @@ not the rig (the rig FBX wires its colour image as the normal map). The steps st
 Budget: steps 2-10 are ~1-2 h for the first character (estimate), mostly in step 6 visual fixes. Later characters reuse
 `IK_Manny` and the script.
 
+## Lessons from a prototype: stylized (non-human) characters
+
+Only relevant for non-human proportions. From a stylized 3D platformer race prototype (12 characters running an obstacle course, glossy pastel look): a short, stubby, rounded character
+(~1.2 m, short arms and legs) built with the kit pipeline. Human-proportioned characters retarget cleanly without this.
+
+- **Tripo's auto-rig can be wrong for non-human proportions.** Diagnosis in Blender showed the shoulder joint ~15 cm
+  (13% of height) above the arm's centre line, the arm chain ending mid-arm, the outer arm weighted to finger bones,
+  and stray head/hand/thigh weights on the body. Result: arms swing around a pivot above them, shear through the body
+  and crumple when fingers curl. Fix without credits in Blender: move the arm bones onto the mesh centre line,
+  reskin the arm along upperarm/lowerarm/hand with no finger weights, strip arm/leg weights from the body, then
+  rebuild with `character.ts --rig <fixed.fbx> --pbr <glb>`. Check joint-to-mesh offsets before importing any
+  non-human character.
+- **Always smooth after scripted weight edits.** Hard cut-offs (100% arm bones, stripped body weights) left 676 edges
+  with a weight step above 0.5 (the original rig: 121), which creased and blotched the body when bones moved. A
+  12-iteration Laplacian smoothing of all weights except the arm core and lower legs, then top-4 influences and
+  renormalise: 243 edges, p99 step 0.38. Report the step statistics and check a bent pose with a reflective matcap.
+- **Human animations on a stubby body look stiff; tune the retarget, then add procedural motion.** 5.8's IK
+  retargeter default op stack has no IK Chains op (Pelvis Motion, FK Chains, Run IK Rig, Root Motion, Remap Curves),
+  so stride warping has no goals. Lengthen the stride with the FK Chains op's per-chain `rotation_alpha` (edit via
+  `rc.get_op_controller(i).get_settings()` / `set_settings()`, then rerun the batch retarget): legs 1.6, arms 0.7 worked,
+  plus speeding up the run animation with movement speed (up to 1.8x). Then add a procedural waddle, lean, bounce
+  and squash-and-stretch on jumps and landings, with all amounts in the tuning DataAsset.
+- **Procedural bone edits in C++ with no graph logic: an anim instance proxy.** Override
+  `FAnimInstanceProxy::Evaluate_WithRoot`, call `EvaluateAnimationNode_WithRoot`, then edit `Output.Pose` (use `FCSPose`
+  for component space); read game state in `PreUpdate` (game thread); return the proxy from `CreateAnimInstanceProxy`.
+  The ABP only needs reparenting to the C++ anim instance class. Use it for look-at, reach, lean and squash.
+- **Judge reach and attack poses from the gameplay camera.** A grab that pointed the hands straight at the target was
+  hidden behind the character's own body from a chase camera. Wrapping the hands round the target's sides and
+  stretching the arms (cartoon style, capped ~2.5x and eased) made it read.
+- **Re-running a batch retarget with `overwrite_existing_files=True` breaks the cook.** The anims are overwritten in
+  place, but the blend space is saved pointing at temporary `<anim>_<Suffix>1` packages that never exist, and an
+  orphan `ABP_..._<Suffix>1` appears. The editor shows nothing wrong; the cook fails ("BlendSpace ... has a sample with
+  no/invalid animation"). Fix: re-point each blend space `sample_data` entry to the real retargeted anim (same order as
+  the source blend space) and delete the orphan. Grep the anim folder for `_<Suffix>1` before packaging.
+- **Single-node animation in editor scripts:** call `override_animation_data` only. Setting `animation_mode =
+  ANIMATION_SINGLE_NODE` as a raw property first makes `SetAnimationMode` see no change, so the mesh stays in T-pose.
+- **The camera collides with characters by default** (Pawn and CharacterMesh profiles block `ECC_Camera`). Characters
+  behind the player pull the spring arm into the player's back. Set the capsule and mesh to ignore `ECC_Camera` in
+  the character constructor.
+- **Per-character colour variants from one model:** a tint mask in the base colour's alpha (master material v3,
+  `UseTintMask`) and one tintable material instance whose children change only `Tint`. Generated "off-white" bodies
+  come out beige, so divide each target tint by the measured body colour (linear) or every variant darkens.
+
 ## Verified against
 
 - Toolset functions and their options (FBX-only legacy factory, `save=False`): `Engine/Plugins/Experimental/Toolsets/EditorToolset/Content/Python/editor_toolset/toolsets/skeletal_mesh.py`, `.../asset.py` (`import_asset`).
@@ -264,7 +307,7 @@ Budget: steps 2-10 are ~1-2 h for the first character (estimate), mostly in step
 - IK Rig / Retargeter controller APIs, `ApplyAutoGeneratedRetargetDefinition`, `ApplyAutoFBIK`, `AutoMapChains`, `AutoAlignAllBones`: `Engine/Plugins/Animation/IKRig/Source/IKRigEditor/Public/RigEditor/IKRigController.h`, `.../RetargetEditor/IKRetargeterController.h`.
 - `RunBatchRetarget` + inputs struct, `DuplicateAndRetarget` deprecated 5.8, ABP/Montage handling: `.../RetargetEditor/IKRetargetBatchOperation.h`, `IKRigEditor/Private/.../IKRetargetBatchOperation.cpp`.
 - Template list, prefix stripping, no fallback: `IKRigEditor/Private/RigEditor/IKRigAutoCharacterizer.cpp`.
-- Python names (snake_case methods, `AutoMapChainType.FUZZY`, `RetargetSourceOrTarget.SOURCE/TARGET`, factories, `BlendSample`, `reparent_blueprint`): `C:\dev\SmokeTest\Intermediate\PythonStub\unreal.py`.
+- Python names (snake_case methods, `AutoMapChainType.FUZZY`, `RetargetSourceOrTarget.SOURCE/TARGET`, factories, `BlendSample`, `reparent_blueprint`): `<Project>\Intermediate\PythonStub\unreal.py`.
 - `NativeUpdateAnimation`, `NativeThreadSafeUpdateAnimation`, `TryGetPawnOwner`, `Montage_Play`: `Engine/Source/Runtime/Engine/Classes/Animation/AnimInstance.h`. URO/visibility tick: `.../Components/SkinnedMeshComponent.h`.
 - Template content and ABP internals (state machines, slot, vars, Control Rig bones): `Templates/TemplateResources/High/Characters/Content/Mannequins/` (strings of `ABP_Unarmed.uasset`, `CR_Mannequin_FootIK.uasset`); montages in `Templates/TP_ThirdPerson/Content/Variant_*`; `CombatCharacter.cpp`; capsule/MaxWalkSpeed in `TP_ThirdPersonCharacter.cpp`.
 - Tripo rig specs, rig models, presets, limits: Tripo API docs (below) and `tripo docs --topic examples/animation` on GIZMO, 2026-10-24.

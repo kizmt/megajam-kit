@@ -175,6 +175,17 @@ Mesh->OnComponentHit.AddDynamic(this, &AMyProp::OnHit);   // in BeginPlay (not t
   or via generic object/property tools. `DataflowAgent` can edit Dataflow graphs (Dataflow-driven fracture is possible
   in principle; untested, don't plan on it).
 
+## Collision lessons (from a prototype)
+
+- **Imported generated props get one auto convex hull, and it fills openings.** An arch's single hull walled off the
+  finish line; only characters running wide around the posts could finish. For anything passed through or under
+  (arches, gates, tunnels), set complex-as-simple (if low-poly) or author box shapes, and check with a line trace
+  through the opening.
+- **Meshes built with Geometry Script have no simple collision**, so characters fall through them
+  (`editor-scripting.md`). Complex-as-simple is fine for a few low-poly walkable pieces; never for dense generated meshes.
+- **Match collision to the visible shape** after swapping a mesh (e.g. a shorter bumper): a taller hidden collider
+  makes jumps feel unfair.
+
 ## Verified against
 
 - 5.8.4 headers on GIZMO: `PrimitiveComponent.h` (AddImpulse/AddForce/AddRadialImpulse/AddTorqueInRadians, SetUseCCD,

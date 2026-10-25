@@ -11,6 +11,10 @@ Scott is the director: he owns concept, feel, art direction and sign-off. Claude
   Run generators from the kit folder: `cd C:\dev\megajam-kit; node gen\asset.ts ...`. Their output goes to the
   project (`<Project>\Generated\`) via `MEGAJAM_PROJECT` in the kit's `.env`. Check it names this project first.
 - Project paths (`scripts/`, `PROGRESS.md`, `art/`, `devlog/`, `Source/`, `Config/`) are relative to the project.
+- **Any command that writes a project file uses an absolute path** (`C:\dev\<Project>\...`, `git -C <Project>`),
+  even after a `cd`. The session's working directory is often the kit, permission checks resolve relative paths
+  against it, and the deny rule then blocks the whole command. Compute values first, then write them (an
+  expression inside a write command can be read as a relative target path).
 - At the start of a session: read `PROGRESS.md` if it exists, then `C:\dev\megajam-kit\docs\ue\README.md`.
 - **The kit is read-only for game sessions.** Read it and run its scripts, but never edit, commit or push
   anything in `C:\dev\megajam-kit` (the project's settings deny edits there). Kit suggestions go in the project's
@@ -61,13 +65,15 @@ Scott is the director: he owns concept, feel, art direction and sign-off. Claude
   hard-coded. Scott tunes feel without a recompile.
 - Live Coding for function bodies only. New UPROPERTY/UFUNCTION/UCLASS = close editor, full build.
 - Fix compile errors before anything else. Never work around a broken build.
-- Target the RTX 4060 (8 GB VRAM): **100+ fps at 4K output** (1080p internal, TSR) in a packaged build,
-  using the render defaults in `docs/ue/performance.md` (SETUP step 7b). Prefer a stylized look; check
-  `stat unit` and `stat gpu` after big visual changes, and run `gen/perf/bench.ts` on a packaged build per milestone.
+- Target the RTX 4060 (8 GB VRAM): crisp at 4K output and **100+ fps on the slowest 5% of frames** in a packaged
+  build. Run `gen/perf/bench.ts` on a packaged build per milestone.
+- **Choose the render path (Lumen or not, internal resolution) with the style lock, not mid-game**: SETUP step 7b
+  and `docs/ue/performance.md` "Render paths". Compare candidates on the same frame at true 1:1, including something
+  moving. Never SMAA/FXAA below 100% screen percentage (lower detail, not crisper).
 - C++ must compile with **zero UHT warnings** (UHT treats warnings as errors). `.generated.h` is the last
   include; a delegates-only header needs `UDELEGATE`. See `docs/ue/production.md`.
 - **Name assets per `docs/ue/naming.md`** (Epic prefixes + kit extensions) and keep the folder layout there.
-- **Lighting is Lumen-only, all lights Movable, no baking** (`docs/ue/worldbuilding.md`). PCG work follows Epic's
+- **All lights Movable, no light baking** (`docs/ue/worldbuilding.md`); Lumen or not per the render path. PCG work follows Epic's
   agent workflow there (load the PCG skill first, adapt example graphs, plan before executing).
 - **Beta/Experimental features** follow `docs/ue/features.md`: welcome when they earn their place, never first used on jam day.
 - **Follow `docs/ue/performance.md`** (budgets, Nanite, one master material, tick off by default, pooling,
@@ -135,6 +141,13 @@ add an entry to the project's `KIT_NOTES.md` in the same round (not to the kit i
 - After gameplay changes: run PIE, capture a short clip or screenshot sequence, check the Output
   Log for errors and warnings.
 - Never claim something works without a capture or a log line proving it.
+- **Test the feel, not the binding**: a player action is done when it reads from the gameplay camera, and Scott has
+  played it. Test input with real input, not autoplay hooks. **Ask Scott before every key-injection run** and use
+  `gen/test/keytest.ps1` (it aborts if the game loses focus). Details: `docs/ue/gameplay.md`, `docs/ue/debugging.md` F.
+- **Performance numbers come from `gen/perf/bench.ts` on a packaged build**, not editor `stat` (a background editor
+  throttles to ~3 fps). Check the machine is free first (`nvidia-smi`, foreground app); if not, ask.
+- **Screenshots:** downscale to ~1600 px and read at most 2 per step (full 4K reads have caused API errors); compare
+  numerically before looking. Rare crashes need enough runs to prove a fix (`docs/ue/debugging.md` G).
 - Kit maintenance only (not game sessions): kit scripts (`gen/**/*.ts`) are strict TypeScript run directly
   by Node 24 (type stripping: no enums, namespaces or parameter properties; `import type`; `.ts` in import paths). After changing one, run
   `pnpm typecheck` in the kit (must pass) and run the script for real. Type external results at the
@@ -142,9 +155,12 @@ add an entry to the project's `KIT_NOTES.md` in the same round (not to the kit i
 
 ## Shipping
 
-- Package a Win64 development build at least once per day from day 2 (`scripts/package.ps1`).
-- Zip as `TeamName_GameName.zip`, under 1 GB, push with butler.
-- Video: 30–60 s, 1920×1080 or higher, gameplay in the first 5 seconds, English only.
+- Package a Win64 development build at least once per day from day 2 (`scripts/package.ps1`). Show its build stamp
+  in a corner and log it at startup (`docs/ue/production.md`).
+- Zip as `TeamName_GameName.zip`, under 1 GB. Upload **the zip** with `scripts/upload.ps1`, never the build folder
+  (its `Saved/` holds local paths and the Windows user name). The exe is unsigned: note it on the page (`SETUP.md` 9).
+- Video: 30–60 s, 1920×1080 or higher, gameplay in the first 5 seconds, English only, with sound
+  (`docs/ue/cinematics-video.md`).
 
 ## Jam compliance
 

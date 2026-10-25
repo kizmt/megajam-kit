@@ -49,7 +49,7 @@ Jam rules forbid shipping a lightly modified template, so take the patterns belo
   choice: play the montage with `PlayAnimMontage`. While the character walks or falls, the Z axis of root motion is
   ignored and gravity still applies. Root-motion modes push the anim graph update onto the game thread, which costs CPU.
 
-## Verified recipe: third-person player (built and play-tested in SmokeTest, 2026-10-24)
+## Verified recipe: third-person player (built and play-tested in a test project, 2026-10-24)
 
 Write it fresh in the jam project (no pre-jam gameplay code in the kit); this is the layout that worked first time.
 Expect ~15 min including one full build.
@@ -242,6 +242,16 @@ public:
   map is a classic "works in PIE, black screen in build" bug (unverified for 5.8 UI wording).
 - To restart the level: `OpenLevel` with the current level name. Reset the GameMode state rather than relying on
   leftovers.
+
+## Verification lessons (from a prototype)
+
+- **Test the feel, not the binding.** A grab "worked" in logs but held 0.03-0.97 s with almost no visual change, so the
+  player reported it broken. Done means: visible from the gameplay camera within ~0.2 s, lasts long enough to read,
+  ends for a logged reason (log duration and reason when a timed state ends).
+- **Autoplay hooks are great for captures and benchmarks but bypass input.** Keep an autoplay cvar (the player driven
+  by bot logic) and test input separately with real keys (`docs/ue/debugging.md` F).
+- **After any scripted level rebuild, run a full autoplay playthrough**: rebuilds can silently break references, and
+  a prototype's characters ran back to the start for a whole round before anyone noticed.
 
 ## Verified against
 

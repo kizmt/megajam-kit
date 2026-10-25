@@ -4,7 +4,7 @@ The goal: never dig a hole we can't climb out of in 93 hours. These rules come f
 (links at the bottom) plus what we measured on GIZMO. Check them when adding content, not after the
 game feels slow.
 
-## Display + render defaults (measured 2026-10-24, packaged SmokeTest, GIZMO 4K monitor)
+## Display + render defaults (measured 2026-10-24 on an empty test level, packaged, RTX 4060, 4K monitor)
 
 Target: **100+ fps at 4K output** on the RTX 4060. Measure with `node gen/perf/bench.ts` (launches the packaged
 build per variant, cvars via `-DPCVars`, no repackage) and `node gen/perf/csv_report.ts <csv>`.
@@ -37,6 +37,45 @@ Config (SETUP step 7b applies it): `DefaultEngine.ini` `[/Script/Engine.Renderer
 `[ScalabilityGroups] sg.GlobalIlluminationQuality=2 sg.ReflectionQuality=2 sg.ShadowQuality=2`.
 **Don't place a VolumetricCloud** (use SkyAtmosphere + a cheap sky). The empty test scene is the floor: real content
 adds cost, so re-bench after each big content round and keep ~8 ms GPU headroom in mind.
+
+## Render paths (measured on a prototype, packaged, 4K output, RTX 4060)
+
+One data point, not a rule: a stylized 3D platformer race prototype (12 characters running an obstacle course, glossy pastel look), ~550 m course, benched on every render path on the same
+frame. Other genres and looks will land differently; use the method (same frame, true 1:1, something moving) and
+re-measure. avg / p95 fps:
+
+| Path | fps | Look |
+|---|---|---|
+| Lumen GI + Lumen reflections + TSR 1080p internal | 101 / 95 | Soft bounce; **grainy contact shadows under moving characters** (Lumen GI noise) |
+| Lumen GI + SSR + SMAA 1080p | 157 / 147 | Soft, but dithered speckle on silhouettes |
+| No Lumen + TSR 1080p | 132 / 124 | Dark undersides until the bounce stand-ins are added (`lighting.md`) |
+| No Lumen + SMAA 1080p | 217 / 199 | Fastest, but lower detail (see below) and dark undersides |
+| **No Lumen + TSR 1260p + bounce stand-ins** | **122 / 117** | **Chosen: smooth shadows in motion, crisp, close to the Lumen look** |
+| No Lumen + TSR 1440p | 103 / 99 | Slightly sharper than 1260p, no headroom |
+| Lumen + TSR 1440p / 1620p / native 4K | 77 / 66 / 43 | Crisper, unplayable budgets |
+
+Facts behind the table:
+- **Grain under moving characters is Lumen GI noise, not shadows or resolution.** Same VSM settings with GI off gave
+  smooth contact shadows at 1260p and 1440p, still and in motion. When choosing a path, capture a running character's
+  feet at true 1:1 (a still plus a 1 s clip), not only a static frame.
+- **Non-temporal AA below 100% (SMAA/FXAA + screen percentage) is a lower-detail path, not a cheap crisp one.** In
+  5.8.4 the automatic negative texture mip bias (`SceneVisibility.cpp`, only with `TemporalUpscale`) and the Nanite
+  view LOD bias apply only with temporal upscaling, and VSM penumbra noise is left unresolved.
+- **Virtual shadow maps were cheaper than cascaded ones** in a Nanite scene (shadow depths 0.9 vs 2.6 ms): many large
+  meshes land in every cascade. "VSM off" is not a free win; measure it.
+- TSR costs ~2.1-2.6 ms at 4K output from 1080p, ~3.7 ms from 1440p. `r.TSR.History.ScreenPercentage=200` adds ~3.2 ms.
+- With TSR/TAA, post-processing runs at output resolution (~1 ms at 4K); with a spatial upscale at internal resolution.
+- **Past ~200 fps the render thread sets the frame.** With ~110 draw calls, `EventWait/Visibility` took 1.4 ms;
+  `r.AllowOcclusionQueries=0` (small open scenes) took p95 173 -> 190 fps. When GPU ms < frame ms, read the render
+  thread column before trimming the GPU.
+- `r.DynamicGlobalIlluminationMethod` / `r.ReflectionMethod` are read every frame (unless a PPV overrides them), so
+  `bench.ts` variants with `-DPCVars` compare paths without repackaging. `-DPCVars` also sets game cvars registered
+  after startup (non-cheat), so autoplay switches work as bench variants.
+- A canvas HUD with outlined text cost ~0.5 ms at 4K. Measure the HUD on its own when it lands.
+- Bloom off and lower VSM resolution changed p95 by 0-4 fps (noise) on this content.
+- **Many animated characters:** enable the Animation Budget Allocator plugin (stable, ships with 5.8, off by
+  default; `a.Budget.Enabled=1`, `a.Budget.BudgetMs`) and use its budgeted skeletal mesh component for non-player
+  characters. 12 characters needed ~0.6 ms of animation, under a 1 ms budget, so it only matters at larger counts.
 
 ## Budgets (packaged build, 4K output)
 

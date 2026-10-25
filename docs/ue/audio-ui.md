@@ -191,6 +191,15 @@ Functions (C++ names; the MCP may expose them snake_cased):
 - Don't use `BindToEventProperty`: it puts logic in the BP graph. Bind delegates in C++ instead (kit rule).
 - `MVVMToolset` also exists (CreateViewModel, CreateViewBinding, ...); unused since we skip Viewmodel.
 
+## Quick canvas HUD (before a UMG HUD exists)
+
+- `FCanvasTextItem` with an `FSlateFontInfo` renders through the runtime font cache with no outline (5.8
+  `CanvasItem.cpp`): outline settings in the font info are ignored and `bOutlined` is only a 1 px offset. For a
+  readable cartoon prompt, draw the text on a ring of offsets in the outline colour (16 offsets for a thick ring),
+  then the fill. Keep the font size fixed while a prompt shows and animate `Item.Scale`, so glyphs aren't re-cached
+  every frame. Remove all `AddOnScreenDebugMessage` text before shipping.
+- Game audio for the trailer: record the engine's own mix (`cinematics-video.md` D1).
+
 ## Verified against
 
 - `Engine\Source\Runtime\Engine\Classes\Kismet\GameplayStatics.h`: PlaySound2D (bIsUISound=true default),
