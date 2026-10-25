@@ -44,6 +44,11 @@ Scott is the director: he owns concept, feel, art direction and sign-off. Claude
   CLAUDE.md + PROGRESS.md rather than pushing on.
 - **Rounds, not marathons.** Each round: plan (≤5 bullets) → build → capture screenshots/video →
   stop for Scott's review. No round longer than ~2 hours without a review.
+- **Two failed fixes, then roll back.** Commit before each risky change. If two fixes for the same problem have not
+  worked, stop patching: revert to the last commit where it worked, write down what is known (proven vs suspected),
+  and re-plan or ask Scott. Layered guesses cost more than a rollback.
+- **Reporting a bug or a fix:** what was seen (capture or log line), what was expected, the cause (say whether proven
+  or suspected), the fix, and how it was verified. Scott judges from this, so keep it to those five parts.
 
 ## Money, keys and installs
 

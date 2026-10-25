@@ -131,6 +131,18 @@ if (auto* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent))
   `bUsePawnControlRotation = true`. A `UCameraComponent` attaches to the arm at `USpringArmComponent::SocketName`
   with `bUsePawnControlRotation = false`. The arm sweeps (`bDoCollisionTest`, `ProbeSize`) to pull the camera in
   front of walls. `bEnableCameraLag` smooths movement.
+- **Third person in tight interiors** (one data point: a dungeon crawl). The default arm feels broken indoors:
+  - What pulls the arm in is mostly **small props and pawns**, not walls. Set small props (crates, shelves, sconces,
+    decals with collision) and characters (`characters.md`) to ignore `ECC_Camera`; keep walls and large geometry
+    blocking.
+  - **Pull in fast, ease out slowly.** Compress the arm immediately when blocked and interpolate it back out over
+    ~0.5-1 s (a small `USpringArmComponent` subclass, or interp `TargetArmLength`), or the camera pops.
+  - A **shorter arm** (~240 cm) with an over-the-shoulder `SocketOffset` suits rooms better than the template's 400.
+  - When the arm compresses near zero (backing into a wall), the near clip plane slices through the player and the
+    body shows its hollow inside. Fix both ways: raise the camera over the shoulder as the arm shortens (scale
+    `SocketOffset.Z` up as length drops), and **dither-fade the character** when the camera is within ~60-80 cm
+    (masked material, `DitherTemporalAA` into Opacity Mask, a `Fade` scalar set per tick from camera distance).
+    Fade any pawn between the camera and the player the same way, since it no longer pushes the arm in.
 - **First person (simple):** a `UCameraComponent` attached to the capsule at eye height (about +60 Z), with
   `bUsePawnControlRotation = true`. Hide the body mesh from its owner with `GetMesh()->SetOwnerNoSee(true)`. If you
   need arms, add a separate arms mesh with `SetOnlyOwnerSee(true)` and `SetCollisionProfileName("NoCollision")`.

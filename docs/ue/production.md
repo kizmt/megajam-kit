@@ -62,6 +62,25 @@ which build they played (a stale unzipped copy fooled a prototype test).
   token or cloud HSM), or no signing plus a note on the game page (`SETUP.md` section 9). Self-signing doesn't help.
   Sign after packaging (any later change breaks the signature) and check with `Get-AuthenticodeSignature`.
 
+## Final pass (last half-day, on the packaged zip)
+
+Freeze features first: from here, only fixes. Each check is done on the build that will ship, unzipped to a fresh
+folder, never on PIE.
+
+- **Full play-through twice**, start to credits, with real input (keyboard and mouse, plus gamepad if the page claims
+  it). Restart, quit and every menu path work; Esc always has a way out; the game never soft-locks.
+- **No debug left on screen:** print strings, on-screen debug messages, debug draws, `stat` overlays, cheat keys,
+  test levels in the level list. The build stamp is the only debug text.
+- **Starts right:** opens in the intended window mode at the monitor's native resolution, mouse captured, first
+  gameplay within seconds; a missing save or settings file doesn't break the first launch.
+- **Performance:** `gen/perf/bench.ts` on this build meets the target; one look at the worst spot in the level.
+- **Audio:** nothing clips, music and effects balanced, no sound missing on key actions, volume sensible at launch.
+- **Compliance:** credits list every sourced asset (`SOURCED_ASSETS.md`); no trademarks or real brands; content fits a
+  Teen rating; all text in English.
+- **Package:** zip named `TeamName_GameName.zip`, under 1 GB, no `Saved/` inside (`scripts/upload.ps1` checks), build
+  stamp matches the final commit with no `+dirty`.
+- **Submission:** video passes its checklist (`cinematics-video.md`), devlog complete, game page notes the unsigned exe.
+
 ## Sources (5.8)
 
 - Naming: https://dev.epicgames.com/documentation/en-us/unreal-engine/recommended-asset-naming-conventions-in-unreal-engine-projects?application_version=5.8
