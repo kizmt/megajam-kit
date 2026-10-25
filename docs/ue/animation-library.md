@@ -47,15 +47,47 @@ No free source has a proper **parry** or **sword idle**; a paid melee pack cover
 1. **Before the jam (once per machine):** add the free sources to your Fab library and download them into a library
    project that is *not* the game (Paragon Kwang/Greystone/Feng Mao, Game Animation Sample); keep a Mixamo account
    ready. Note what is there.
-2. **During the jam:** migrate the needed library folder into the game project (`/Game/AnimLibrary/<Source>/...`;
-   Content Browser > Asset Actions > Migrate), then retarget it onto the character:
-   `node gen/unreal/retarget_library.ts --name <Hero> --folder /Game/AnimLibrary/<Source> --source-mesh <a mesh on that
-   skeleton> --category <Sword|Locomotion|...>`. Epic-skeleton libraries need no `--source-mesh`.
+2. **During the jam:** run `node gen/unreal/anim_inventory.ts --project <library project>` (offline, ~20 s) to see what
+   is there and which `--source-mesh` each pack needs. Migrate the needed pack folder into the game project (Content
+   Browser > right-click the folder > Asset Actions > Migrate; it keeps its path, e.g. `/Game/ParagonKwang`), then
+   retarget it onto the character:
+   `node gen/unreal/retarget_library.ts --name <Hero> --folder /Game/<Pack>/<clip folder> --source-mesh <mesh from the
+   inventory> --category <Sword|Locomotion|...>`. Only clips on the game's own Manny need no `--source-mesh`: every
+   Fab pack ships its own copy of the mannequin skeleton, so point at that pack's mesh.
 3. The tool reuses one retargeter per (source skeleton, character), never overwrites, and warns about unmapped chains.
    Check a few clips in PIE from the gameplay camera: arms, feet, weapon hand. A rest-pose mismatch (A-pose vs T-pose)
    bends the arms; fix it in the retargeter's retarget pose, then rerun for the missing clips.
 4. Paragon heroes hold the sword as a bone. Either attach the game's own sword to that bone's socket on the retargeted
    character, or ignore the bone and attach to `hand_r`.
+
+## Reference inventory (free packs as downloaded for 5.8, from `anim_inventory.ts`)
+
+Counts are approximate (heuristic classification). Mesh = the `--source-mesh` to pass.
+
+| Pack folder | Clips | Skeleton | `--source-mesh` | Notes |
+|---|---|---|---|---|
+| `ParagonKwang` | 177 seq, 5 montages, 12 BS | Kwang_Skeleton | `.../Kwang/Meshes/Kwang_GDC` | Longsword: 4-hit combo (PrimaryAttack A-D + recoveries), air attack, hit reacts x4, knockback, stun, Death_Bwd, emotes, full jog/sprint set |
+| `ParagonGreystone` | 154 / 4 / 10 | Greystone_Skeleton | `.../Greystone/Meshes/Greystone` | Greatsword |
+| `ParagonFengMao` | 196 / 5 / 12 | FengMao_Skeleton | `.../FengMao/Meshes/FengMao_GDC` | Sword |
+| `ParagonSunWukong` | 170 / 5 / 10 | Wukong_Skeleton | `.../Wukong/Meshes/Wukong` | Staff |
+| `ParagonGideon` | 201 / 4 / 17 | Gideon_Skeleton | `.../Gideon/Meshes/Gideon` | Mage casts |
+| `ParagonMurdock` | 197 / 3 / 11 | Murdock_Skeleton | `.../Murdock/Meshes/Murdock` | Shotgun |
+| `ParagonWraith` | 229 / 5 / 13 | Wraith_Skeleton | `.../Wraith/Meshes/Wraith` | Sniper |
+| `ParagonSevarog` | 144 / 3 / 10 | Sevarog_Skeleton | `.../Sevarog/Meshes/Sevarog` | Large scythe boss: ready-made enemy set |
+| `FreeAnimationLibrary` | 129 | pack's own UE5 SK_Mannequin | `.../Demo/Characters/Mannequins/Meshes/SKM_Manny_Simple` | Climb (wall/ledge/pipe/ladder), prone, cover, swim, downed/revive, interactions, spear attacks, counters |
+| `Free_Interaction_Animation` | 10 | own UE5 SK_Mannequin | `.../Demo/Characters/Mannequins/Meshes/SKM_Manny_Simple` | Doors (push/kick), lever |
+| `FreeLadderAnimationSet` | 12 | own UE5 SK_Mannequin | `.../Demo/Mannequins/Meshes/SKM_Manny_Simple` | Ladder |
+| `FreeAnimationsPack2` | 12 | own UE5 SK_Mannequin | `.../Demo/Mannequins/Meshes/SKM_Manny_Simple` | NPC idles/conversation, pistol |
+| `DramaticDeath` | 12 | own UE5 SK_Mannequin | `.../Demo/ControlRig/Characters/Mannequins/Meshes/SKM_Manny_Simple` | Long cinematic deaths (8-45 s) |
+| `DeadBodies_Poses_nikoff` | 30 | own UE5 SK_Mannequin | `.../Demo/Mannequins/Meshes/SKM_Manny_Simple` | Single-frame corpse poses (set dressing) |
+| `8WayFlyAnimation` | 9 + 1 BS + ABP | own UE5 SK_Mannequin | `.../Animations/UnrealMannequin/Meshes/SKM_Quinn` | 8-way levitation locomotion |
+| `MCO_Mocap_Basics` | 39 | **UE4** mannequin | `.../Character/Mesh/SK_Mannequin` | Idles, walk/jog/run, crouch, a death, scared walks |
+| Game Animation Sample `Characters/UEFN_Mannequin` | ~1,500 | SK_UEFN_Mannequin | `/Game/Characters/UEFN_Mannequin/Meshes/SKM_UEFN_Mannequin` | Walk/run/crouch 450 each, jumps 145, traversal 145, interactions/shoves 187, slides, ragdoll, look-at. Separate project: migrate from it |
+| Zebra Sample | 1 | SK_Zebra / Monster_Skeleton | - | Reference only: stylized in-engine rig and face rig, not a retarget source |
+
+**AnimGen** (Experimental engine plugin, plus an AnimGen Example content plugin on the UEFN mannequin): its
+dependencies (LearningCore, NNE, PoseSearch, AnimDatabase, TensorBoard) point to a neural network trained on an
+animation database, not a text-to-motion generator. Untested; training time makes it a poor fit for a jam.
 
 ## Combat animation pattern (C++, stable 5.8 APIs)
 
