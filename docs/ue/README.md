@@ -35,7 +35,7 @@ If a note and the engine disagree, the engine wins: fix the note and add the fac
 | Write editor Python, MCP toolsets, in-editor skills | [editor-scripting.md](editor-scripting.md) |
 | Track down a bug, crash, hitch; profile; write a test; scripted captures, key-injection tests, rare crashes | [debugging.md](debugging.md) |
 | Record the submission video or a cinematic (trailer recipes: game audio, MRQ gameplay render, beat-cut edit) | [cinematics-video.md](cinematics-video.md) |
-| Packaging, build stamp, code signing / Smart App Control, DDC/Zen, version control | [production.md](production.md) |
+| Packaging, build stamp, final-pass checklist, code signing / Smart App Control, DDC/Zen, version control | [production.md](production.md) |
 
 ## Finding anything else
 
