@@ -25,6 +25,7 @@ Researched 2026-10-26; prices and terms change, so re-check a source before rely
 | **Mixamo** (Adobe) | Broad: sword and shield attacks (mostly single swings), block, roll, hit reactions, knockdown/get-up, deaths, strafe | `mixamorig` skeleton, FBX; auto-retargets well. Download "In Place" except for attacks/rolls (root motion sits on Hips) | Free with an Adobe ID; royalty-free commercial use |
 | **Kevin Iglesias, Human Melee** (itch.io) | 284 hand-keyed: 1H/2H/dual/polearm attacks, **parries**, shield blocks, dodges, stun, hit reactions, deaths, sprint/strafe; root-motion and in-place versions | Own skeleton, one IK Rig | ~$23 (free lite version). Check the licence file before relying on it |
 | **Fab combat packs** (e.g. a greatsword action-RPG pack: 112 clips, 5-hit combo, lock-on strafe, defence) | Combos, skills, defence | Often the UE4 mannequin skeleton: near-zero retarget | Paid, Fab standard licence |
+| **Free Fab mocap samplers** (e.g. voxel vision "Free Animation Library", MoCap Online free pack, dramatic-death and pose packs) | Traversal gaps the Game Animation Sample lacks (wall/ledge/ladder climb, prone, cover, swim, downed/revive, interactions), NPC idles, long cinematic deaths | Skeleton often unstated: check each clip's skeleton after download; UE4 mannequin needs `--source-mesh` | Free, Fab standard licence |
 
 No free source has a proper **parry** or **sword idle**; a paid melee pack covers those.
 
@@ -37,6 +38,8 @@ No free source has a proper **parry** or **sword idle**; a paid melee pack cover
   Video-to-motion (Move.ai, DeepMotion, Rokoko) needs filmed reference and paid plans for commercial use.
 - **Cascadeur** (AI-assisted keyframing, physics, inbetweening) is the tool for *polishing* a clip; FBX export needs a
   paid plan. Hand-authoring a convincing combo in Blender takes a non-animator hours per move: avoid in a jam.
+- Fab listings marked **"Allows usage with AI: No"** opt out of use as generative-AI input: retarget and ship them
+  normally, but never feed them to a generator as reference or source motion.
 - Untested in this kit: run a 2-3 clip trial (cost stated first) before relying on any generator.
 
 ## Workflow
