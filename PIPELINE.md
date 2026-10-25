@@ -28,7 +28,7 @@ Unreal: `/Game/Props/<Name>/` (SM_, MI_, T_*).
 | `--tex 1024` | Smaller textures for small props (default 2048). |
 | `--faces 30000` / `--tris N` | Tripo face limit / extra Blender decimation. |
 | `--place x,y,z --yaw deg` | Placement in cm. Use `--yaw=-90` form for negatives. |
-| `--hulls 6` | Replace default collision with N convex hulls (4Ã¢â‚¬â€œ8). For props the player pushes, carries or brushes against. |
+| `--hulls 6` | Replace default collision with N convex hulls (4-8). For props the player pushes, carries or brushes against. |
 | `--no-unreal` | Stop after the FBX. |
 
 Measured 2026-10-24: ~3 min per new prop (Tripo ~2.5-3.5 min), 45 Tripo credits ($0.45).
@@ -97,7 +97,7 @@ Measured: SFX ~2 s end to end, 30 s music track ~6 s.
 | `gen/blender/prep.py` | Size, pivot at base, texture budget, single mesh, UE-scaled FBX |
 | `gen/blender/inspect.py` | Stats JSON + preview render |
 | `gen/unreal/mcp.ts` | Call any Unreal MCP tool from scripts; `captureViewport()` |
-| `gen/unreal/py.ts` | Run a Python file (or `-c` code) in the editor via `run_python`; `--arg k=v` Ã¢â€ â€™ `ARGS` dict |
+| `gen/unreal/py.ts` | Run a Python file (or `-c` code) in the editor via `run_python`; `--arg k=v` -> `ARGS` dict |
 | `gen/unreal/shot.ts` | Viewport screenshot to PNG (`--wait N` for shader compiles) |
 | `gen/character.ts` | Concept -> rigged, PBR-textured, retargeted character (+ BP); see Characters |
 | `gen/blender/prep_rig.py` | Rigged character: height, facing, armature-safe cm export, textures stripped |
