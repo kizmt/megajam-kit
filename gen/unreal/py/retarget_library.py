@@ -11,6 +11,7 @@
 # that already exist at the destination are skipped, so reruns only add what is missing.
 # Prints RETARGET_LIB_JSON={...}.
 import json
+import re
 import unreal
 
 name = ARGS["name"]
@@ -85,18 +86,38 @@ KINDS = ("AnimSequence", "AnimMontage", "BlendSpace", "BlendSpace1D", "AimOffset
 reg = unreal.AssetRegistryHelpers.get_asset_registry()
 reg.scan_paths_synchronous([folder], True)
 found = [a for a in (reg.get_assets_by_path(folder, recursive=True) or []) if str(a.asset_class_path.asset_name) in KINDS]
-picked, skipped = [], []
-for a in sorted(found, key=lambda x: str(x.package_name)):
+dep_opts = unreal.AssetRegistryDependencyOptions()
+dep_opts.include_soft_package_references = False
+
+
+def retargeted_deps(a):
+    """Names of a montage/blend space's referenced assets that are already retargeted at dest."""
+    deps = reg.get_dependencies(a.package_name, dep_opts) or []
+    return [str(d).rsplit("/", 1)[-1] for d in deps if eal.does_asset_exist(f"{dest}/{str(d).rsplit('/', 1)[-1]}{suffix}")]
+
+
+# Sequences first, then montages / blend spaces. A montage or blend space brings its sequences with it
+# (include_referenced_assets), so if one of those was retargeted by an earlier run the batch would make a second copy
+# (<anim>_<Name>1) and the montage would point at it. Skip those and report them instead.
+picked, skipped, skipped_compound = [], [], []
+order = sorted(found, key=lambda x: (str(x.asset_class_path.asset_name) != "AnimSequence", str(x.package_name)))
+for a in order:
     n = str(a.asset_name)
     if filters and not any(f in n.lower() for f in filters):
         continue
     if eal.does_asset_exist(f"{dest}/{n}{suffix}"):
         skipped.append(n)
         continue
+    if str(a.asset_class_path.asset_name) != "AnimSequence":
+        clash = retargeted_deps(a)
+        if clash:
+            skipped_compound.append({"asset": n, "already_retargeted": clash})
+            continue
     picked.append(a)
     if limit and len(picked) >= limit:
         break
 
+before = set(eal.list_assets(dest, recursive=True, include_folder=False)) if eal.does_directory_exist(dest) else set()
 results = []
 if picked:
     inputs = unreal.IKRetargetBatchOperationInputs()
@@ -111,8 +132,31 @@ if picked:
     results = unreal.IKRetargetBatchOperation.run_batch_retarget(inputs)
     eal.save_directory(dest, only_if_is_dirty=False)
 
+after = set(eal.list_assets(dest, recursive=True, include_folder=False)) if eal.does_directory_exist(dest) else set()
+created = sorted(p.split(".")[0] for p in after - before)
+duplicates = [p for p in created if re.search(re.escape(suffix) + r"\d+$", p)]
+
+# Curves: the batch copies source curves (Paragon clips carry mask_geo) into the new sequences but never registers
+# them on the target skeleton on disk. The editor patches that in memory on load, so it works in PIE, but -game,
+# autoclip and the cook crash in USkeleton::AccumulateCurveMetaData. Register every curve and save the skeleton.
+skeleton = target_mesh.get_editor_property("skeleton")
+known = {str(c) for c in unreal.AnimationLibrary.get_curve_meta_data_names(skeleton)}
+added_curves = []
+for a in (reg.get_assets_by_path(dest, recursive=True) or []):
+    if str(a.asset_class_path.asset_name) != "AnimSequence":
+        continue
+    seq = unreal.load_asset(str(a.package_name))
+    for c in unreal.AnimationLibrary.get_animation_curve_names(seq, unreal.RawCurveTrackTypes.RCT_FLOAT):
+        if str(c) not in known:
+            unreal.AnimationLibrary.add_curve_meta_data(skeleton, c, False)
+            known.add(str(c))
+            added_curves.append(str(c))
+skeleton.modify()
+eal.save_loaded_asset(skeleton, only_if_is_dirty=False)
+
 print("RETARGET_LIB_JSON=" + json.dumps({
-    "retargeter": rtg_path, "source_rig": src_rig_path, "dest": dest, "found": len(found), "retargeted": len(results),
-    "skipped_existing": len(skipped), "unmapped_target_chains": unmapped, "chain_map": mapped,
-    "assets": [str(r.package_name) for r in results][:200],
+    "retargeter": rtg_path, "source_rig": src_rig_path, "dest": dest, "found": len(found), "requested": len(picked),
+    "created": len(created), "skipped_existing": len(skipped), "skipped_compound": skipped_compound,
+    "duplicates": duplicates, "skeleton_curves_added": added_curves, "skeleton": skeleton.get_path_name(),
+    "unmapped_target_chains": unmapped, "chain_map": mapped, "assets": created[:200],
 }))

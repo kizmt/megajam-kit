@@ -54,11 +54,36 @@ No free source has a proper **parry** or **sword idle**; a paid melee pack cover
    `node gen/unreal/retarget_library.ts --name <Hero> --folder /Game/<Pack>/<clip folder> --source-mesh <mesh from the
    inventory> --category <Sword|Locomotion|...>`. Only clips on the game's own Manny need no `--source-mesh`: every
    Fab pack ships its own copy of the mannequin skeleton, so point at that pack's mesh.
-3. The tool reuses one retargeter per (source skeleton, character), never overwrites, and warns about unmapped chains.
-   Check a few clips in PIE from the gameplay camera: arms, feet, weapon hand. A rest-pose mismatch (A-pose vs T-pose)
-   bends the arms; fix it in the retargeter's retarget pose, then rerun for the missing clips.
-4. Paragon heroes hold the sword as a bone. Either attach the game's own sword to that bone's socket on the retargeted
+3. **Test run first, then the rest:** `--filter PrimaryAttack --limit 5` (`--limit` alone takes the first five
+   alphabetically, usually abilities). Check those clips **in PIE** (editor-world skeletal meshes don't re-evaluate
+   single-node animation, and `shot.ts` only captures the editor viewport): `set_animation` / `play` /
+   `set_play_rate(0)` / `set_position(t)`, then a `HighResShot` in a **separate** call. For numbers without a world,
+   `AnimPoseExtensions.get_anim_pose_at_time` + `get_bone_pose(..., WORLD)` gives component-space bones. Arms, feet,
+   weapon hand; a rest-pose mismatch (A-pose vs T-pose) bends the arms: fix the retargeter's retarget pose and rerun.
+   Then run without `--limit`. Finally do one `-game` launch: it catches cook-only problems PIE hides.
+4. The tool reuses one retargeter per (source skeleton, character), never overwrites, retargets sequences before
+   montages, skips a montage whose clips an earlier run already retargeted (it would make `_<Name>1` duplicates), and
+   registers the clips' curves on the target skeleton and saves it (Paragon's `mask_geo` curve otherwise crashes
+   `-game` and the cook in `USkeleton::AccumulateCurveMetaData`). It warns about unmapped chains and duplicates.
+5. Paragon heroes hold the sword as a bone. Either attach the game's own sword to that bone's socket on the retargeted
    character, or ignore the bone and attach to `hand_r`.
+
+## Paragon clips: what to reuse (measured on Kwang, one prototype)
+
+- **Build your own montages from the sequences.** Paragon's `PrimaryAttack_*_Montage` assets are single-segment
+  montages on an `UpperBody` slot whose combo logic is plain named notifies (`SaveAttack`, `ResetCombo`) for Paragon's
+  own AnimBP; on a `DefaultSlot` ABP they do nothing. Make one montage per combo step on `DefaultSlot` with the
+  hit-window and combo-window notify states (pattern below). Retarget sequences only (`--filter` the attack names).
+- **Timing (blade-tip speed on the retargeted clips):** every attack strikes early, then holds the follow-through:
+  A 0.08-0.27 s of 1.2, B 0.10-0.30 of 1.27, C 0.15-0.30 of 1.27, D 0.18-0.30 of 1.47. Epic's chain point
+  (`SaveAttack`) is at 0.55-0.62 s and `ResetCombo` at ~1.07 s; opening the combo window much earlier feels spammy.
+  A-C have `_Recovery` clips back to guard; D's tail returns to guard itself.
+- **Reaction names say where the hit came from:** `Hitreact_Fwd` recoils backward (hit from the front),
+  `Hitreact_Left` is a hit from the left, `Knockback_Bwd` is thrown backward (heavy hit from the front).
+- **No root motion on deaths:** `Death_Bwd`'s pelvis ends ~2.4 m behind the root, so the body lands outside the
+  capsule. Turn the capsule's collision off on death (or move the actor to the pelvis afterwards).
+- Light hits with a big knockback push the target out of reach of the next swing: keep knockback small on light hits
+  and save the big one for the finisher.
 
 ## Reference inventory (free packs as downloaded for 5.8, from `anim_inventory.ts`)
 

@@ -1,9 +1,13 @@
 #!/usr/bin/env node
 // Retarget a whole animation library folder onto a character built by gen/character.ts (editor open, MCP).
-//   node gen/unreal/retarget_library.ts --name Hero --folder /Game/AnimLibrary/GASP                     # Epic skeleton
-//   node gen/unreal/retarget_library.ts --name Hero --folder /Game/AnimLibrary/Paragon/Kwang \
-//        --source-mesh /Game/AnimLibrary/Paragon/Kwang/Characters/Heroes/Kwang/Meshes/Kwang_GDC --category Sword
+//   node gen/unreal/anim_inventory.ts --project <library project> --folder ParagonKwang   # find the --source-mesh first
+//   node gen/unreal/retarget_library.ts --name Hero --folder /Game/ParagonKwang/Characters/Heroes/Kwang/Animations \
+//        --source-mesh /Game/ParagonKwang/Characters/Heroes/Kwang/Meshes/Kwang_GDC --category Sword \
+//        --filter PrimaryAttack --limit 5                       # test run: filter to the clips you will check
 //   options: --mesh <target SK>  --source-rig <IK rig>  --category <subfolder>  --filter attack,dodge  --limit 5
+// --limit takes the first N alphabetically, so pair it with --filter. Sequences are retargeted before montages and
+// blend spaces; a montage whose clips an earlier run already retargeted is skipped (it would duplicate them).
+// Registers the clips' curves on the target skeleton and saves it (otherwise -game and the cook crash).
 // Output: /Game/Characters/<Name>/Anims/<category>/<anim>_<Name>. Reruns skip what already exists (never overwrites:
 // overwriting breaks blend spaces in the cook). Sources, licences and jam status: docs/ue/animation-library.md.
 // Retargeted library clips are SOURCED assets under the jam rules: list them in SOURCED_ASSETS.md.
@@ -18,8 +22,13 @@ export interface RetargetLibraryResult {
   source_rig: string;
   dest: string;
   found: number;
-  retargeted: number;
+  requested: number;
+  created: number;
   skipped_existing: number;
+  skipped_compound: { asset: string; already_retargeted: string[] }[];
+  duplicates: string[];
+  skeleton_curves_added: string[];
+  skeleton: string;
   unmapped_target_chains: string[];
   chain_map: Record<string, string>;
   assets: string[];
@@ -54,7 +63,16 @@ if (o.limit) args['limit'] = o.limit;
 
 try {
   const r = await retargetLibrary(args);
-  console.log(`${r.retargeted} retargeted into ${r.dest} (${r.found} found, ${r.skipped_existing} already there) via ${r.retargeter}`);
+  console.log(`${r.created} assets created in ${r.dest} (${r.requested} requested of ${r.found} found, ${r.skipped_existing} already there) via ${r.retargeter}`);
+  for (const s of r.skipped_compound) {
+    console.log(`SKIPPED ${s.asset}: its clips ${s.already_retargeted.join(', ')} were retargeted by an earlier run; retargeting it would duplicate them. Build your own montage from the existing clips, or delete them and rerun with this asset.`);
+  }
+  if (r.duplicates.length) {
+    console.log(`WARNING: duplicate copies created (break the cook if referenced): ${r.duplicates.join(', ')}`);
+  }
+  if (r.skeleton_curves_added.length) {
+    console.log(`Registered ${r.skeleton_curves_added.length} curve(s) on ${r.skeleton} and saved it (${r.skeleton_curves_added.join(', ')}); without this, -game and the cook crash.`);
+  }
   if (r.unmapped_target_chains.length) {
     console.log(`WARNING: target chains with no source chain: ${r.unmapped_target_chains.join(', ')}. Check the retargeter's chain mapping before trusting these clips.`);
   }
