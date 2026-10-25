@@ -65,24 +65,42 @@ if ($ok) {
     if (-not $exe) { $exe = Get-ChildItem -Path $archiveDir -Filter '*.exe' -File -Recurse | Select-Object -First 1 }
     $exePath = if ($exe) { $exe.FullName } else { $null }
 
+    # Build stamp: <archive>\<Platform>\<Project>\BuildStamp.txt (the packaged game's project dir), one line:
+    # "<short commit>[+dirty] <package time>". The game logs it at startup and shows it in a corner.
+    if ($exe) {
+        $commit = (& git -C $projectDir rev-parse --short HEAD 2>$null)
+        if (-not $commit) { $commit = 'nogit' }
+        elseif (& git -C $projectDir status --porcelain --untracked-files=no 2>$null) { $commit += '+dirty' }
+        $stamp = "$commit {0:yyyy-MM-dd HH:mm}" -f (Get-Date)
+        $stampPath = Join-Path (Join-Path $exe.DirectoryName $projectName) 'BuildStamp.txt'
+        Set-Content -Path $stampPath -Value $stamp -Encoding ASCII
+        Write-Host "Build stamp: $stamp"
+    }
+
     try {
         if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
         Add-Type -AssemblyName System.IO.Compression
         Add-Type -AssemblyName System.IO.Compression.FileSystem
         # Zip everything except debug symbols (*.pdb, ~350 MB); they stay in the build folder
         # for crash debugging. Entries keep the top-level folder so the zip extracts into one directory.
+        # Also leave out every Saved\ folder: test runs of the packaged game write logs (local paths, user name),
+        # crash reports, profiling traces and recordings there (a prototype test found ~250 MB of it in the zip).
+        # Upload the zip, never the build folder: the folder still contains Saved\.
         $rootName = Split-Path -Leaf $archiveDir
         $zip = [System.IO.Compression.ZipFile]::Open($zipPath, [System.IO.Compression.ZipArchiveMode]::Create)
         $skipped = 0
+        $skippedSaved = 0
         try {
             Get-ChildItem -Path $archiveDir -Recurse -File | ForEach-Object {
                 if ($_.Extension -ieq '.pdb') { $skipped++; return }
                 $rel = $_.FullName.Substring($archiveDir.Length).TrimStart('\') -replace '\\', '/'
+                if ("/$rel" -match '/Saved/') { $skippedSaved++; return }
                 [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $_.FullName,
                     "$rootName/$rel", [System.IO.Compression.CompressionLevel]::Optimal)
             }
         } finally { $zip.Dispose() }
         if ($skipped -gt 0) { Write-Host "Left $skipped .pdb file(s) out of the zip (kept in $archiveDir)" }
+        if ($skippedSaved -gt 0) { Write-Host "Left $skippedSaved file(s) from Saved\ folders out of the zip (local test-run output)" }
         $zipSize = (Get-Item $zipPath).Length
     } catch {
         Write-Host "Zip failed: $_"
