@@ -14,7 +14,7 @@
 // Credits per new character: model 45 + re-texture 20 + rig 25 (--no-retexture: 70, maps from the model).
 // Needs the editor open with MegajamTools, and the Third Person content pack in the project (Manny + ABP_Unarmed).
 // Everything lands in <Project>/Generated/characters/<name>/ with a manifest.json.
-// One manual step remains (printed at the end): delete the foot-IK Control Rig node in the new ABP.
+// No manual step: 6b removes the foot-IK Control Rig node from the new ABP (it twists non-Manny feet).
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -24,6 +24,7 @@ import { packOrm, parseMarkedJson, parseTripo, q, readTripoTask, run, secs, type
 import { applyPbr, type ApplyPbrResult } from './unreal/materials.ts';
 import { McpUnreachableError, callTool, mcpCall } from './unreal/mcp.ts';
 import { runPythonFileOrThrow } from './unreal/python.ts';
+import { stripFootIk } from './unreal/abp.ts';
 
 process.env['TRIPO_NO_UPDATE_CHECK'] = '1';
 
@@ -98,6 +99,7 @@ interface Manifest {
     material?: ApplyPbrResult;
     check?: CheckResult;
     retarget?: RetargetResult & { time: string };
+    footik?: { changed: boolean; deleted: string[] };
     blueprint?: BpResult;
     unreal?: { skipped: string };
   };
@@ -266,6 +268,11 @@ try {
       console.log(`    ${rt.chains} chains mapped, ${rt.assets} assets retargeted into ${rt.anim_dir} (${secs(t)})`);
       if (!rt.abp) throw new Error(`no retargeted ABP found in ${rt.anim_dir}`);
 
+      step('6b', 'remove the foot-IK Control Rig node from the ABP (twists non-Manny feet)');
+      const strip = await stripFootIk(rt.abp);
+      manifest.steps.footik = { changed: strip.changed, deleted: strip.deleted };
+      console.log(strip.changed ? `    deleted ${strip.deleted.join(', ')}, compiled and saved` : '    already removed');
+
       if (o.parent) {
         step('7', `BP_${name} (parent ${o.parent})`);
         const bp = parseMarkedJson<BpResult>(await runPythonFileOrThrow(PY('make_character_bp.py'), { name, parent: o.parent, folder, abp: rt.abp }), 'BP_JSON');
@@ -275,10 +282,6 @@ try {
         step('7', 'skipped (no --parent)');
       }
 
-      manifest.manual = [
-        `Open ${rt.abp} > AnimGraph: delete the Control Rig node (CR_Mannequin_FootIK) between Slot 'DefaultSlot' and Output Pose,`,
-        `wire Slot 'DefaultSlot' -> Output Pose, delete the orphaned NOT / Is Falling nodes, Compile, Save (feet twist without this).`,
-      ];
     } catch (e) {
       if (!(e instanceof McpUnreachableError)) throw e;
       manifest.steps.unreal = { skipped: 'editor not running' };

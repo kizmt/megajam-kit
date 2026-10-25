@@ -1,14 +1,15 @@
-# Build (or upgrade in place) the kit master material M_PBR_Master, version 2.
+# Build (or upgrade in place) the kit master material M_PBR_Master, version 3 (v3 adds the UseTintMask switch).
 # Run by gen/unreal/materials.ts ensureMaster(); default textures are imported there first and passed in ARGS.
 # Rebuilds the graph INSIDE the existing asset (delete_all_material_expressions) because material instances
 # reference it: deleting a referenced asset opens a modal dialog that blocks the editor (PIPELINE.md).
 #
 # Parameters (group: name = default):
 #   Textures: BaseColor, Normal, ORM (R=AO, G=Roughness, B=Metallic; TC_Masks, linear), EmissiveTexture
-#   Color:    Tint = (1,1,1), Saturation = 1
+#   Color:    Tint = (1,1,1), Saturation = 1, UseTintMask = false (static switch: tint only where BaseColor alpha = 1;
+#             off = whole texture tinted, identical to v2)
 #   Surface:  RoughnessScale = 1, RoughnessOffset = 0, MetallicOverride = 0 (lerp to MetallicValue), MetallicValue = 0,
 #             NormalStrength = 1, AOStrength = 1
-#   Emissive: EmissiveColor = (1,1,1), EmissiveStrength = 0, UseEmissiveTexture = false (the only static switch)
+#   Emissive: EmissiveColor = (1,1,1), EmissiveStrength = 0, UseEmissiveTexture = false (static switch)
 #   Feedback: FlashAmount (Custom Primitive Data index 0; C++: Mesh->SetCustomPrimitiveDataFloat(0, x)),
 #             FlashColor = (1,1,1), FlashStrength = 20
 # ARGS: path, tex_basecolor, tex_normal, tex_orm, tex_black, [force=1]. Prints MASTER_JSON={...}.
@@ -16,7 +17,7 @@
 import json
 import unreal
 
-VERSION = "2"
+VERSION = "3"
 mel = unreal.MaterialEditingLibrary
 eal = unreal.EditorAssetLibrary
 MP = unreal.MaterialProperty
@@ -67,8 +68,17 @@ def build(mat):
     sat = scalar("Saturation", 1.0, -1400, -260, "Color")
     sat_inv = op(unreal.MaterialExpressionOneMinus, -1100, -260)
     link(sat, "", sat_inv, "")
+    # v3 tint mask: lerp(BaseColor.rgb, BaseColor.rgb * Tint, BaseColor.a) behind a static switch (off = v2 behaviour).
+    tm_lerp = op(unreal.MaterialExpressionLinearInterpolate, -1000, -760)
+    link(bc, "RGB", tm_lerp, "A")
+    link(bc_mul, "", tm_lerp, "B")
+    link(bc, "A", tm_lerp, "Alpha")
+    tm_switch = op(unreal.MaterialExpressionStaticSwitchParameter, -900, -640, parameter_name="UseTintMask",
+                   group="Color", default_value=False)
+    link(tm_lerp, "", tm_switch, "True")
+    link(bc_mul, "", tm_switch, "False")
     desat = op(unreal.MaterialExpressionDesaturation, -850, -520)
-    link(bc_mul, "", desat, "")
+    link(tm_switch, "", desat, "")
     link(sat_inv, "", desat, "Fraction")
     out(desat, "", MP.MP_BASE_COLOR)
 

@@ -1,8 +1,8 @@
 // PBR material setup through Unreal MCP.
-//   ensureMaster()  -> builds / upgrades /Game/Kit/Materials/M_PBR_Master (v2, gen/unreal/py/build_master_material.py)
+//   ensureMaster()  -> builds / upgrades /Game/Kit/Materials/M_PBR_Master (v3, gen/unreal/py/build_master_material.py)
 //   applyPbr({...}) -> imports an asset's textures (basecolor, normal, orm, emissive), makes MI_<Name>, assigns it
 //
-// v2 parameters: BaseColor, Normal, ORM (R=AO G=Roughness B=Metallic), EmissiveTexture; Tint, Saturation;
+// v3 parameters: BaseColor, Normal, ORM (R=AO G=Roughness B=Metallic), EmissiveTexture; Tint, Saturation, UseTintMask;
 // RoughnessScale/Offset, MetallicOverride/Value, NormalStrength, AOStrength; EmissiveColor/Strength,
 // UseEmissiveTexture (static switch); FlashAmount (Custom Primitive Data 0), FlashColor, FlashStrength.
 // ORM comes from gen/blender/pack_orm.py (packs T_<Name>_roughness/metallic/ao).
