@@ -28,6 +28,7 @@ If a note and the engine disagree, the engine wins: fix the note and add the fac
 | Light a scene, set exposure/post, fix Lumen or shadow artefacts, the no-Lumen stylized look | [lighting.md](lighting.md) |
 | Build or change materials (master, glass, decals, emissive, hit flash) | [materials.md](materials.md) |
 | Make particle effects | [vfx.md](vfx.md) |
+| Make actions feel good: hit-stop, shake, flash, rumble, springs, a juice pass | [game-feel.md](game-feel.md) |
 | Physics props, collision, doors, pick-up, destruction | [physics.md](physics.md) |
 | Sound, music, MetaSounds, HUD and menus (UMG/CommonUI) | [audio-ui.md](audio-ui.md) |
 | Lay out the level, blockout, splines, water | [worldbuilding.md](worldbuilding.md) |

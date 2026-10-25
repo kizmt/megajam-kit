@@ -149,6 +149,8 @@ add an entry to the project's `KIT_NOTES.md` in the same round (not to the kit i
 - **Test the feel, not the binding**: a player action is done when it reads from the gameplay camera, and Scott has
   played it. Test input with real input, not autoplay hooks. **Ask Scott before every key-injection run** and use
   `gen/test/keytest.ps1` (it aborts if the game loses focus). Details: `docs/ue/gameplay.md`, `docs/ue/debugging.md` F.
+- **Juice pass:** once a verb works, give it feedback on 3+ channels (visual, audio, camera/time) before calling it
+  done (`docs/ue/game-feel.md`). Fun is judged, and it breaks ties.
 - **Performance numbers come from `gen/perf/bench.ts` on a packaged build**, not editor `stat` (a background editor
   throttles to ~3 fps). Check the machine is free first (`nvidia-smi`, foreground app); if not, ask.
 - **Screenshots:** downscale to ~1600 px and read at most 2 per step (full 4K reads have caused API errors); compare
@@ -169,8 +171,11 @@ add an entry to the project's `KIT_NOTES.md` in the same round (not to the kit i
 
 ## Jam compliance
 
-- Only this kit (tools, agent configs, MCP settings, prompts, scripts) predates the jam. Game repo,
-  assets, levels and gameplay code are created after 2026-11-12 14:00 JST.
+- Only this kit predates the jam. Rules 7(h) allow preparing "AI tools, agent configurations, MCP settings, prompt
+  libraries, and scripts"; "all other game content, including gameplay, levels, and art assets" is made during the
+  contest. So the kit holds docs, prompts, agent config and scripts, never runtime game code or game assets to ship.
+  Docs may show short snippets of engine calls, not drop-in components. Game repo, assets, levels and gameplay code
+  are created after 2026-11-12 14:00 JST.
 - Practice projects are throwaway. Nothing from them goes into the jam game.
 - The kit is version-controlled at github.com/kizmt/megajam-kit (private). Only kit maintenance sessions
   change it, never a game session (`KIT_NOTES.md` instead). Push after every kit commit:
