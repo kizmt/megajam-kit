@@ -146,6 +146,8 @@ add an entry to the project's `KIT_NOTES.md` in the same round (not to the kit i
 - After gameplay changes: run PIE, capture a short clip or screenshot sequence, check the Output
   Log for errors and warnings.
 - Never claim something works without a capture or a log line proving it.
+- **Scripted asset edits must reach the disk:** save with `only_if_is_dirty=False` and confirm with `git status` that
+  the `.uasset` changed. Unsaved in-memory edits pass PIE checks and then vanish (`docs/ue/editor-scripting.md`).
 - **Test the feel, not the binding**: a player action is done when it reads from the gameplay camera, and Scott has
   played it. Test input with real input, not autoplay hooks. **Ask Scott before every key-injection run** and use
   `gen/test/keytest.ps1` (it aborts if the game loses focus). Details: `docs/ue/gameplay.md`, `docs/ue/debugging.md` F.

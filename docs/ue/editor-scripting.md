@@ -15,6 +15,12 @@ Python stub or headers before writing an API call from memory.
 - **Read results.** Many tools report failure in the payload, not as an MCP error. `mcp.ts` throws on `isError`;
   for anything else, read back (`get_editor_property`, a find/list tool, `captureViewport()`).
 - **Save points.** Tool edits are not always undoable (imports never are). Save before and after bulk changes.
+- **A scripted edit is not saved until the file on disk changed.** Many Python edits don't mark the asset dirty, so a
+  normal save (`only_if_is_dirty=True`, `save_directory`, Save All) silently skips it and the edit lives only in the
+  editor's memory: it works in PIE, then vanishes from the build and the next session. Seen with input mapping keys,
+  montage notifies and skeleton curve metadata, in two prototypes. Always save each edited asset with
+  `save_loaded_asset(x, only_if_is_dirty=False)`, then **check the disk**: `git status` (or the file's timestamp)
+  must show that `.uasset` modified. Reading the asset back in the same editor proves nothing.
 - **Not during PIE.** Asset and level tools act differently while Play-In-Editor runs. Stop PIE first.
 - **Python runs only in the editor** (embedded Python 3.11.8). It is not available in PIE, standalone or packaged
   builds, so gameplay code is C++.
