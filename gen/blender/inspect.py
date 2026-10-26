@@ -80,7 +80,9 @@ for loc, energy in (((3, -4, 6), 600), ((-5, -2, 3), 200), ((0, 5, 4), 300)):
     lob.location = center + Vector(loc) * radius
     lob.rotation_euler = (center - lob.location).to_track_quat("-Z", "Y").to_euler()
 
-world = bpy.data.worlds.new("w"); scene.world = world; world.use_nodes = True
+world = bpy.data.worlds.new("w"); scene.world = world
+if bpy.app.version < (5, 0, 0):
+    world.use_nodes = True  # deprecated in 5.x (always node-based), removed in 6.0
 world.node_tree.nodes["Background"].inputs[0].default_value = (0.35, 0.35, 0.37, 1)
 world.node_tree.nodes["Background"].inputs[1].default_value = 0.6
 
