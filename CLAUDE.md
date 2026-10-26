@@ -34,16 +34,30 @@ Scott is the director: he owns concept, feel, art direction and sign-off. Claude
 
 - **One main session.** A single Opus 5.5 session on high effort leads all design, code and editor
   work. No predefined agent teams or role subagents. Claude may spin up a helper agent on its own
-  judgement (research, docs lookups), but only the main session calls Unreal MCP (tool calls run
-  one at a time on the game thread anyway).
+  judgement (research, docs lookups, critics, work outside the editor such as Blender generation, audio and
+  images), but only the main session calls Unreal MCP (tool calls run one at a time on the game thread anyway).
+  Parallel helpers each own their own output files; no two write the same file.
+- **Blind critic for visual and level work.** The builder doesn't grade its own look. After a visual or level change,
+  give a fresh helper agent the screenshots and the references (or the rubric) with labels hidden, using
+  `prompts/critic.md`; its ranked flaws become the next tasks. Scott's calls (`DECISIONS.md`) overrule the critic.
+- **`DECISIONS.md` (in the game project) records Scott's explicit calls** ("responsiveness beats foot accuracy",
+  "accept this shot"), one line each with the date. Read it at the start of every round. Never silently undo one;
+  to change one, propose it with evidence and ask. It records what Scott decided, not what is forbidden: new ideas
+  are welcome.
+- **One flagged improvement per round.** Beyond the plan, each round may add one unrequested improvement that makes
+  the game better, labelled as such in the report so Scott can keep or drop it.
 - **Repeatable pipeline jobs are plain scripts, not agents**: asset generation, import, package,
   zip and upload live in `gen/` and `scripts/` and are run by the session (see `PIPELINE.md`).
   Deterministic and re-runnable. Run one editor-touching script at a time.
 - **Keep context fresh.** At the end of each round, write state to `PROGRESS.md` (what exists,
   what's next, open problems). When the session gets long or slow, start a new one from
-  CLAUDE.md + PROGRESS.md rather than pushing on.
+  CLAUDE.md + PROGRESS.md + DECISIONS.md rather than pushing on.
 - **Rounds, not marathons.** Each round: plan (≤5 bullets) → build → capture screenshots/video →
   stop for Scott's review. No round longer than ~2 hours without a review.
+- **Every goal in a plan has a check that can pass or fail:** a number (latency in s, foot slip in cm, fps, contrast),
+  a behaviour ("the exit is visible from the first fight", "no dead ends"), a reference image to match, or a short
+  rubric (3-5 criteria) when nothing else fits. "Make the room better" is not a goal until it has one. Report each
+  check's before and after.
 - **Two failed fixes, then roll back.** Commit before each risky change. If two fixes for the same problem have not
   worked, stop patching: revert to the last commit where it worked, write down what is known (proven vs suspected),
   and re-plan or ask Scott. Layered guesses cost more than a rollback.
