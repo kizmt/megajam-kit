@@ -42,6 +42,29 @@ session). The decisions below already apply.
   `Skill_PCGShapeGrammarDefinition` (modules along a spline), `Skill_PCGInstancingOnMeshActor` (surface detail).
 - Pairs with our pipeline: generate 4-6 props, then let PCG dress the level with instanced copies (cheap, see `performance.md`).
 
+## Ambition on a budget: making a small game feel big
+
+Ambition and Innovation is judged, but the jam is four days and rule 1 (small scope) stands. Ambition reads from what
+the player *sees and does*, not from how many square metres exist. Cheapest first:
+
+- **A world beyond the playable space.** Keep play in one space and show a big world past its edges: a view through a
+  window or over a wall, distant silhouettes (low-poly meshes or cards, no collision, no shadows), layered height fog
+  for depth, a strong sky. Large backdrop meshes can break Lumen's sky occlusion: see `lighting.md` (keep backdrops
+  reasonably sized, or out of Lumen).
+- **Scale contrast.** A small player next to one huge structure (a statue, a gate, a machine) reads as epic for the
+  cost of one asset. Verticality (looking up or down a shaft) does the same.
+- **One set piece.** A single scripted moment (a collapse, a reveal, a boss entrance) with Sequencer
+  (`cinematics-video.md`) does more for ambition than a larger map. It also gives the trailer its best shot.
+- **Density by instancing.** PCG and instanced meshes fill space cheaply (`pcg.md`); generated kit pieces
+  (`procedural-assets.md`) assembled as Level Instances or Packed Level Actors make many rooms from few meshes.
+- **Ambition in the mechanic.** A novel verb, a system that reacts to the player, or AI powering a system in the game
+  (rules 7(a) allow it) can score as Innovation with no extra world at all.
+- **Only if the game truly needs an open space:** World Partition (streaming grid, One File Per Actor), HLODs for
+  distant cells and Level Instances. Know they exist; budget at least a day of the jam if you use them, and test the
+  packaged build early. Most jam games should not.
+
+Judge it in the 60-second video: if the extra scale doesn't show there, cut it.
+
 ## Splines
 
 - Spline Component / Spline Mesh Component for paths, roads, rails, fences, rivers-as-paths. Subpages: Blueprint Spline

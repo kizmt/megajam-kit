@@ -31,7 +31,8 @@ If a note and the engine disagree, the engine wins: fix the note and add the fac
 | Make actions feel good: hit-stop, shake, flash, rumble, springs, a juice pass | [game-feel.md](game-feel.md) |
 | Physics props, collision, doors, pick-up, destruction | [physics.md](physics.md) |
 | Sound, music, MetaSounds, HUD and menus (UMG/CommonUI) | [audio-ui.md](audio-ui.md) |
-| Lay out the level, blockout, splines, water | [worldbuilding.md](worldbuilding.md) |
+| Lay out the level, blockout, splines, water; make a small game feel big | [worldbuilding.md](worldbuilding.md) |
+| Generate walls, arches, stairs, props with Blender Python and import them | [procedural-assets.md](procedural-assets.md) |
 | Scatter content procedurally | [pcg.md](pcg.md) |
 | Write editor Python, MCP toolsets, in-editor skills | [editor-scripting.md](editor-scripting.md) |
 | Track down a bug, crash, hitch; profile; write a test; scripted captures, key-injection tests, rare crashes | [debugging.md](debugging.md) |
