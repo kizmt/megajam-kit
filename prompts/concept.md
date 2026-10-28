@@ -8,8 +8,9 @@ Order: **theme reveal → this prompt (in words) → contest start → `prompts/
 **The theme window.** The theme is revealed in Epic's livestream about 10 hours before the contest starts (S).
 Rule 7(h): gameplay, levels and art assets are made during the contest. So in the window: words, tables and
 decisions only. No game repo, no code, no level, no images (key art included).
-**Where the session runs before S:** a planning folder, e.g. `C:\dev\_plan\` with a copy of the kit's `CLAUDE.md`
-and `design\concept.md`; start Claude Code there. At S, create the project (`SETUP.md`), move `design\` into it, and
+**Where the session runs before S:** a planning folder, e.g. `C:\dev\_plan\` with a copy of the kit's `CLAUDE.md`,
+an empty `design\`, and `.claude\settings.local.json` holding SETUP step 5's `additionalDirectories` and `deny`
+lines (and `attribution`; no MCP lines yet); start Claude Code there. At S, create the project (`SETUP.md`), move `design\` into it, and
 commit it as the repo's first file. From then on the session runs in the project as usual.
 The reveal is at 04:00 JST: decide the night before whether the director watches live or sleeps and starts planning
 in the morning; the window fits either.
