@@ -85,7 +85,7 @@ folder, never on PIE.
   Teen rating; all text in English.
 - **Package:** zip named `TeamName_GameName.zip`, under 1 GB (`scripts/package.ps1` checks), no `Saved/` inside (`scripts/upload.ps1` checks), build
   stamp matches the final commit with no `+dirty`.
-- **Submission:** video passes its checklist (`cinematics-video.md`), devlog complete, game page notes the unsigned exe.
+- **Submission:** video passes its checklist (`cinematics-video.md`); page, form and devlog per `docs/submission.md`.
 
 ## Sources (5.8)
 

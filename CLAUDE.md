@@ -11,8 +11,9 @@ means ask the director). **The target PC** is the machine the game is built and 
 
 - **This file is a copy.** The session runs in the game project (`C:\dev\<ProjectName>`); the kit lives at
   **`C:\dev\megajam-kit`** (added as a working directory in `.claude\settings.local.json`, SETUP step 5).
-- Kit paths in this file (`PIPELINE.md`, `SETUP.md`, `docs/design.md`, `docs/ue/`, `gen/`, `prompts/`) are relative
-  to the kit. `docs/design.md` is the game, level and progression design playbook (with playtesting).
+- Kit paths in this file (`PIPELINE.md`, `SETUP.md`, `docs/design.md`, `docs/submission.md`, `docs/ue/`,
+  `gen/`, `prompts/`) are relative to the kit. `docs/design.md` is the game, level and progression design
+  playbook (with playtesting).
   Run generators from the kit folder in PowerShell (Git Bash rewrites `/Game/...` arguments; `PIPELINE.md`):
   `cd C:\dev\megajam-kit; node gen\asset.ts ...`. Their output goes to the
   project (`<Project>\Generated\`) via `MEGAJAM_PROJECT` in the kit's `.env`. Check it names this project first.
@@ -190,6 +191,7 @@ add an entry to the project's `KIT_NOTES.md` in the same round.
   Windows user name). The exe is unsigned: note it on the page (`SETUP.md` 9).
 - Video: 30–60 s, 1920×1080 or higher, gameplay in the first 5 seconds, English only, with sound
   (`docs/ue/cinematics-video.md`).
+- Page, submission form and devlog: `docs/submission.md` (the rules' must-haves and the last-day order).
 
 ## Jam compliance
 
@@ -222,4 +224,5 @@ add an entry to the project's `KIT_NOTES.md` in the same round.
 ## Devlog (Glass Box)
 
 - At the end of each round, append to `devlog/YYYY-MM-DD.md`: what was asked, what was built,
-  what broke, one or two screenshots, and the prompts that mattered.
+  what broke, one or two screenshots, and the prompts that mattered. At content lock it becomes the published
+  devlog (`docs/submission.md` "The devlog").
