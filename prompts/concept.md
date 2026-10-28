@@ -1,16 +1,22 @@
-# Concept, scope and schedule: run first, at jam start (before the style lock)
+# Concept, scope and schedule: run at the theme reveal, before the contest starts
 
 Goal: one game concept the director picks on evidence, a scope that fits the jam, and a schedule with fixed freeze
 points. Everything here is words and tables (no images, no credits). Budget: ~1.5 hours, ~45 min in practice runs.
-Order of the jam's first day: **this prompt → `prompts/style-lock.md` → build** (CLAUDE.md "The two rules that
-matter most").
+Order: **theme reveal → this prompt (in words) → contest start → `prompts/style-lock.md` → build** (CLAUDE.md
+"The two rules that matter most", "Jam compliance").
+
+**The theme window.** The theme is revealed in Epic's livestream about 10 hours before the contest starts (S).
+Rule 7(h): gameplay, levels and art assets are made during the contest. So in the window: words, tables and
+decisions only. No game repo, no code, no level, no images (key art included). Keep `design/concept.md` outside the
+game repo until S, then commit it as the repo's first file. The reveal is at 04:00 JST: decide the night before
+whether the director watches live or sleeps and starts planning in the morning; the window fits either.
 
 ## 0. Facts first (5 min)
 - Read the jam page at kickoff: the exact submission deadline (with time zone), the theme wording, any new rules.
-  Write them at the top of `design/concept.md` in the game project. Schedule from the real deadline, not from memory
-  (the kit plans for a 93-hour jam).
+  Write them at the top of `design/concept.md`. Schedule from the real times, not from memory (CLAUDE.md "Jam
+  compliance": S = 14:00 JST Nov 12, D = 10:59 JST Nov 16, 93 h).
 - The judging categories (CLAUDE.md "Jam compliance"): Ambition and Innovation, Use of Theme, Fun Factor,
-  Gameplay, Visuals, Level Design and Game Progression, Audio. Ties are re-scored with Fun Factor doubled.
+  Gameplay, Visuals, Level Design, Audio. Ties are re-scored with Fun Factor doubled.
 
 ## 1. Direction (the director, 10 min)
 The director gives: first reactions to the theme, any genre or feel they want or want to avoid, and how many hours
@@ -61,15 +67,15 @@ Write `design/concept.md` in the game project:
   fails, switch to its fallback then, not later.
 
 ## 5. Schedule with freeze points (Claude, 10 min)
-Count back from the real deadline D (for a 93-hour jam, H0 = D − 93 h). Sleep is part of the plan: put the sleep
-blocks in the table first, then fit the milestones between them. Keep the order and the gaps:
+S = contest start, D = submission deadline (S + 93 h). Sleep is part of the plan: put the sleep blocks in the
+table first, then fit the milestones between them. Keep the order and the gaps:
 
 | When | Milestone (pass/fail) |
 |---|---|
-| H0 + 2 h | Concept picked, `design/concept.md` written |
-| H0 + 5 h | Style lock approved (`prompts/style-lock.md`) |
-| H0 + 8 h | Risk spike answered: core verb works in grey boxes, or the fallback is chosen |
-| H0 + 20 h | **First playable:** start → core verb → an end, in grey boxes; game repo committed; **packaged and benched** |
+| Before S | Concept picked; cut list, schedule and style directions (in words) written |
+| S + 3 h | Style lock approved (`prompts/style-lock.md`: key art images start at S) |
+| S + 6 h | Risk spike answered: core verb works in grey boxes, or the fallback is chosen |
+| S + 18 h | **First playable:** start → core verb → an end, in grey boxes; game repo committed; **packaged and benched** |
 | D − 50 h | All beats playable in rough form, start to end |
 | **D − 32 h** | **Feature freeze:** no new systems or verbs after this. Only content, tuning, polish and fixes |
 | D − 20 h | **Content lock:** levels, assets and audio in. Cold playtest done (`docs/design.md` "Playtesting") |

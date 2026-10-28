@@ -198,6 +198,10 @@ add an entry to the project's `KIT_NOTES.md` in the same round.
   contest. So the kit holds docs, prompts, agent config and scripts, never runtime game code or game assets to ship.
   Docs may show short snippets of engine calls, not drop-in components. Game repo, assets, levels and gameplay code
   are created after 2026-11-12 14:00 JST. Epic may ask for the kit or its version history to verify this.
+- **Contest period** (Official Rules 4): 2026-11-12 00:00 ET to 2026-11-15 20:59 ET = **14:00 JST Nov 12 to
+  10:59 JST Nov 16** (93 h). The theme is revealed in Epic's livestream about 10 h before the start (04:00 JST
+  Nov 12): plan in words then (`prompts/concept.md`), but no game repo, code, levels or images before the start.
+- Rules 7(d)/(e): not an obvious extension of an Epic tutorial, and gameplay beyond the starter templates.
 - Practice projects are throwaway. Nothing from them goes into the jam game.
 - The kit's GitHub push history is the proof of what existed before the jam (procedure: kit `README.md`
   "Maintaining the kit").
@@ -210,8 +214,7 @@ add an entry to the project's `KIT_NOTES.md` in the same round.
 - **Only use a sourced asset whose licence allows AI use.** On Fab: the listing's "Allows usage with AI" must be Yes
   (Epic content licence section 17 bars NoAI content as input to generative AI, which includes this agent; the same
   flag is `"isAiForbidden"` at `https://www.fab.com/i/listings/<listing id>`). Check before importing any pack.
-- Judging (rules 9): Ambition and Innovation, Use of Theme, Fun Factor, Gameplay, Visuals, Level Design and Game
-  Progression, Audio (up to 5 points each; ties re-scored with Fun Factor doubled). The amount of AI used doesn't change the score.
+- Judging (rules 9): Ambition and Innovation, Use of Theme, Fun Factor, Gameplay, Visuals, Level Design, Audio (up to 5 points each; ties re-scored with Fun Factor doubled). The amount of AI used doesn't change the score.
 - The Glass Box devlog must be submitted with the game, during the contest.
 - Content must be Teen-appropriate, contain no third-party IP, and show no trademarks except the
   Unreal Engine logo. All in-game text and audio in English.

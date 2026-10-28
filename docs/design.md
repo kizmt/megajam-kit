@@ -1,6 +1,6 @@
 # Game design, level design and progression playbook
 
-Engine-neutral craft for a short jam game. "Level Design and Game Progression", "Fun Factor" and "Gameplay" are
+Engine-neutral craft for a short jam game. "Level Design", "Fun Factor" and "Gameplay" are
 three of the seven judging categories, and Fun Factor counts double in a tie: this is where most points are.
 The concept and the beats come from `prompts/concept.md`; this note is how to turn them into a game that teaches
 itself, escalates and ends well. Engine how-tos live in `docs/ue/` (`gameplay.md`, `worldbuilding.md`,
@@ -125,7 +125,7 @@ Pass/fail checks for each playtest round (report before and after):
 
 Write one line per category in `design/concept.md` and check it at feature freeze:
 - **Fun Factor / Gameplay:** the core verb feels good in a grey room; the juice pass is done; playtest checks pass.
-- **Level Design and Game Progression:** readable path, one new idea per beat, escalation to a climax, a real end.
+- **Level Design (progression included):** readable path, one new idea per beat, escalation to a climax, a real end.
 - **Use of Theme:** the theme changes the rules, and the video shows it in the first 15 s.
 - **Ambition and Innovation:** one twist nobody else will have, made solid; ambition through the mechanic and the
   set piece, not through scope (`docs/ue/worldbuilding.md` "Ambition on a budget").

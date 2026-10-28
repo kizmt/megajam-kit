@@ -1,5 +1,8 @@
 # Style lock — run after `prompts/concept.md`, before any gameplay
 
+Starts at the contest start: key art images are created art (rule 7(h)); directions in words can be drafted in the
+theme window (`prompts/concept.md`).
+
 Goal: a look the director approves, written down precisely enough that every later asset and scene can be
 checked against it. Budget: ~3 hours of the jam, ~1 hour in practice runs.
 
