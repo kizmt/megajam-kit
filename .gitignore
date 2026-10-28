@@ -9,3 +9,6 @@ out/
 tripo-out/
 .tripo/
 node_modules/
+
+# Python bytecode (Unreal and Blender write these next to the scripts)
+__pycache__/

@@ -1,6 +1,9 @@
 # Asset pipeline
 
 Run from `C:\dev\megajam-kit` with the Unreal editor open (MCP server on). Keys come from `.env`.
+Run generators from **PowerShell**. Git Bash (Claude Code's Bash tool) rewrites any argument starting with `/`:
+`--dest /Game/Props` reached Node as `C:/Program Files/Git/Game/Props`, and the import failed with a misleading
+"produced no assets ... file format may not be supported". From Bash, set `MSYS_NO_PATHCONV=1` first.
 
 All generators write to `<Project>/Generated/` where `<Project>` is `MEGAJAM_PROJECT` in the kit's `.env`.
 Nothing generated is ever written into the kit.
@@ -27,19 +30,26 @@ Unreal: `/Game/Props/<Name>/` (SM_, MI_, T_*).
 | `--style file --ref img` | Style prefix text and reference images for a consistent look. |
 | `--tex 1024` | Smaller textures for small props (default 2048). |
 | `--faces 30000` / `--tris N` | Tripo face limit / extra Blender decimation. |
-| `--place x,y,z --yaw deg` | Placement in cm. Use `--yaw=-90` form for negatives. |
-| `--hulls 6` | Replace default collision with N convex hulls (4-8). For props the player pushes, carries or brushes against. |
+| `--place x,y,z --yaw deg` | Placement in cm. A value starting with `-` needs the `=` form (`--place=-10,-470,60`, `--yaw=-90`), or Node's `parseArgs` fails with "argument is ambiguous". |
+| `--hulls 6` | Replace default collision with N convex hulls (4-8 is typical; the script clamps to 1-16). For props the player pushes, carries or brushes against. |
+| `--dest /Game/Props` | Unreal content folder for the asset (default `/Game/Props`; the asset goes in `<dest>/<Name>/`). |
 | `--no-unreal` | Stop after the FBX. |
 
 Measured 2026-10-24: ~3 min per new prop (Tripo ~2.5-3.5 min), 45 Tripo credits ($0.45).
 With `--model`: ~14 s.
+
+Image prices (as of 2026-10; check before quoting): `gemini-3-pro-image` ~$0.134 per 1K/2K image, ~$0.24 per 4K
+(Google list price as quoted by third-party gateways; confirm on Google's pricing page). So a new prop is ~$0.58
+(one concept + 45 Tripo credits). `gpt-image-2` is billed per token (OpenAI pricing page, as of 2026-10; check
+before quoting): $15 per 1M image output tokens, $4 per 1M image input (reference images), $2.50 per 1M text input.
+The per-image cost depends on size and quality: estimate it with the calculator in OpenAI's image generation guide.
 
 Known limits: master material is opaque (glass renders dark).
 
 ## Characters: concept to playable (tested 2026-10-24: Explorer, Mechanic in a test project)
 
 ```powershell
-# 1. Three T-pose concepts, then STOP for Scott to pick (art direction; also catches A-poses)
+# 1. Three T-pose concepts, then STOP for the director to pick (art direction; also catches A-poses)
 node gen/character.ts "a young mechanic in blue work overalls, brown work boots" --name Mechanic --concepts 3
 # 2. Everything else (no manual steps)
 node gen/character.ts --image <picked concept> --name Mechanic --parent /Script/<Module>.PlayerCharacter
@@ -51,26 +61,44 @@ cm export, no textures) -> import -> `MI_<Name>` of `M_PBR_Master` (textures cap
 kept) -> root-scale gate -> IK rigs + retargeter + batch retarget of `ABP_Unarmed` -> `BP_<Name>` on `--parent`.
 Measured: ~4 min and 90 credits per new character; a rebuild from downloaded files takes ~20 s and no credits.
 
+**Balance first:** `character.ts` and `asset.ts` check `tripo balance --json` before the first paid step and stop if
+the run can't finish (90 new, 45 from `--task`, 25 rig only, 45 per prop). Before that check existed, a run spent 45
+credits on the model and then failed the re-texture on "Insufficient credits"; the model survived (resume with
+`--task <id>`). Tripo exit 6 (timed out) or 7 (network) can still bill: resume with `tripo task watch <id> --download`
+(id from `tripo history --limit 3`), never re-run. `run()` prints these hints.
+
+**A-pose concepts? T-pose pass (5 credits, manual for now).** Concepts can come out A-pose despite the T-pose
+wording: 6/6 for a long outfit description (hood, shoulder cape, long coat); a plainer outfit the same day gave 2/3
+T-pose. Fix the picked concept before image-to-model:
+`tripo generate image-to-image <concept> --model seedream_v5 -p template=t_pose` gave a clean T-pose with outfit,
+colours and silhouette kept, for 5 credits (as of 2026-10; check before quoting). Output was 1024×1024 PNG, not the
+documented 2048. `generate` has no `--dry-run`; the price is on Tripo's developer pricing page, not in `tripo docs`.
+Show the director the result next to the original. (`character.ts --tpose` is planned.)
+
 | Option | Use |
 |---|---|
 | `--concepts N` | Stop after N T-pose concepts. Always do this first. |
 | `--image file` | Start from a picked concept. |
 | `--task id [--pbr file]` | Start from a Tripo task. With `--pbr`, rig it as is; without, re-texture it first. |
 | `--rig fbx --pbr file` | Rebuild from downloaded files: no credits (e.g. after a pipeline fix, or the editor was closed). |
-| `--no-retexture` | Skip the v3.5 re-texture (70 credits); maps come from the first model. Blotch risk. |
+| `--no-retexture` | Skip the v3.5 re-texture (saves 20 credits: 70 per new character instead of 90); maps come from the first model. Blotch risk. |
 | `--max-tex 2048` | In-game texture cap (cooked size). Raise to 4096 for a hero/close-up character; no regeneration. |
+| `--tex N` | Source texture budget for `extract_pbr.py` in px (default 0 = full resolution; prefer `--max-tex`). |
 | `--parent /Script/M.C` | Make `BP_<Name>`: thin subclass of the game's C++ Character (mesh, ABP, offset only). |
 | `--height 1.8` `--rot -90` | Real height in metres; Blender Z rotation (Tripo faces +X in Unreal; -90 makes +Y like Manny). |
+| `--faces 30000` | Tripo face limit for the model. |
+| `--spec unreal` | Tripo rig spec (default `unreal`: Manny bone names). |
+| `--provider openai` `--style file --ref img` | Concept image provider and style inputs, as for props. |
+| `--no-unreal` | Stop before the Unreal import (files only). |
 
-Needs the Third Person content pack in the project (Manny + `ABP_Unarmed`). Reruns replace the character's whole
-folder (`clean_character.py`); if anything outside it still references the character (game mode pawn, placed
-actors), the run stops and lists them instead of triggering an Unreal dialog. Point those elsewhere first.
+Needs the Third Person content pack in the project (Manny + `ABP_Unarmed`). Reruns rebuild the character's folder
+(`clean_character.py`; see "Hard-won facts").
 
 **Foot IK (automatic, step 6b):** the retargeted `ABP_Unarmed_<Name>` keeps Epic's `CR_Mannequin_FootIK` Control Rig
 node, which twists non-Manny feet. `gen/unreal/abp.ts strip-footik <ABP>` deletes it and its NOT / Is Falling inputs,
 wires Slot -> Output Pose, compiles and force-saves (idempotent; character.ts runs it).
 
-Blend space speeds: idle 0, walk 300, jog 600 (the C++ player recipe in `docs/ue/gameplay.md` matches these).
+Blend space speeds: `docs/ue/characters.md` "Anim Blueprint driven from C++" (Blend Space).
 
 ## Audio
 
@@ -88,6 +116,32 @@ Add `--mono` for any sound played at a location in the world (footsteps, chest, 
 stereo for music, UI and 2D ambience.
 Measured: SFX ~2 s end to end, 30 s music track ~6 s.
 
+| Option | Use |
+|---|---|
+| `--n 3` | Variants in parallel, named `_1`, `_2`, `_3` (1-6). Each is billed. |
+| `--influence 0.4` | SFX only: how closely the sound follows the prompt (ElevenLabs `prompt_influence`, 0-1). |
+| `--format mp3_44100_128` | ElevenLabs output format (`mp3_*`, `opus_*`, `wav_*`, `pcm_*`); the WAV for Unreal is made by ffmpeg either way. |
+| `--voice id` | Voice for `voice` lines (`node gen/audio.ts voices` lists ids). |
+| `--vocals` / `--loop` / `--mono` | Music with vocals / looping SFX / one channel (see above). |
+| `--no-unreal` | Files only, no import. |
+
+## Motion: Uthana (text-to-motion)
+
+No kit script yet (`gen/uthana.ts` is planned: generate with cost logged, fetch, then import, bake root, retarget).
+Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls needed):
+
+- **API:** one GraphQL endpoint, `https://uthana.com/graphql`, HTTP Basic auth with the key (`UTHANA_API_KEY` in
+  `.env`) as the user and an empty password. Keep the key in the auth header only.
+- **Models:** `text-to-motion-3.0` is async (`create_text_to_motion_job`, poll `job(job_id:)` until `FINISHED`;
+  `result.result.id` is the motion id; 134-193 s per job). `text-to-motion-bucmd` (2.0) is a synchronous mutation.
+  3.0 has a **4 s minimum** length. `{ org { payg_total_usd ... } payg_prices { ... } }` shows balance and prices free.
+- **Cost** (as of 2026-10; check before quoting): billed per second of output, ~$0.10/s plus ~$0.004 per call. Rule
+  of thumb **~$0.40 per 4 s clip** (a 5 s clip was ~$0.50).
+- **Output:** FBX from `https://uthana.com/motion/file/motion_viewer/<character>/<motion>/fbx/<name>.fbx?fps=30` (same
+  auth), 30 fps, retargeted to Uthana's built-in UE5 Manny (`c43tbGks3crJ`). Each file **bundles a skinned Manny
+  mesh** (~8.8 MB per clip; causes a harmless "No smoothing group information" warning): discard it on import.
+- **Import and fit** (root bake before retargeting, trimming, open hands): `docs/ue/animation-library.md` "Uthana".
+
 ## Individual tools
 
 | Tool | Does |
@@ -101,10 +155,21 @@ Measured: SFX ~2 s end to end, 30 s music track ~6 s.
 | `gen/unreal/shot.ts` | Viewport screenshot to PNG (`--wait N` for shader compiles) |
 | `gen/character.ts` | Concept -> rigged, PBR-textured, retargeted character (+ BP); see Characters |
 | `gen/blender/prep_rig.py` | Rigged character: height, facing, armature-safe cm export, textures stripped |
-| `gen/blender/pack_orm.py` | Pack roughness/metallic/AO PNGs into `T_<Name>_orm.png` for M_PBR_Master v2 |
+| `gen/blender/pack_orm.py` | Pack roughness/metallic/AO PNGs into `T_<Name>_orm.png` for M_PBR_Master (v2+) |
+| `gen/blender/mesh_compare.py` | Compare two rigged FBX meshes (counts, UVs, normals, skin-weight steps), e.g. after a hand-fixed rig |
+| `gen/audio.ts` | SFX, music and voice via ElevenLabs, converted and imported; see Audio |
+| `gen/unreal/abp.ts` | `strip-footik <ABP>`: remove the foot-IK Control Rig node from a retargeted `ABP_Unarmed` |
+| `gen/unreal/anim_inventory.ts` | Offline inventory of a project's animation content (no editor), to find a library's source mesh |
+| `gen/unreal/retarget_library.ts` | Retarget a whole animation library folder onto a `character.ts` character (`docs/ue/animation-library.md`) |
+| `gen/perf/bench.ts` / `csv_report.ts` | Benchmark render variants on the packaged build / summarise an Unreal CSV profile (`docs/ue/performance.md`) |
+| `gen/test/keytest.ps1` | Real-input key test of a packaged build (ask the director first; aborts if the game loses focus) |
+| `gen/test/autoclip.ps1` | Film the game playing itself through an autoplay hook (no key injection) |
+| `gen/test/record_window.ps1` | Record the game window only, while it has focus |
+| `gen/test/game_test.ps1` | Run a scripted test in a standalone `-game` instance and print its result lines |
 | `gen/blender/extract_pbr.py` | Colour/normal/roughness/metallic PNGs from a Tripo textured model (FBX or GLB) |
 | `gen/unreal/py/import_skeletal.py` / `check_skeletal.py` / `retarget_setup.py` / `clean_character.py` / `make_character_bp.py` | Skeletal import, root-scale check, IK retarget, safe rebuild, thin BP |
 | `gen/unreal/materials.ts` | `M_PBR_Master` + per-asset material instances |
+| `gen/vfx/vfx.ts` | VFX building blocks: procedural mask/noise textures, `M_VFX_Master` + per-effect instances, effect meshes (`docs/ue/vfx.md` "Kit VFX building blocks") |
 | `unreal/Plugins/MegajamTools` | Project plugin: MCP tools `import_sound`, `import_any`, `run_console_command`, `run_python`, `get_sound_info` |
 
 ## Tool references (check here when a generation step fails)
@@ -125,7 +190,6 @@ Measured: SFX ~2 s end to end, 30 s music track ~6 s.
 - The FBX importer's auto materials drop the metallic map and can fail to compile. Always use `M_PBR_Master`.
 - `CaptureViewport` requires `captureTransform` and `annotations`; the image comes back inside JSON.
 - `add_to_scene_from_asset` `snap_to_ground` did not move the actor; place at z=0 (pivots are at the base).
-- Gemini image API only returns JPEG.
 - Generated props import with 1 LOD and Nanite off; the pipeline enables Nanite. See `docs/ue/performance.md`.
 - Master material needs usage flags (Nanite, skeletal, instanced) set up front; a missing flag in a packaged build = default material.
 - After material/Nanite changes, wait ~20 s for shader compiles before taking a judging screenshot (props render grey/blocky meanwhile).
@@ -153,7 +217,8 @@ Measured: SFX ~2 s end to end, 30 s music track ~6 s.
   `tripo anim rig` accepts the `texture_model` task. The command is `tripo model texture` (not `tripo texture`);
   `--dry-run` exists on `make` only. `--for game-pc` and `--for anim` send the same generation settings.
 - T-pose concepts: say the arm angle ("exactly 90 degrees, NOT an A-pose") and camera alignment ("facing the
-  viewer squarely, zero rotation, symmetrical"): 3/3 clean vs 1/2 without (one A-pose, one turned body).
+  viewer squarely, zero rotation, symmetrical"): 3/3 clean vs 1/2 without (one A-pose, one turned body) for a short
+  prompt. It doesn't hold for long outfit descriptions (0/6 later); use the Tripo T-pose pass (Characters).
 - Editor Python must never delete an asset something else references: `delete_asset` force-deletes, but the
   object lives on in memory, and creating one with the same name then opens a modal **"Overwrite Existing
   Object"** dialog that blocks the game thread (and every MCP call) until someone clicks. Reuse shared assets
@@ -163,9 +228,9 @@ Measured: SFX ~2 s end to end, 30 s music track ~6 s.
 - Texture size: keep the full-res source and set `MaxTextureSize` (cooked size) instead of downscaling in
   Blender, so a hero asset can be raised later with one setting. Characters do this (`--max-tex`); props still
   downscale in `prep.py`.
-- M_PBR_Master is version-tagged and rebuilt **in place** (`materials.ts master [--force]`). Existing instances
-  keep working; ones made before v2 lose their old Roughness/Metallic parameters until rebuilt (`asset.ts --model`,
-  `character.ts --rig --pbr`: free). Details: `docs/ue/materials.md` "Master material v2".
+- M_PBR_Master (now v3) is version-tagged and rebuilt **in place** (`materials.ts master [--force]`). Existing
+  instances keep working; ones made before v2 lose their old Roughness/Metallic parameters until rebuilt
+  (`asset.ts --model`, `character.ts --rig --pbr`: free). Details: `docs/ue/materials.md` "Master material".
 - `asset.ts` reruns used to stack a new actor each time while the old ones pointed at the deleted mesh; it now
   removes same-label actors first. Editor scripts that run user code: catch `SystemExit` too (`run_python` does).
 - **Imported props get one auto convex hull, which fills openings** (arches, gates, tunnels): an arch walled off a
@@ -185,5 +250,4 @@ Measured: SFX ~2 s end to end, 30 s music track ~6 s.
   relaunches once if the game doesn't start.
 - **ElevenLabs pricing** differs by product (per generation vs per second for SFX; music per minute). Check the
   current price on the account page before a batch and quote it; one prototype batch (1 music track, 4 SFX) was ~$0.70.
-- **Uploads:** `scripts/upload.ps1` (butler) pushes the zip, never the build folder; set butler up before the jam
-  (`SETUP.md` section 9).
+- **Uploads:** `SETUP.md` section 9.

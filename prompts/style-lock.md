@@ -1,26 +1,29 @@
 # Style lock — run first, before any gameplay
 
-Goal: a look Scott approves, written down precisely enough that every later asset and scene can be
+Goal: a look the director approves, written down precisely enough that every later asset and scene can be
 checked against it. Budget: ~3 hours of the jam, ~1 hour in practice runs.
 
-## 1. Direction (Scott, 15 min)
-Scott gives: the theme take, 3–5 mood words, 2–3 real-world or game references for *feel only*
+## 1. Direction (the director, 15 min)
+The director gives: the theme take, 3–5 mood words, 2–3 real-world or game references for *feel only*
 (no copying), and one sentence on what the player should feel in the first 10 seconds.
 
 ## 2. Key art (Claude, 30 min)
 1. **Directions in words first (free).** Write 2–3 distinct directions as short paragraphs (setting, light,
-   palette, material feel, character idea), all for the same scene. Scott can often pick or merge from the
+   palette, material feel, character idea), all for the same scene. The director can often pick or merge from the
    text alone; then only that direction gets images.
-2. **Images for the chosen direction(s)** (image model, cost stated first): per direction, 2 key frames of the
-   game's main view (different parts of the level) + **1 character sheet** (the player character in a few
-   colour variants). The character sheet becomes the reference for `gen/character.ts` concepts.
-3. Present side by side. Scott picks or asks for changes. Repeat once at most.
+2. **Images for the chosen direction(s)** (image model, cost stated first; prices in `PIPELINE.md`): per direction, 2 key frames of the
+   game's main view (different parts of the level) + **1 character sheet** if the game has a player character
+   (a few colour variants). The character sheet becomes the reference for `gen/character.ts` concepts.
+3. Present side by side. The director picks or asks for changes. Repeat once at most.
 4. Copy the approved images into `art/reference/` (the screenshots in step 4 are compared against them).
 
 ## 3. Write `art/style-lock.md`
 Concrete and checkable, never vague adjectives:
 - **Palette:** 5–7 hex values with roles (key light, shadow, accent, UI, hazard).
 - **Lighting:** time of day, sun angle and colour, sky, fog density and colour, exposure range.
+  For a dark game, give a numeric black floor (e.g. "darkest 1% of pixels at luma ≥ N/255, under 1% near-black") and
+  check in-engine shots against that number, not against the key art: image models crush blacks at the frame edges
+  even when told not to.
 - **Post-process:** colour grading LUT or curve notes, bloom, vignette, outline/cel settings.
 - **Materials:** one master material approach (flat, toon, painted, PBR). Roughness range.
 - **Shape language:** proportions, silhouette rules, level of detail, scale of player vs world.
@@ -29,11 +32,15 @@ Concrete and checkable, never vague adjectives:
 
 ## 4. Build the look in-engine *before* the game (Claude, 1–1.5 h)
 Graybox room + sky + fog + post-process volume + master material + 3 generated hero props.
-Capture `art/camera-set.md` shots and compare with the key art. Iterate lighting and post until
-Scott says it matches. This scene becomes the template every level is built from.
+The Basic level has no post-process volume: build an unbound one here, and on the Lumen path set its
+`LumenMaxRoughnessToTraceReflections` to 0.25 (`SETUP.md` 7b).
+Define 4-6 fixed camera transforms in `art/camera-set.md` (the gameplay view plus key spots), capture those
+shots and compare with the key art. Iterate lighting and post until the director says it matches. This scene becomes the template every level is built from.
 
 ## 5. Freeze
-Scott approves. From here, any change to the look goes through `art/style-lock.md` first.
+The director approves. From here, any change to the look goes through `art/style-lock.md` first.
+Start the project's `DECISIONS.md` now with the style-lock calls (direction, render path, lighting, palette, and the
+target fps: `docs/ue/performance.md` "The bar").
 
 ## Why this order
 Mismatched generated assets look cohesive under a strong, consistent lighting/post/material setup,

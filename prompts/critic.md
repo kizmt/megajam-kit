@@ -1,6 +1,6 @@
 # Blind critic: brief for a fresh helper agent
 
-Use after a visual or level change, before reporting it to Scott. The critic is a **new** helper agent that has not
+Use after a visual or level change, before reporting it to the director. The critic is a **new** helper agent that has not
 seen the work being built. Give it only what is below; never your own opinion of the result.
 
 ## What the main session prepares
@@ -13,7 +13,12 @@ seen the work being built. Give it only what is below; never your own opinion of
      room", "fight spaces are readable from the gameplay camera", "no flat, evenly lit walls").
 3. Copies with neutral names (`A_1.jpg`, `B_1.jpg`...) and a random A/B order per camera, recorded in your own notes.
    The critic must not know which image is the game, which is the reference, or which is newer.
-4. `art/style-lock.md` (palette, lighting, materials) if it exists.
+4. `art/style-lock.md` (palette, lighting, materials) if it exists, **cut down to the look itself**: remove round
+   numbers, dates, version names and anything that describes what was built when ("Round 7 room"), or the critic
+   can tell which image is newer.
+5. Write the rubric **before** running the critic, and keep it to what the camera can show. List the deliberate
+   states the camera will show and say how to judge them ("the exit gate is closed until the enemies are dead; judge
+   whether it reads as the exit, not whether it is open"). This says nothing about which image is newer.
 
 ## The brief (paste, fill the brackets)
 
@@ -33,7 +38,13 @@ seen the work being built. Give it only what is below; never your own opinion of
 
 - Unblind it yourself. If the game lost to the reference, or the new version lost to the old, the ranked flaws
   become the next tasks (within the round's limits).
-- Check each flaw against `DECISIONS.md`: Scott's calls overrule the critic. Drop flaws that contradict one.
-- Report to Scott: the scores, the top 3 flaws, what you changed. Never present the critic's verdict as Scott's.
+- Check each flaw against `DECISIONS.md`: the director's calls overrule the critic. Drop flaws that contradict one
+  (in practice: "cut the fill light" against a frozen lighting call).
+- Don't spend tuning cycles on a rubric item the design or a frozen call blocks: a score that won't move under the
+  constraints is a question for the director, not a task. Report it.
+- Report to the director: the scores, the top 3 flaws, what you changed. Never present the critic's verdict as the director's.
+- **Scores only compare within one run.** The same image scored 34/50 in one run and 26/50 in the next with the same
+  brief; the A-versus-B ranking was consistent. For a trend, put the old and new images in the same run (or average
+  2-3 critics), never compare totals across runs.
 - For a high-stakes look (the style lock, the final submission shots) run 2-3 critics in parallel and act on flaws
   that at least two of them raise.
