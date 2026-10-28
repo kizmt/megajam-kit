@@ -76,7 +76,8 @@ Feel's core idea in Unreal terms, described so the session can write it quickly:
 
 ## Free effect packs on Fab
 
-Packs such as impact frames, shockwaves and spell effects are **sourced assets**: list them, and they are not scored.
+Packs such as impact frames, shockwaves and spell effects are **sourced assets**: only packs whose licence allows AI
+use (CLAUDE.md "Jam compliance"); list them, and they are not scored.
 They are fine for impact frames and placeholders; effects built in Niagara during the jam count as the game's own
 visuals. Check `docs/ue/animation-library.md` for the library-project approach.
 

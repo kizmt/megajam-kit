@@ -1,10 +1,10 @@
-# Style lock — run first, before any gameplay
+# Style lock — run after `prompts/concept.md`, before any gameplay
 
 Goal: a look the director approves, written down precisely enough that every later asset and scene can be
 checked against it. Budget: ~3 hours of the jam, ~1 hour in practice runs.
 
 ## 1. Direction (the director, 15 min)
-The director gives: the theme take, 3–5 mood words, 2–3 real-world or game references for *feel only*
+The director gives (with the picked concept in `design/concept.md`): 3–5 mood words, 2–3 real-world or game references for *feel only*
 (no copying), and one sentence on what the player should feel in the first 10 seconds.
 
 ## 2. Key art (Claude, 30 min)

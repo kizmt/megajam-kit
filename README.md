@@ -37,8 +37,11 @@ Non-AI tools: Blender (headless, for model clean-up and texture packing), ffmpeg
 | `SETUP.md` | Checklist from empty project to ready: plugins, MCP, build loop, packaging, render and performance defaults |
 | `CLAUDE.md` | Standing rules for the Claude session: scope, workflow, engine conventions, verification |
 | `PIPELINE.md` | How each asset type is produced, with the facts learned while testing the pipeline |
+| `docs/design.md` | Game, level and progression design playbook, with playtesting checks |
 | `docs/ue/` | Curated notes on UE 5.8 (C++, gameplay, materials, characters, lighting, performance and more) with links to Epic's docs |
+| `prompts/concept.md` | Jam-start procedure: concepts scored against the judging categories, cut list, schedule with freeze points |
 | `prompts/style-lock.md` | Procedure for agreeing and writing down the game's visual style |
+| `prompts/playtest.md` | Brief for a fresh agent reviewing a recorded first-time play |
 | `prompts/critic.md` | Brief for a blind critic agent that scores screenshots against references or a rubric |
 | `gen/image.ts` | Concept image generation |
 | `gen/asset.ts` | One command from a prompt to a prop placed in the level: concept → 3D model → Blender prep → import (Nanite, collision, material) |

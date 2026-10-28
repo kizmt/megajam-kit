@@ -11,11 +11,12 @@ means ask the director). **The target PC** is the machine the game is built and 
 
 - **This file is a copy.** The session runs in the game project (`C:\dev\<ProjectName>`); the kit lives at
   **`C:\dev\megajam-kit`** (added as a working directory in `.claude\settings.local.json`, SETUP step 5).
-- Kit paths in this file (`PIPELINE.md`, `SETUP.md`, `docs/ue/`, `gen/`, `prompts/`) are relative to the kit.
+- Kit paths in this file (`PIPELINE.md`, `SETUP.md`, `docs/design.md`, `docs/ue/`, `gen/`, `prompts/`) are relative
+  to the kit. `docs/design.md` is the game, level and progression design playbook (with playtesting).
   Run generators from the kit folder in PowerShell (Git Bash rewrites `/Game/...` arguments; `PIPELINE.md`):
   `cd C:\dev\megajam-kit; node gen\asset.ts ...`. Their output goes to the
   project (`<Project>\Generated\`) via `MEGAJAM_PROJECT` in the kit's `.env`. Check it names this project first.
-- Project paths (`scripts/`, `PROGRESS.md`, `DECISIONS.md`, `KIT_NOTES.md`, `SOURCED_ASSETS.md`, `art/`, `devlog/`,
+- Project paths (`scripts/`, `PROGRESS.md`, `DECISIONS.md`, `KIT_NOTES.md`, `SOURCED_ASSETS.md`, `design/`, `art/`, `devlog/`,
   `Generated/`, `Source/`, `Config/`) are relative to the project.
 - **Any command that writes a project file uses an absolute path** (`C:\dev\<Project>\...`, `git -C <Project>`),
   even after a `cd`. The session's working directory is often the kit, permission checks resolve relative paths
@@ -39,7 +40,9 @@ means ask the director). **The target PC** is the machine the game is built and 
 1. **Small scope, always.** One playable space, a 5–10 minute experience, finished and polished.
    Never an open world, never "systems first, content later". If a feature isn't visible in the
    60-second video, it's cut. When in doubt, cut.
-2. **Lock the look before building the game.** No gameplay work starts until `art/style-lock.md`
+2. **Pick the game on evidence, then lock the look, then build.** At jam start, `prompts/concept.md` (concepts
+   scored against the judging categories, the cut list, the schedule with freeze points), then
+   `prompts/style-lock.md`. No gameplay work starts until `art/style-lock.md`
    is approved by the director (see `prompts/style-lock.md`). Every visual change is judged by screenshot
    against `art/reference/`, never by description.
 
