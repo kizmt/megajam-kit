@@ -10,8 +10,9 @@ Rule 7(h): gameplay, levels and art assets are made during the contest. So in th
 decisions only. No game repo, no code, no level, no images (key art included).
 **Where the session runs before S:** a planning folder, e.g. `C:\dev\_plan\` with a copy of the kit's `CLAUDE.md`
 and `design\concept.md`; start Claude Code there. At S, create the project (`SETUP.md`), move `design\` into it, and
-commit it as the repo's first file. From then on the session runs in the project as usual. The reveal is at 04:00 JST: decide the night before
-whether the director watches live or sleeps and starts planning in the morning; the window fits either.
+commit it as the repo's first file. From then on the session runs in the project as usual.
+The reveal is at 04:00 JST: decide the night before whether the director watches live or sleeps and starts planning
+in the morning; the window fits either.
 
 ## 0. Facts first (5 min)
 - Read the jam page at kickoff: the exact submission deadline (with time zone), the theme wording, any new rules.
