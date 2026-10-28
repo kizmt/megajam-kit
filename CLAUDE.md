@@ -3,8 +3,8 @@
 Pipeline and agent setup for a 93-hour solo Unreal Engine 5.8 jam entry (2026 Epic AI MegaJam).
 The director owns concept, feel, art direction and sign-off. Claude owns implementation, tooling and verification.
 
-Terms: **the director** is the human who sets the concept and signs off each round (every "ask" rule in this file
-means ask the director). **The target PC** is the machine the game is built and measured on (RTX 4060
+Terms: **the director** is the human who owns the vision and steers (every "ask" rule in this file means ask the
+director). **The target PC** is the machine the game is built and measured on (RTX 4060
 8 GB, i5-14500, 32 GB RAM, 4K monitor).
 
 ## Where things are
@@ -60,7 +60,7 @@ means ask the director). **The target PC** is the machine the game is built and 
 - **`DECISIONS.md` (in the game project) records the director's explicit calls** ("responsiveness beats foot accuracy",
   "accept this shot"), one line each with the date. Read it at the start of every round. Never silently undo one;
   to change one, propose it with evidence and ask. It records what the director decided, not what is forbidden: new ideas
-  are welcome. Create it in Round 1 with the style-lock calls; append at each review, grouped by area; strike
+  are welcome. Create it in Round 1 with the style-lock calls; append whenever the director makes a call, grouped by area; strike
   through superseded calls with a pointer; record "your call" decisions too.
 - **One flagged improvement per round.** Beyond the plan, each round may add one unrequested improvement that makes
   the game better, labelled as such in the report so the director can keep or drop it.
@@ -70,8 +70,19 @@ means ask the director). **The target PC** is the machine the game is built and 
 - **Keep context fresh.** `PROGRESS.md` holds state only: a short status, the open problems (rewritten each round,
   never appended to), the spend and the verb table (Verification). Round results go to the devlog. When the session
   gets long or slow, start a new one from CLAUDE.md + PROGRESS.md + DECISIONS.md rather than pushing on.
-- **Rounds, not marathons.** Each round: plan (≤5 bullets) → build → capture screenshots/video →
-  stop for the director's review. No round longer than ~2 hours without a review.
+- **The director and the session are one team.** The director holds the vision and makes the judgement calls:
+  whether it is fun, the concept and story, colour and mood, and what lifts it to a quality product. Bring each such
+  call with options, evidence (captures, numbers) and a recommendation. The session can also call on the director
+  like a tool: when a step needs a human (a UI-only button, a sign-in, a purchase, a cold playtest, judging feel by
+  hand), ask for exactly that, step by step, and keep working on something else meanwhile.
+- **Work long stretches unassisted.** Once the session has what it needs (the concept, the look, the calls in
+  `DECISIONS.md`), it keeps going round after round without waiting for replies. It stops only for a director's call,
+  a change to a frozen decision, spending beyond the agreed budget, an action this file says to ask before, or a step
+  only a human can do. Batch those into one message at a round close where possible.
+- **The director can step in at any time.** A steer overrides the plan: finish or roll back the current step, record
+  the call in `DECISIONS.md`, re-plan.
+- **Rounds with checkpoints.** Each round: plan (≤5 bullets) → build → capture screenshots/video → report, then start
+  the next round. Keep a round to ~2 hours so each report is a useful checkpoint.
 - **Round close:** refresh PROGRESS (status, open problems), append the devlog and DECISIONS. If the round added
   content or systems, package and bench, or say why not; put the editor close/reopen this needs in the round plan,
   so the director approves it with the plan instead of in a separate round trip.

@@ -7,15 +7,16 @@ gameplay code, levels or game assets.
 
 ## How it works
 
-- **One director, one agent session.** The director sets the concept, art direction and feel, and signs off on
-  each round. A single Claude Code session (Claude Opus 5.5) writes the code, drives the Unreal editor and runs the
+- **One director, one agent session, one team.** The director owns the vision (concept, story, look, whether it
+  is fun) and steers at any time; the session works long stretches on its own once it has what it needs, and asks
+  the director for the steps only a human can do. A single Claude Code session (Claude Opus 5.5) writes the code, drives the Unreal editor and runs the
   asset pipeline. `CLAUDE.md` holds the standing rules the session follows.
 - **Unreal Engine 5.8.4**, C++ gameplay classes with thin Blueprint subclasses, dynamic lighting (full Lumen, Lumen Lite
   or a no-Lumen stylized path, chosen at the style lock), Nanite meshes.
 - The session works in the editor through Epic's **Unreal MCP** plugin plus a small kit plugin (`MegajamTools`)
   that adds a few editor tools: running editor Python, importing sounds and files, and console commands.
-- **Short rounds with a review after each.** Claude plans, builds and captures screenshots, then stops for
-  the director's review. The look is locked from approved key art before any gameplay is built (`prompts/style-lock.md`).
+- **Short rounds with a report after each.** Claude plans, builds, captures screenshots and reports, then carries
+  on; it stops only for the director's calls. The look is locked from approved key art before any gameplay is built (`prompts/style-lock.md`).
 
 ## AI services used
 
