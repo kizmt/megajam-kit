@@ -13,7 +13,7 @@
 #   Feedback: FlashAmount (Custom Primitive Data index 0; C++: Mesh->SetCustomPrimitiveDataFloat(0, x)),
 #             FlashColor = (1,1,1), FlashStrength = 20
 # ARGS: path, tex_basecolor, tex_normal, tex_orm, tex_black, [force=1]. Prints MASTER_JSON={...}.
-# No SystemExit here: run_python only catches Exception, so exit through normal control flow.
+# No exit()/SystemExit here: run_python would report it as ERROR. Finish through normal control flow.
 import json
 import unreal
 
@@ -41,8 +41,16 @@ def out(a, a_out, prop):
         raise RuntimeError(f"connect to {prop} failed: {a.get_name()}.{a_out!r}")
 
 
+def clear_graph(mat):
+    # delete_all_material_expressions removes only about half the nodes per call in 5.8.4 (tested): repeat until empty.
+    while (n := mel.get_num_material_expressions(mat)) > 0:
+        mel.delete_all_material_expressions(mat)
+        if mel.get_num_material_expressions(mat) >= n:
+            raise RuntimeError(f"could not clear the graph of {mat.get_path_name()} ({n} nodes left)")
+
+
 def build(mat):
-    mel.delete_all_material_expressions(mat)
+    clear_graph(mat)
 
     def tex_param(name, tex_path, sampler, x, y, group="Textures"):
         return node(mat, unreal.MaterialExpressionTextureSampleParameter2D, x, y, parameter_name=name, group=group,
@@ -155,10 +163,12 @@ def build(mat):
                   unreal.MaterialUsage.MATUSAGE_INSTANCED_STATIC_MESHES):
         mel.set_material_usage(mat, usage)
 
-    errors = mel.recompile_material(mat)
+    # recompile_material returns nothing (no error list): a broken graph shows up as the default material, so
+    # check the result renders (shot) after a change.
+    mel.recompile_material(mat)
     eal.set_metadata_tag(mat, "MegajamMasterVersion", VERSION)
     eal.save_loaded_asset(mat)
-    return {"expressions": mel.get_num_material_expressions(mat), "errors": [str(e) for e in (errors or [])]}
+    return {"expressions": mel.get_num_material_expressions(mat)}
 
 
 path = ARGS["path"]

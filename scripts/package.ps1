@@ -1,16 +1,19 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Packages the Unreal project in the parent folder for Win64 (Development) and zips it for itch.io.
+  Packages the Unreal project in the parent folder for Win64 (Development) and zips it for the jam submission.
+.EXAMPLE
+  .\scripts\package.ps1 -ZipName MyTeam
 #>
 [CmdletBinding()]
 param(
     [string]$EngineRoot = 'C:\Program Files\Epic Games\UE_5.8',
     [string]$BuildRoot  = 'C:\dev\Builds',
-    [string]$ZipName    = 'ScottManson'
+    [string]$ZipName    = ''            # the team name: the jam wants <TeamName>_<GameName>.zip
 )
 
 $ErrorActionPreference = 'Stop'
+if (-not $ZipName) { Write-Host 'FAIL: pass -ZipName <TeamName> (the zip is named <TeamName>_<ProjectName>.zip).'; exit 1 }
 
 if (Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue) {
     Write-Host 'FAIL: UnrealEditor.exe is running. Save your work and close the editor, then run this script again.'
@@ -68,9 +71,19 @@ if ($ok) {
     # Build stamp: <archive>\<Platform>\<Project>\BuildStamp.txt (the packaged game's project dir), one line:
     # "<short commit>[+dirty] <package time>". The game logs it at startup and shows it in a corner.
     if ($exe) {
-        $commit = (& git -C $projectDir rev-parse --short HEAD 2>$null)
+        # git's stderr under $ErrorActionPreference='Stop' would throw in PS 5.1 (no repo, no commits, no git), after the
+        # build already succeeded: run it with Continue and treat any failure as 'nogit'.
+        $gitOut = {
+            param([string[]]$GitArgs)
+            if (-not (Get-Command git -ErrorAction SilentlyContinue)) { return $null }
+            $ErrorActionPreference = 'Continue'
+            $o = & git -C $projectDir @GitArgs 2>$null
+            if ($LASTEXITCODE -ne 0) { return $null }
+            return $o
+        }
+        $commit = & $gitOut @('rev-parse', '--short', 'HEAD')
         if (-not $commit) { $commit = 'nogit' }
-        elseif (& git -C $projectDir status --porcelain --untracked-files=no 2>$null) { $commit += '+dirty' }
+        elseif (& $gitOut @('status', '--porcelain', '--untracked-files=no')) { $commit += '+dirty' }
         $stamp = "$commit {0:yyyy-MM-dd HH:mm}" -f (Get-Date)
         $stampPath = Join-Path (Join-Path $exe.DirectoryName $projectName) 'BuildStamp.txt'
         Set-Content -Path $stampPath -Value $stamp -Encoding ASCII
@@ -117,8 +130,8 @@ if ($ok) {
     Write-Host "PASS  $projectName packaged in $elapsed"
     if ($exePath) { Write-Host "  Exe: $exePath" }
     Write-Host "  Zip: $zipPath ($mb MB)"
-    if ($zipSize -ge 1GB) { Write-Host '  WARNING: zip is 1 GB or larger; itch.io requires under 1 GB.' }
-    else { Write-Host '  Under 1 GB itch.io limit: OK' }
+    if ($zipSize -ge 1GB) { Write-Host '  WARNING: zip is 1 GB or larger; the jam requires under 1 GB.' }
+    else { Write-Host '  Under the jam 1 GB limit: OK' }
 } else {
     Write-Host "FAIL  $projectName (UAT exit code $exit) after $elapsed"
     Write-Host '  Last errors from log:'

@@ -1,5 +1,5 @@
 # Pack T_<Name>_ao / _roughness / _metallic PNGs into one T_<Name>_orm.png (R=AO, G=Roughness, B=Metallic) for
-# M_PBR_Master v2: one texture sample and one asset instead of three.
+# M_PBR_Master (ORM since v2, current v3): one texture sample and one asset instead of three.
 #   blender -b --factory-startup --python gen/blender/pack_orm.py -- <texDir> <Name>
 # Missing AO = 1 (white), missing roughness = 0.6, missing metallic = 0. Prints ORM_JSON={...}.
 import bpy, sys, os, json
@@ -24,7 +24,10 @@ def load(key):
 channels = {k: load(k) for k in ("ao", "roughness", "metallic")}
 size = next((s for _, s in channels.values() if s), None)
 if size is None:
-    raise SystemExit(f"no T_{name}_roughness/metallic/ao PNG in {tex_dir}")
+    # No maps at all (the model came back without them): a small flat ORM of the defaults below, instead of failing
+    # the whole asset after the generation credits are spent.
+    print(f"ORM note: no T_{name}_roughness/metallic/ao PNG in {tex_dir}; writing a flat default ORM")
+    size = (8, 8)
 w, h = size
 for k, (data, s) in channels.items():
     if s and s != size:

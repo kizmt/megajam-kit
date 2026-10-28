@@ -25,7 +25,12 @@ elif ext == ".obj":
 else:
     print(f"unsupported format {ext}"); sys.exit(2)
 
-meshes = [o for o in bpy.context.scene.objects if o.type == "MESH"]
+HULL_PREFIXES = ("UCX_", "UBX_", "USP_", "UCP_")  # Unreal collision hulls: report, never render
+all_meshes = [o for o in bpy.context.scene.objects if o.type == "MESH"]
+hulls = [o for o in all_meshes if o.name.startswith(HULL_PREFIXES)]
+for o in hulls:
+    o.hide_render = True
+meshes = [o for o in all_meshes if o not in hulls] or all_meshes
 deps = bpy.context.evaluated_depsgraph_get()
 tris = 0
 for o in meshes:
@@ -53,6 +58,7 @@ for o in meshes:
 info = {
     "file": src,
     "objects": len(meshes),
+    "collision_hulls": sorted(o.name for o in hulls),
     "triangles": tris,
     "size_m": [round(size.x, 3), round(size.y, 3), round(size.z, 3)],
     "min_z": round(lo.z, 3),

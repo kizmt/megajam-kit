@@ -3,7 +3,12 @@
 #            [--arg mesh=/Game/Characters/Explorer/SK_Explorer] [--arg anims=/Game/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed,...]
 # Creates: /Game/Characters/Rigs/IK_Manny (shared), /Game/Characters/<Name>/Rig/IK_<Name>, RTG_Manny_To_<Name>,
 #          retargeted copies in /Game/Characters/<Name>/Anims with suffix _<Name>.
+# Normally run by character.ts step 6. For anything beyond the template anims (a library, montages, clips with
+# curves) use gen/unreal/retarget_library.ts: it also registers the clips' curves on the target skeleton and saves
+# it, which this script does not (missing curves crashed a -game launch once).
 import unreal
+
+from megajam_tools.refs import delete_asset_safely
 
 name = ARGS["name"]
 target_mesh_path = ARGS.get("mesh", f"/Game/Characters/{name}/SK_{name}")
@@ -30,7 +35,7 @@ def make_ik_rig(path, mesh, reuse=False):
             ctrl = unreal.IKRigController.get_controller(rig)
             print(f"{asset}: reused, root={ctrl.get_retarget_root()} chains={len(ctrl.get_retarget_chains())}")
             return rig, True
-        eal.delete_asset(path)
+        delete_asset_safely(path)
     rig = tools.create_asset(asset, folder, unreal.IKRigDefinition, unreal.IKRigDefinitionFactory())
     ctrl = unreal.IKRigController.get_controller(rig)
     ctrl.set_skeletal_mesh(mesh)
@@ -43,8 +48,7 @@ def make_ik_rig(path, mesh, reuse=False):
 
 rtg_path = f"{rig_dir}/RTG_Manny_To_{name}"
 # Delete the old retargeter BEFORE the old target IK rig it references (deleting a referenced asset = modal dialog).
-if eal.does_asset_exist(rtg_path):
-    eal.delete_asset(rtg_path)
+delete_asset_safely(rtg_path)
 
 src_rig, ok_src = make_ik_rig("/Game/Characters/Rigs/IK_Manny", source_mesh, reuse=True)
 tgt_rig, ok_tgt = make_ik_rig(f"{rig_dir}/IK_{name}", target_mesh)
@@ -65,13 +69,17 @@ mapped = {str(c.chain_name): str(rc.get_source_chain(c.chain_name)) for c in unr
 print("chain map (target <- source):", mapped)
 eal.save_loaded_asset(rtg)
 
+if eal.does_directory_exist(anim_dir) and eal.list_assets(anim_dir, recursive=True, include_folder=False):
+    raise RuntimeError(f"{anim_dir} already has assets: the batch would add '<anim>_{name}1' duplicates. Clear the "
+                       "character folder first (clean_character.py, as character.ts does).")
 inputs = unreal.IKRetargetBatchOperationInputs()
 inputs.assets_to_retarget = [unreal.EditorAssetLibrary.find_asset_data(a) for a in anims]
 inputs.source_mesh = source_mesh
 inputs.target_mesh = target_mesh
 inputs.ik_retarget_asset = rtg
 inputs.include_referenced_assets = True
-inputs.overwrite_existing_files = True
+inputs.overwrite_existing_files = False  # True re-saves blend spaces pointing at temp packages and breaks the cook;
+# for a fresh retarget, clear the character folder first (clean_character.py, as character.ts does)
 inputs.target_path = anim_dir
 inputs.suffix = f"_{name}"
 results = unreal.IKRetargetBatchOperation.run_batch_retarget(inputs)

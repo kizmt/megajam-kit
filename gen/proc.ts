@@ -3,25 +3,75 @@ import { spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
-/** Quote one argument for the Windows command line (paths and free text; " cannot occur in Windows paths). */
-export const q = (s: string): string => (process.platform === 'win32' ? `"${s.replace(/"/g, '\\"')}"` : s);
+/** Characters cmd.exe would expand or treat as operators even inside quotes (%VAR% expansion, ", ^, &, |, <, >). */
+const CMD_UNSAFE = /[%"^&|<>\r\n]/;
 
 /**
- * Run a command, resolve with stdout. On Windows `tripo` is an npm .cmd shim, which needs a shell; Node 24
- * deprecates args + shell:true (DEP0190: args are concatenated unescaped), so build one command line ourselves.
- * Every path or free-text argument must go through q().
+ * Run a command, resolve with stdout. Everything runs without a shell (arguments reach the program verbatim),
+ * except `tripo` on Windows: it is an npm .cmd shim and needs cmd.exe. Its arguments are paths, names and task ids,
+ * never prompts; any argument with a cmd metacharacter is refused rather than risk expansion or injection
+ * (a prompt holding `%GEMINI_API_KEY%` would otherwise put the key into the prompt).
+ * Blender always gets `--python-exit-code 1`, so a Python error fails the run and its traceback is reported.
  */
 export function run(cmd: string, args: string[], label: string): Promise<string> {
+  if (cmd === 'blender' && !args.includes('--python-exit-code')) {
+    const at = args[0] === '-b' ? 1 : 0;
+    args = [...args.slice(0, at), '--python-exit-code', '1', ...args.slice(at)];
+  }
   return new Promise((res, rej) => {
-    const p = process.platform === 'win32'
-      ? spawn([cmd, ...args].join(' '), { shell: true, env: process.env })
-      : spawn(cmd, args, { env: process.env });
+    let p;
+    if (process.platform === 'win32' && cmd === 'tripo') {
+      const bad = args.find((a) => CMD_UNSAFE.test(a));
+      if (bad !== undefined) { rej(new Error(`${label}: refusing a tripo argument with a cmd.exe metacharacter: ${bad.slice(0, 80)}`)); return; }
+      p = spawn([cmd, ...args.map((a) => (/[\s()]/.test(a) ? `"${a}"` : a))].join(' '), { shell: true, env: process.env });
+    } else {
+      p = spawn(cmd, args, { env: process.env });
+    }
     let out = '', err = '';
     p.stdout.on('data', (d: Buffer) => { out += d.toString(); });
     p.stderr.on('data', (d: Buffer) => { err += d.toString(); });
     p.on('error', rej);
-    p.on('close', (code) => (code === 0 ? res(out) : rej(new Error(`${label} failed (exit ${code}):\n${(err || out).slice(-1500)}`))));
+    p.on('close', (code) => {
+      if (code === 0) { res(out); return; }
+      const hint = cmd === 'tripo' && code !== null ? TRIPO_EXIT_HINT[code] : undefined;
+      rej(new Error(`${label} failed (exit ${code})${hint ? `: ${hint}` : ''}\n${(err + '\n' + out).trim().slice(-2500)}`));
+    });
   });
+}
+
+/** Tripo CLI exit codes (`tripo docs`, 2026-10). 6 and 7 can still bill: never re-run blindly. */
+const TRIPO_EXIT_HINT: Record<number, string> = {
+  3: 'not signed in (tripo login, or TRIPO_API_KEY in the kit .env)',
+  4: 'not enough credits; nothing started and nothing was charged. The director tops up (tripo topup)',
+  5: 'content policy rejection; change the input',
+  6: 'the task failed (credits refunded) OR the wait timed out. A timed-out task can still finish and be billed: do NOT ' +
+     're-run. Find its id with `tripo history --limit 3` and resume with `tripo task watch <id> --download`',
+  7: 'network error; the task may have been created. Check `tripo history --limit 3` and `tripo balance` (frozen ' +
+     'credits) before submitting again',
+  9: 'rate limited; wait and retry',
+};
+
+/** Credits available now (`tripo balance --json` prints {"balance":N,"frozen":M}; frozen = running tasks' holds). */
+export async function tripoBalance(): Promise<number> {
+  const out = await run('tripo', ['balance', '--json'], 'tripo balance');
+  const line = out.trim().split(/\r?\n/).reverse().find((l) => l.trimStart().startsWith('{'));
+  const j = line ? (JSON.parse(line) as { balance?: unknown }) : {};
+  if (typeof j.balance !== 'number') throw new Error(`unexpected tripo balance output: ${out.slice(-300)}`);
+  return j.balance;
+}
+
+/**
+ * Refuse before the first paid Tripo step when the balance can't cover the whole run: a run that stops half-way
+ * still bills the steps before it. `need` is an estimate (CLAUDE.md lists the prices).
+ */
+export async function requireTripoCredits(need: number, what: string): Promise<void> {
+  if (need <= 0) return;
+  const have = await tripoBalance();
+  if (have < need) {
+    throw new Error(`${what} needs about ${need} Tripo credits and the balance is ${have}. Nothing was spent. ` +
+      'The director tops up (tripo topup) or picks a cheaper route.');
+  }
+  console.log(`    Tripo balance ${have} credits; this run needs about ${need}`);
 }
 
 export const secs = (t: number): string => `${((Date.now() - t) / 1000).toFixed(1)}s`;
@@ -61,7 +111,7 @@ export interface OrmResult { file: string; size: number[]; from: Record<'ao' | '
 
 /** Pack T_<Name>_ao/_roughness/_metallic PNGs in texDir into T_<Name>_orm.png (gen/blender/pack_orm.py). */
 export async function packOrm(kit: string, texDir: string, name: string): Promise<OrmResult> {
-  const out = await run('blender', ['-b', '--factory-startup', '--python', q(join(kit, 'gen', 'blender', 'pack_orm.py')), '--', q(texDir), name], 'blender pack_orm');
+  const out = await run('blender', ['-b', '--factory-startup', '--python', join(kit, 'gen', 'blender', 'pack_orm.py'), '--', texDir, name], 'blender pack_orm');
   return parseMarkedJson<OrmResult>(out, 'ORM_JSON');
 }
 

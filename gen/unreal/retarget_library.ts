@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 // Retarget a whole animation library folder onto a character built by gen/character.ts (editor open, MCP).
-//   node gen/unreal/anim_inventory.ts --project <library project> --folder ParagonKwang   # find the --source-mesh first
-//   node gen/unreal/retarget_library.ts --name Hero --folder /Game/ParagonKwang/Characters/Heroes/Kwang/Animations \
-//        --source-mesh /Game/ParagonKwang/Characters/Heroes/Kwang/Meshes/Kwang_GDC --category Sword \
-//        --filter PrimaryAttack --limit 5                       # test run: filter to the clips you will check
+//   node gen/unreal/anim_inventory.ts --project <library project> --folder <Pack>   # find the --source-mesh first
+//   node gen/unreal/retarget_library.ts --name Hero --folder /Game/<Pack>/Animations \
+//        --source-mesh /Game/<Pack>/Mannequins/Meshes/SKM_Manny_Simple --category Interact \
+//        --filter Door --limit 5                                # test run: filter to the clips you will check
 //   options: --mesh <target SK>  --source-rig <IK rig>  --category <subfolder>  --filter attack,dodge  --limit 5
-// --limit takes the first N alphabetically, so pair it with --filter. Sequences are retargeted before montages and
+// --filter is a substring match (it also catches neighbours such as *_Lean); --names a,b,c takes exact asset names.
+// --limit takes the first N (sequences first, then by asset path), so pair it with --filter or --names. Sequences are retargeted before montages and
 // blend spaces; a montage whose clips an earlier run already retargeted is skipped (it would duplicate them).
 // Registers the clips' curves on the target skeleton and saves it (otherwise -game and the cook crash).
 // Output: /Game/Characters/<Name>/Anims/<category>/<anim>_<Name>. Reruns skip what already exists (never overwrites:
@@ -48,6 +49,7 @@ const { values: o } = parseArgs({
     'source-rig': { type: 'string' },
     category: { type: 'string' },
     filter: { type: 'string' },
+    names: { type: 'string' },
     limit: { type: 'string' },
   },
 });
@@ -59,6 +61,7 @@ if (o['source-mesh']) args['source_mesh'] = o['source-mesh'];
 if (o['source-rig']) args['source_rig'] = o['source-rig'];
 if (o.category) args['category'] = o.category;
 if (o.filter) args['filter'] = o.filter;
+if (o.names) args['names'] = o.names;
 if (o.limit) args['limit'] = o.limit;
 
 try {
@@ -73,6 +76,8 @@ try {
   if (r.skeleton_curves_added.length) {
     console.log(`Registered ${r.skeleton_curves_added.length} curve(s) on ${r.skeleton} and saved it (${r.skeleton_curves_added.join(', ')}); without this, -game and the cook crash.`);
   }
+  console.log('Chain map (target <- source):');
+  for (const [t, s] of Object.entries(r.chain_map)) console.log(`  ${t} <- ${s === 'None' || s === '' ? '(unmapped)' : s}`);
   if (r.unmapped_target_chains.length) {
     console.log(`WARNING: target chains with no source chain: ${r.unmapped_target_chains.join(', ')}. Check the retargeter's chain mapping before trusting these clips.`);
   }

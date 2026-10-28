@@ -31,8 +31,14 @@ export async function stripFootIk(abpPath: string): Promise<StripResult> {
   const slot = namesFrom(found, 'AnimGraphNode_Slot');
   const root = namesFrom(found, 'AnimGraphNode_Root');
   if (slot.length !== 1 || root.length !== 1) throw new Error(`expected one Slot and one Output Pose node in ${abpPath} (found ${slot.length} / ${root.length})`);
-  // In the retargeted ABP_Unarmed AnimGraph, the only K2 nodes are the NOT and Is Falling inputs of the Control Rig node.
+  // In the retargeted ABP_Unarmed AnimGraph, the only K2 nodes are the NOT and Is Falling inputs of the Control Rig
+  // node. Refuse if there are more than those two: this ABP has been edited, and deleting by class would take
+  // someone's nodes with it.
   const inputs = [...namesFrom(found, 'K2Node_CallFunction'), ...namesFrom(found, 'K2Node_VariableGet')];
+  if (inputs.length > 2) {
+    throw new Error(`${abpPath}: ${inputs.length} K2 nodes in the AnimGraph (expected only NOT and Is Falling): ` +
+      'the graph was edited, so remove the foot-IK Control Rig node by hand');
+  }
   const deleted: string[] = [];
   for (const n of [...controlRig, ...inputs]) {
     await mcpCall(BP, 'delete_node', { node: nodeRef(graph, n) });
@@ -42,9 +48,11 @@ export async function stripFootIk(abpPath: string): Promise<StripResult> {
     output_pin: { direction: 'EGPD_Output', index_id: 0, node: nodeRef(graph, slot[0] ?? '') },
     input_pin: { direction: 'EGPD_Input', index_id: 0, node: nodeRef(graph, root[0] ?? '') },
   });
+  // compile_blueprint raises on compile errors ("Compile Errors: ..."), so a failed compile stops here, unsaved.
   const compiled = await mcpCall(BP, 'compile_blueprint', { blueprint: { refPath: obj }, warnings_as_errors: false });
   // Force the save: scripted edits don't always mark an asset dirty, and a skipped save loses the change.
-  const saved = await runPythonCode(`import unreal\nprint('SAVED', unreal.EditorAssetLibrary.save_asset('${abpPath}', only_if_is_dirty=False))`);
+  const saved = await runPythonCode(
+    "import unreal\nprint('SAVED', unreal.EditorAssetLibrary.save_asset(ARGS['abp'], only_if_is_dirty=False))", { abp: abpPath });
   if (!saved.ok || !saved.output.includes('SAVED True')) throw new Error(`save failed for ${abpPath}: ${saved.output.trim()}`);
   return { abp: abpPath, changed: true, deleted, compiled };
 }

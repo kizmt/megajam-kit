@@ -1,6 +1,6 @@
 // PBR material setup through Unreal MCP.
 //   ensureMaster()  -> builds / upgrades /Game/Kit/Materials/M_PBR_Master (v3, gen/unreal/py/build_master_material.py)
-//   applyPbr({...}) -> imports an asset's textures (basecolor, normal, orm, emissive), makes MI_<Name>, assigns it
+//   applyPbr({...}) -> imports an asset's textures (basecolor, normal, orm, emissive), makes (or on a re-run reuses) MI_<Name>, assigns it
 //
 // v3 parameters: BaseColor, Normal, ORM (R=AO G=Roughness B=Metallic), EmissiveTexture; Tint, Saturation, UseTintMask;
 // RoughnessScale/Offset, MetallicOverride/Value, NormalStrength, AOStrength; EmissiveColor/Strength,
@@ -74,7 +74,7 @@ async function importTexture(folder: string, name: string, file: string, props: 
   return tex;
 }
 
-export interface MasterResult { path: string; version: string; rebuilt: boolean; expressions?: number; errors?: string[] }
+export interface MasterResult { path: string; version: string; rebuilt: boolean; expressions?: number }
 
 /**
  * Make sure M_PBR_Master is at the current version. The graph is rebuilt in place (instances keep working),
@@ -84,6 +84,7 @@ export async function ensureMaster({ force = false }: { force?: boolean } = {}):
   const tmp = join(tmpdir(), 'megajam-kit-defaults');
   mkdirSync(tmp, { recursive: true });
   const defaults = {} as Record<MapKey, string>;
+  const imported: string[] = [];
   for (const key of MAP_KEYS) {
     const m = MAPS[key];
     const path = `${KIT_TEX}/${m.defaultName}`;
@@ -91,8 +92,13 @@ export async function ensureMaster({ force = false }: { force?: boolean } = {}):
       const f = join(tmp, `${m.defaultName}.tga`);
       writeTga(f, m.fill);
       await importTexture(KIT_TEX, m.defaultName, f, m.props);
+      imported.push(path);
     }
     defaults[key] = path;
+  }
+  // The master references these: unsaved, they'd be missing after a restart or in a cook.
+  if (imported.length && !(await callTool<boolean>(AS, 'save_assets', { asset_paths: imported }))) {
+    throw new Error(`saving ${imported.join(', ')} failed`);
   }
   const result = parseMarkedJson<MasterResult>(
     await runPythonFileOrThrow(join(KIT, 'gen', 'unreal', 'py', 'build_master_material.py'), {
@@ -100,7 +106,6 @@ export async function ensureMaster({ force = false }: { force?: boolean } = {}):
       tex_black: defaults.emissive, ...(force ? { force: '1' } : {}),
     }),
     'MASTER_JSON');
-  if (result.errors && result.errors.length > 0) throw new Error(`M_PBR_Master compile errors: ${result.errors.join('; ')}`);
   return result;
 }
 
@@ -125,21 +130,33 @@ export async function applyPbr({ name, texDir, dest = '/Game/Props', mesh, kind 
   await ensureMaster();
   const folder = `${dest}/${name}`;
   const instPath = `${folder}/MI_${name}`;
-  if (await callTool<boolean>(AS, 'exists', { path: instPath })) await mcpCall(AS, 'delete', { path: instPath });
-  const inst = await callTool<ObjectRef>(MI, 'create', { folder_path: folder, asset_name: `MI_${name}`, parent: ref(MASTER) });
+  // Re-running reuses the existing instance: the mesh (and maybe levels) reference it, and deleting a referenced
+  // asset opens a modal dialog that stalls the editor.
+  const reuse = await callTool<boolean>(AS, 'exists', { path: instPath });
+  const inst = reuse ? ref(instPath)
+    : await callTool<ObjectRef>(MI, 'create', { folder_path: folder, asset_name: `MI_${name}`, parent: ref(MASTER) });
   const applied: MapKey[] = [];
+  const touched: string[] = [instPath];
   for (const key of MAP_KEYS) {
     const m = MAPS[key];
     const file = join(texDir, `T_${name}_${key}.png`);
+    // On a reused instance, point each map at the kit default first: maps missing this run then don't keep an old
+    // texture, and the old texture is unreferenced when importTexture replaces it.
+    if (reuse) await mcpCall(MI, 'set_texture_parameter', { instance: inst, name: m.param, value: ref(`${KIT_TEX}/${m.defaultName}`) });
     if (!existsSync(file)) continue;
     const tex = await importTexture(folder, `T_${name}_${key}`, file, { ...m.props, MaxTextureSize: maxTextureSize });
     await mcpCall(MI, 'set_texture_parameter', { instance: inst, name: m.param, value: tex });
     applied.push(key);
+    touched.push(`${folder}/T_${name}_${key}`);
   }
-  const meshRef = ref(mesh ?? `${dest}/${kind === 'skeletal' ? 'SK' : 'SM'}_${name}`);
+  const meshPath = (mesh ?? `${folder}/${kind === 'skeletal' ? 'SK' : 'SM'}_${name}`).split('.')[0] ?? '';  // asset.ts/character.ts import into <dest>/<Name>/
+  const meshRef = ref(meshPath);
   const slots = await callTool<string[]>(meshTools, 'get_material_slots', { mesh: meshRef });
   for (const s of slots) await mcpCall(meshTools, 'set_material', { mesh: meshRef, slot_name: s, material: inst });
-  await mcpCall(AS, 'save_assets', { asset_paths: [] });
+  // Save exactly what this call changed: an empty list would save every dirty package (the user's level included).
+  if (!(await callTool<boolean>(AS, 'save_assets', { asset_paths: [...touched, meshPath] }))) {
+    throw new Error(`saving ${[...touched, meshPath].join(', ')} failed`);
+  }
   return { instance: instPath, textures: applied, slots };
 }
 

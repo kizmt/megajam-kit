@@ -14,7 +14,7 @@ import { mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { KIT, env, errorMessage, fail, generatedDir } from './paths.ts';
+import { KIT, env, errorMessage, fail, generatedDir, pascal } from './paths.ts';
 import { McpUnreachableError, callTool } from './unreal/mcp.ts';
 
 type Kind = 'sfx' | 'music' | 'voice';
@@ -44,7 +44,7 @@ const { values: o, positionals } = parseArgs({
 const [kindArg, ...rest] = positionals;
 const text = rest.join(' ').trim();
 const USAGE = `usage: node gen/audio.ts sfx|music|voice "<prompt or line>" [--name N] [--seconds S] [--loop] [--mono] [--n 3] [--voice id] [--vocals]
-       --mono: downmix to one channel (any sound played at a 3D location; stereo only spatialises as mono anyway)
+       --mono: downmix to one channel (any sound played at a 3D location: spatialised stereo plays as two spread emitters, 6 dB quieter; docs/ue/audio-ui.md)
        node gen/audio.ts voices`;
 if (o.help || (!isKind(kindArg) && kindArg !== 'voices') || (kindArg !== 'voices' && !text)) {
   console.log(USAGE);
@@ -70,9 +70,7 @@ if (kindArg === 'voices') {
 if (!isKind(kindArg)) fail(USAGE); // narrowed above; keeps the type checker honest
 const kind: Kind = kindArg;
 
-const pascal = (s: string): string =>
-  s.replace(/[^a-zA-Z0-9]+/g, ' ').trim().split(' ').slice(0, 4).map((w) => (w[0]?.toUpperCase() ?? '') + w.slice(1)).join('');
-const name = pascal(o.name ?? text);
+const name = pascal(o.name ?? text, 4);
 const secs = o.seconds ? Number(o.seconds) : undefined;
 
 interface ApiRequest { url: string; body: Record<string, unknown> }
@@ -116,7 +114,10 @@ const FFMPEG = findFfmpeg();
 function toWav(file: string): string | null {
   if (!FFMPEG) return null;
   const wav = file.replace(/\.[a-z0-9]+$/, '.wav');
-  const r = spawnSync(FFMPEG, ['-y', '-loglevel', 'error', '-i', file, '-ar', '48000', '-sample_fmt', 's16', ...(o.mono ? ['-ac', '1'] : []), wav]);
+  // ElevenLabs pcm_<rate> is headerless 16-bit mono: ffmpeg must be told the input format.
+  const pcmRate = /^pcm_(\d+)/.exec(o.format)?.[1];
+  const inFmt = pcmRate ? ['-f', 's16le', '-ar', pcmRate, '-ac', '1'] : [];
+  const r = spawnSync(FFMPEG, ['-y', '-loglevel', 'error', ...inFmt, '-i', file, '-ar', '48000', '-sample_fmt', 's16', ...(o.mono ? ['-ac', '1'] : []), wav]);
   return r.status === 0 ? wav : null;
 }
 
@@ -153,7 +154,11 @@ if (!o['no-unreal'] && toImport.length > 0) {
       console.log(`  imported ${folder}/${asset}${looping ? ' (looping)' : ''}`);
     }
   } catch (e) {
-    console.log(e instanceof McpUnreachableError ? '  editor not running: WAVs ready, import later' : `  Unreal import failed: ${errorMessage(e).slice(0, 300)}`);
+    if (!(e instanceof McpUnreachableError)) {
+      console.error(`  FAIL: Unreal import failed: ${errorMessage(e).slice(0, 300)}`);
+      process.exit(1);
+    }
+    console.log('  editor not running: WAVs ready, import later');
   }
 }
 process.exit(ok > 0 ? 0 : 1);

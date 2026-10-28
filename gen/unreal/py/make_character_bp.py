@@ -17,8 +17,8 @@ if parent is None:
 
 eal = unreal.EditorAssetLibrary
 bp_path = f"{folder}/BP_{name}"
-if eal.does_asset_exist(bp_path):
-    eal.delete_asset(bp_path)
+from megajam_tools.refs import delete_asset_safely
+delete_asset_safely(bp_path)  # refuses if a game mode or placed actor still uses the old BP
 factory = unreal.BlueprintFactory()
 factory.set_editor_property("parent_class", parent)
 bp = unreal.AssetToolsHelpers.get_asset_tools().create_asset(f"BP_{name}", folder, unreal.Blueprint, factory)

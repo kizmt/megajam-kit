@@ -1,11 +1,12 @@
 # Batch-retarget a folder of animations (an animation library) onto a character built by gen/character.ts.
 # Run via gen/unreal/retarget_library.ts. ARGS:
 #   name         character name (target mesh /Game/Characters/<name>/SK_<name> unless mesh=...)
-#   folder       source folder of AnimSequences / AnimMontages / BlendSpaces (recursive), e.g. /Game/AnimLibrary/Paragon/Kwang
+#   folder       source folder of AnimSequences / AnimMontages / BlendSpaces (recursive), e.g. /Game/<Pack>/Animations
 #   source_mesh  skeletal mesh on the source skeleton (default Epic's SKM_Manny_Simple)
 #   source_rig   optional existing IK Rig for the source (otherwise one is auto-generated next to the library folder)
 #   category     destination subfolder: /Game/Characters/<name>/Anims/<category> (default: last part of folder)
 #   filter       optional comma-separated substrings; only asset names containing one are retargeted
+#   names        optional comma-separated exact asset names (case-insensitive)
 #   limit        optional max number of assets (for a quick test)
 # Never overwrites: overwrite=True re-saves blend spaces pointing at temporary packages and breaks the cook. Assets
 # that already exist at the destination are skipped, so reruns only add what is missing.
@@ -20,6 +21,7 @@ target_mesh_path = ARGS.get("mesh", f"/Game/Characters/{name}/SK_{name}")
 source_mesh_path = ARGS.get("source_mesh", "/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple")
 category = ARGS.get("category") or folder.rsplit("/", 1)[-1]
 filters = [f.strip().lower() for f in ARGS.get("filter", "").split(",") if f.strip()]
+exact = {n.strip().lower() for n in ARGS.get("names", "").split(",") if n.strip()}
 limit = int(ARGS.get("limit", "0") or 0)
 suffix = f"_{name}"
 dest = f"/Game/Characters/{name}/Anims/{category}"
@@ -105,6 +107,8 @@ for a in order:
     n = str(a.asset_name)
     if filters and not any(f in n.lower() for f in filters):
         continue
+    if exact and n.lower() not in exact:
+        continue
     if eal.does_asset_exist(f"{dest}/{n}{suffix}"):
         skipped.append(n)
         continue
@@ -136,7 +140,7 @@ after = set(eal.list_assets(dest, recursive=True, include_folder=False)) if eal.
 created = sorted(p.split(".")[0] for p in after - before)
 duplicates = [p for p in created if re.search(re.escape(suffix) + r"\d+$", p)]
 
-# Curves: the batch copies source curves (Paragon clips carry mask_geo) into the new sequences but never registers
+# Curves: the batch copies source curves (e.g. a mesh-mask curve) into the new sequences but never registers
 # them on the target skeleton on disk. The editor patches that in memory on load, so it works in PIE, but -game,
 # autoclip and the cook crash in USkeleton::AccumulateCurveMetaData. Register every curve and save the skeleton.
 skeleton = target_mesh.get_editor_property("skeleton")

@@ -5,8 +5,8 @@
   commands; nothing is uploaded unless -Push is given (ask the director first). Run after scripts\package.ps1.
   Lives in <Project>\scripts\ like package.ps1 and finds the project from its own location.
 .EXAMPLE
-  .\scripts\upload.ps1 -Target myname/mygame          # dry run
-  .\scripts\upload.ps1 -Target myname/mygame -Push    # upload
+  .\scripts\upload.ps1 -ZipName MyTeam -Target myname/mygame          # dry run
+  .\scripts\upload.ps1 -ZipName MyTeam -Target myname/mygame -Push    # upload
 .NOTES
   butler docs: https://itch.io/docs/butler/ (installing, login, pushing). Setup steps: kit SETUP.md section 9.
   - Push the zip, never the build folder: the folder also holds Saved\ (test-run logs with local paths and the Windows
@@ -20,10 +20,11 @@ param(
     [string]$Target = '',                      # itch "user/game" (lowercase); the page must exist (itch.io/game/new)
     [string]$Channel = 'windows',
     [string]$BuildRoot = 'C:\dev\Builds',
-    [string]$ZipName = 'ScottManson',          # same team-name prefix as package.ps1
+    [string]$ZipName = '',                     # the team name, same as package.ps1 -ZipName
     [switch]$Push                              # really upload (only with the director's go-ahead)
 )
 $ErrorActionPreference = 'Stop'
+if (-not $ZipName) { Write-Host 'FAIL: pass -ZipName <TeamName> (the same as for package.ps1).'; exit 1 }
 
 $projectDir = Split-Path -Parent $PSScriptRoot
 $uproject = Get-ChildItem -Path $projectDir -Filter *.uproject -File | Select-Object -First 1
@@ -56,19 +57,23 @@ if (Test-Path $zip) {
             $(if ($savedInZip) { "$savedInZip (REPACKAGE: local test output is in the zip)" } else { 'none (OK)' }))
     } finally { $z.Dispose() }
 }
+$versionArgs = if ($version) { @('--userversion', $version) } else { @() }   # never pass an empty --userversion
 Write-Host ''
 Write-Host 'Commands'
-Write-Host "  butler push `"$zip`" $targetShown`:$Channel --userversion $version"
+Write-Host "  butler push `"$zip`" $targetShown`:$Channel $($versionArgs -join ' ')"
 Write-Host "  butler status $targetShown`:$Channel"
 Write-Host ''
 
 if (-not (Test-Path $zip)) { Write-Host 'Stopping: no zip.'; exit 1 }
 if ($savedInZip) { Write-Host 'Stopping: the zip contains Saved\ files. Repackage with the current package.ps1.'; exit 1 }
-if (-not $butler) { Write-Host 'Stopping: butler is not installed.'; exit 0 }
-if (-not $Target) { Write-Host 'Stopping: no -Target.'; exit 0 }
+$stopCode = if ($Push) { 1 } else { 0 }   # a dry run that can't go further is fine; an upload that didn't happen is a failure
+if (-not $butler) { Write-Host 'Stopping: butler is not installed.'; exit $stopCode }
+if (-not $Target) { Write-Host 'Stopping: no -Target.'; exit $stopCode }
 if ($Push) {
-    & $butler.Source push $zip "${Target}:$Channel" --userversion $version
+    if (-not $version) { Write-Host 'Stopping: no build stamp, so the upload would have no version. Repackage with the current package.ps1.'; exit 1 }
+    & $butler.Source push $zip "${Target}:$Channel" @versionArgs
+    if ($LASTEXITCODE -ne 0) { Write-Host "FAIL: butler push exited $LASTEXITCODE"; exit $LASTEXITCODE }
     & $butler.Source status "${Target}:$Channel"
 } else {
-    & $butler.Source push --dry-run $zip "${Target}:$Channel" --userversion $version   # lists what would go up
+    & $butler.Source push --dry-run $zip "${Target}:$Channel" @versionArgs   # lists what would go up
 }

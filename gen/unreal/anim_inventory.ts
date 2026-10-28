@@ -1,14 +1,20 @@
 #!/usr/bin/env node
 // Offline inventory of a project's animation content: no editor needed, reads .uasset name tables directly.
 //   node gen/unreal/anim_inventory.ts --project C:\dev\AnimLibrary                 # every top-level Content folder
-//   node gen/unreal/anim_inventory.ts --project C:\dev\AnimLibrary --folder ParagonKwang --list
+//   node gen/unreal/anim_inventory.ts --project C:\dev\AnimLibrary --folder <Pack> --list
 //   options: --json <out file>  --list (print every clip path)
 // Per top-level folder: sequences / montages / blend spaces, the skeleton(s) the clips use, and skeletal meshes on
 // each skeleton (a valid --source-mesh for retarget_library.ts). Classification is heuristic (name-table classes,
 // highest-level class wins): treat counts as approximate and confirm a skeleton in the editor before a big retarget.
 import { parseArgs } from 'node:util';
 import { openSync, readSync, closeSync, readdirSync, statSync, existsSync, writeFileSync } from 'node:fs';
-import { join, relative, sep } from 'node:path';
+import { dirname, join, relative, resolve, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// Standalone (no paths.ts import, which refuses to run without MEGAJAM_PROJECT), but still read the kit's .env so
+// MEGAJAM_PROJECT works as the --project default. Only that variable is used here.
+const KIT_ENV = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '.env');
+if (existsSync(KIT_ENV)) process.loadEnvFile(KIT_ENV);
 
 type Kind = 'Blueprint' | 'AnimBlueprint' | 'AnimMontage' | 'BlendSpace' | 'PoseAsset' | 'AnimSequence' | 'SkeletalMesh' | 'Skeleton' | 'Other';
 
@@ -86,8 +92,13 @@ if (!existsSync(content)) {
   process.exit(2);
 }
 
+const root = o.folder ? join(content, o.folder) : content;
+if (!existsSync(root)) {
+  console.error(`no folder ${o.folder} under ${content} (pass a top-level Content folder name, e.g. FreeLadderAnimationSet)`);
+  process.exit(2);
+}
 const files: string[] = [];
-walk(o.folder ? join(content, o.folder) : content, files);
+walk(root, files);
 
 const assets: Asset[] = files.map((file) => {
   const buf = readHead(file);

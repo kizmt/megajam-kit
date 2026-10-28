@@ -25,8 +25,7 @@ param(
     [Parameter(Mandatory = $true)][string]$Sequence,
     [string]$StartPattern = '',      # log regex that marks t = 0 (e.g. the level/round start line)
     [double]$ReadyTimeoutSec = 120,
-    [string]$Record = '',            # optional mp4 path (ffmpeg ddagrab)
-    [string]$RecordFilter = 'scale=1280:-2',
+    [string]$Record = '',            # optional mp4 path: recorded through record_window.ps1 (game window only)
     [string[]]$GameArgs = @()
 )
 $ErrorActionPreference = 'Stop'
@@ -56,6 +55,8 @@ public static class KitKeys {
 }
 "@
 
+. (Join-Path $PSScriptRoot 'game_common.ps1')   # KitGameWin.Largest: finds the game's viewport window
+
 $vk = @{ Space = 0x20; Enter = 0x0D; Escape = 0x1B; Tab = 0x09; Backspace = 0x08; LShift = 0xA0; RShift = 0xA1
          LCtrl = 0xA2; RCtrl = 0xA3; LAlt = 0xA4; RAlt = 0xA5; Left = 0x25; Up = 0x26; Right = 0x27; Down = 0x28 }
 foreach ($c in [char[]]'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789') { $vk["$c"] = [int][char]$c }
@@ -71,34 +72,65 @@ $steps = @(foreach ($part in ($Sequence -split ';' | Where-Object { $_.Trim() })
 $name = [IO.Path]::GetFileNameWithoutExtension($Exe)
 $log = Join-Path (Split-Path $Exe) "$name\Saved\Logs\$name.log"
 $start = Get-Date
-if ($GameArgs.Count) { $null = Start-Process $Exe -ArgumentList $GameArgs } else { $null = Start-Process $Exe }
+# Instances already running are not ours: never send keys to, record or kill one of them.
+# A packaged <Game>.exe is a launcher: the window belongs to a child named <Game> (Development) or
+# <Game>-Win64-Shipping (Shipping).
+$names = @($name, "$name-Win64-Shipping")
+$before = @(Get-Process $names -ErrorAction SilentlyContinue | ForEach-Object Id)
+if ($before.Count) { Write-Host "FAIL: $name is already running (pid $($before -join ', ')); close it first (ask the director)"; exit 1 }
+$launcher = if ($GameArgs.Count) { Start-Process $Exe -ArgumentList $GameArgs -PassThru } else { Start-Process $Exe -PassThru }
 $game = $null
 $deadline = (Get-Date).AddSeconds($ReadyTimeoutSec)
-while (-not $game -and (Get-Date) -lt $deadline) {
+$hwnd = [IntPtr]::Zero
+while ($hwnd -eq [IntPtr]::Zero -and (Get-Date) -lt $deadline) {
     Start-Sleep -Milliseconds 250
-    $game = Get-Process $name -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
+    # The largest visible window, not MainWindowHandle: with -log that can be the console.
+    foreach ($p in @(Get-Process $names -ErrorAction SilentlyContinue)) {
+        $h = [KitGameWin]::Largest([uint32]$p.Id)
+        if ($h -ne [IntPtr]::Zero) { $game = $p; $hwnd = $h; break }
+    }
 }
-if (-not $game) { Write-Host 'FAIL: no game window appeared'; exit 1 }
+if (-not $game) {
+    # Clean up what this run started (nothing else was running under these names, checked above).
+    Stop-Process -Id $launcher.Id -Force -ErrorAction SilentlyContinue
+    Get-Process $names -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+    Write-Host 'FAIL: no game window appeared'; exit 1
+}
 
 $held = New-Object System.Collections.Generic.HashSet[byte]
 $rec = $null
 function Stop-Test([string]$why, [int]$code = 2) {
     foreach ($k in @($held)) { [KitKeys]::Up($k) }
-    if ($rec -and -not $rec.HasExited) { $rec.Kill() }
-    Get-Process $name -ErrorAction SilentlyContinue | Stop-Process -Force
+    if ($game) { Stop-Process -Id $game.Id -Force -ErrorAction SilentlyContinue }
+    # The recorder sees the game exit, stops and cuts the clip back to clean footage by itself.
+    if ($rec) { $null = $rec.WaitForExit(15000) }
     Write-Host "ABORTED: $why (no keys were sent while another window was in front)"; exit $code
 }
-$hwnd = $game.MainWindowHandle
 $focused = $false
 for ($i = 0; $i -lt 10 -and -not $focused; $i++) { $focused = [KitKeys]::Focus($hwnd); if (-not $focused) { Start-Sleep -Milliseconds 200 } }
 if (-not $focused) { Stop-Test 'could not bring the game window to the front' }
 
 if ($Record) {
-    $ff = (Get-Command ffmpeg -ErrorAction SilentlyContinue).Source
-    if (-not $ff) { $ff = (Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\Gyan.FFmpeg*\*\bin\ffmpeg.exe" -ErrorAction SilentlyContinue | Select-Object -First 1).FullName }
-    if (-not $ff) { Stop-Test 'ffmpeg not found for -Record' 1 }
-    $dur = [math]::Ceiling(($steps | Select-Object -Last 1).At) + 4
-    $rec = Start-Process $ff -ArgumentList "-hide_banner -loglevel error -y -f lavfi -i ddagrab=output_idx=0:framerate=30 -t $dur -vf hwdownload,format=bgra,$RecordFilter -c:v libx264 -preset fast -crf 18 -pix_fmt yuv420p `"$Record`"" -PassThru -WindowStyle Hidden
+    # Always through record_window.ps1: it records only the game window, only while the game is alive, in front and
+    # uncovered, and cuts the clip back to clean footage the moment that ends (raw desktop capture once recorded a
+    # private chat window).
+    $dur = [math]::Ceiling(($steps | Select-Object -Last 1).At) + 4 + $(if ($StartPattern) { [int]$ReadyTimeoutSec } else { 2 })
+    $recScript = Join-Path $PSScriptRoot 'record_window.ps1'
+    $recLog = [IO.Path]::ChangeExtension($Record, '.rec.log')
+    New-Item -ItemType Directory -Force -Path (Split-Path $Record) | Out-Null
+    Remove-Item $recLog -ErrorAction SilentlyContinue
+    $rec = Start-Process powershell -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$recScript`"",
+        '-GamePid', $game.Id, '-Hwnd', $hwnd.ToInt64(), '-Out', "`"$Record`"", '-Seconds', $dur) -PassThru -WindowStyle Hidden `
+        -RedirectStandardOutput $recLog
+    # No keys until the recorder has said 'REC start' (a cold powershell.exe can take a few seconds to get there).
+    $recDeadline = (Get-Date).AddSeconds(15)
+    while (-not ((Test-Path $recLog) -and (Select-String -Path $recLog -Pattern '^REC start' -Quiet))) {
+        if ($rec.HasExited -or (Get-Date) -gt $recDeadline) {
+            $why = if (Test-Path $recLog) { (Get-Content $recLog | Select-Object -Last 3) -join ' / ' } else { 'no output' }
+            Stop-Test "the recorder did not start: $why" 1
+        }
+        Start-Sleep -Milliseconds 100
+    }
 }
 
 if ($StartPattern) {
@@ -124,7 +156,9 @@ foreach ($s in $steps) {
     Write-Host ("{0,6:N2}s {1,-4} {2}" -f $s.At, $s.Action, $s.Name)
 }
 foreach ($k in @($held)) { [KitKeys]::Up($k) }
+Start-Sleep -Seconds 2
+Stop-Process -Id $game.Id -Force -ErrorAction SilentlyContinue  # only the instance this test launched
 if ($rec) { $null = $rec.WaitForExit(20000) }
-Get-Process $name -ErrorAction SilentlyContinue | Stop-Process -Force
-Write-Host "DONE. Game log: $log$(if ($Record) { "`nRecording: $Record" })"
+$recNote = if (-not $Record) { '' } elseif (Test-Path $Record) { "`nRecording: $Record" } else { "`nNO RECORDING (recorder output: $recLog)" }
+Write-Host "DONE. Game log: $log$recNote"
 Write-Host 'Prove each action from the game''s own log lines (log one line per player action in the game).'

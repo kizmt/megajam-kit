@@ -7,24 +7,31 @@
 //   node gen/perf/bench.ts --variant "a:" --variant "b:r.AllowOcclusionQueries=0"
 //   options: --exe <path> (default C:\dev\Builds\<Project>\Windows\<Project>.exe)  --res 3840x2160 | native
 //            --frames 1200  --skip 200  --only name1,name2  --no-warmup  --force (run even if the GPU is busy)
+//            --target-fps 60 (the game's target from DECISIONS.md; sets the hitch limit and the PASS/FAIL column)
 // -DPCVars also sets game cvars registered at runtime (non-cheat), so an autoplay switch works as part of a variant.
 // The game window takes the screen for ~25 s per variant. Don't touch the mouse/keyboard while it runs.
-// Facts behind the defaults (docs/ue/performance.md): the first launch after packaging reads ~13% low (shader/PSO
-// warm-up), so one discarded warm-up launch runs first; a fresh exe sometimes never starts (likely being scanned),
-// so a launch that writes no log within 30 s is killed and retried once.
+// Facts behind the defaults (PIPELINE.md "Hard-won facts"): the first launch after packaging reads ~13% low
+// (shader/PSO warm-up), so one discarded warm-up launch runs first; a fresh exe sometimes never starts (likely being
+// scanned), so a launch that writes no log within 30 s, or no capture within 240 s, is killed and retried once.
 import { spawn, execFileSync, type ChildProcess } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { fail, projectDir } from '../paths.ts';
-import { summarise, type CsvSummary } from './csv_report.ts';
+import { barCheck, hitches, summarise, type CsvSummary } from './csv_report.ts';
 
 const LUMEN = 'r.DynamicGlobalIlluminationMethod=1,r.ReflectionMethod=1';
 const NO_LUMEN = 'r.DynamicGlobalIlluminationMethod=0,r.ReflectionMethod=2,r.AmbientOcclusionLevels=0,r.DistanceFieldAO=0';
+// Lumen Lite: what sg.GlobalIlluminationQuality=1 + sg.ReflectionQuality=1 set (BaseScalability.ini, 5.8.4): the
+// Irradiance final gather, the smaller surface cache, and SSR in place of Lumen reflections.
+const LUMEN_LITE = `${LUMEN},r.Lumen.FinalGatherMethod=0,r.LumenScene.SurfaceCache.AtlasSize=2048,` +
+  'r.LumenScene.SurfaceCache.CardTexelDensityScale=50,r.LumenScene.SurfaceCache.CardMinResolution=2,' +
+  'r.LumenScene.SurfaceCache.CardMaxResolution=256,r.Lumen.Reflections.Allow=0,r.SSR.Quality=2,r.SSR.HalfResSceneColor=1';
 const SP = (pct: number): string => `r.ScreenPercentage.Default.Desktop.Mode=0,r.ScreenPercentage.Default=${pct}`;
 const PRESETS: [string, string][] = [
   ['current', ''],
   ['lumen-1080p', `${LUMEN},${SP(50)}`],
+  ['lumenlite-1080p', `${LUMEN_LITE},${SP(50)}`],
   ['nolumen-1260p', `${NO_LUMEN},${SP(58.33)}`],
   ['nolumen-1440p', `${NO_LUMEN},${SP(66.67)}`],
 ];
@@ -39,11 +46,15 @@ const { values: o } = parseArgs({
     only: { type: 'string' },
     'no-warmup': { type: 'boolean', default: false },
     force: { type: 'boolean', default: false },
+    'target-fps': { type: 'string', default: '60' },
   },
 });
+const targetFps = Number(o['target-fps']) || 60;
 
-const proj = basename(projectDir());
-const exe = o.exe ?? join('C:\\dev\\Builds', proj, 'Windows', `${proj}.exe`);
+// With --exe the project name comes from the exe (<Project>.exe sits next to <Project>\Saved), so MEGAJAM_PROJECT
+// is only needed for the default path.
+const exe = o.exe ?? join('C:\\dev\\Builds', basename(projectDir()), 'Windows', `${basename(projectDir())}.exe`);
+const proj = basename(exe).replace(/\.exe$/i, '');
 if (!existsSync(exe)) fail(`packaged exe not found: ${exe} (run scripts\\package.ps1 or pass --exe)`);
 const saved = join(exe, '..', proj, 'Saved');
 const csvDir = join(saved, 'Profiling', 'CSV');
@@ -94,6 +105,7 @@ function killTree(pid: number | undefined): void {
 }
 
 const logTouchedSince = (t: number): boolean => existsSync(logFile) && statSync(logFile).mtimeMs >= t;
+const logText = (): string => (existsSync(logFile) ? readFileSync(logFile, 'utf8') : '');
 
 function launch(name: string, cvars: string, frames: string): { child: ChildProcess; started: number; exit: { code: number | null } } {
   const started = Date.now();
@@ -116,12 +128,12 @@ async function runVariant(name: string, cvars: string, frames = o.frames ?? '120
           if (attempt === 1) { console.log(`    no log after 30 s (exit code ${exit.code ?? 'none yet'}): relaunching once`); break; }
           throw new Error(`the game never started (${name}); exit code ${exit.code ?? 'none'}`);
         }
-        if (logTouchedSince(started) && readFileSync(logFile, 'utf8').includes('CSV finalize time')) {
+        if (logTouchedSince(started) && logText().includes('CSV finalize time')) {
           const csv = newestCsv(started);
           if (csv) return summarise(csv, Number(o.skip));
         }
-        if (exit.code !== null && !readFileSync(logFile, 'utf8').includes('CSV finalize time')) {
-          throw new Error(`the game exited early (${name}) with code ${exit.code}; see ${logFile}`);
+        if (exit.code !== null && !logText().includes('CSV finalize time')) {
+          throw new Error(`the game exited early (${name}) with code ${exit.code}; ${existsSync(logFile) ? `see ${logFile}` : `no log at ${logFile}`}`);
         }
       }
       if (attempt === 2) throw new Error(`timed out waiting for the CSV capture (${name})`);
@@ -155,11 +167,19 @@ const g = (s: CsvSummary, pass: string): string => (s.gpuPasses.find((p) => p.na
 const t = (s: CsvSummary, k: string, w: number): string => (s.threads[k]?.avg ?? 0).toFixed(2).padStart(w);
 console.log(`\noutput ${o.res}, ${o.frames} frames, first ${o.skip} skipped${gpu ? `; before the run: ${gpu.text}` : ''}`);
 console.log('(CSV "systemresolution" metadata is recorded before DPI awareness and can say 2560x1440 on a 4K screen: ignore it)');
-console.log('variant            fps  p95fps   GPU ms   RT ms   GT ms   TSR  Lumen');
+console.log(`the bar (docs/ue/performance.md) at the game's target of ${targetFps} fps: p95 >= ${targetFps}, 1% low within 20% of avg, ` +
+  `no hitch (frame > ${(2000 / targetFps).toFixed(1)} ms)`);
+console.log('variant            fps  p95fps  1%low  hitches   GPU ms   RT ms   GT ms   TSR  Lumen  bar');
 for (const { name, s } of results) {
   const lumen = s.gpuPasses.filter((p) => p.name.startsWith('Lumen')).reduce((a, p) => a + p.avg, 0);
+  const bar = barCheck(s, targetFps);
   console.log(
-    `${name.padEnd(16)} ${s.fps.toFixed(0).padStart(5)}  ${s.fpsLow.toFixed(0).padStart(6)}  ${t(s, 'GPUTime', 7)}  ${t(s, 'RenderThreadTime', 6)}` +
-      `  ${t(s, 'GameThreadTime', 6)}  ${g(s, 'TemporalSuperResolution')}  ${lumen.toFixed(2).padStart(5)}`,
+    `${name.padEnd(16)} ${s.fps.toFixed(0).padStart(5)}  ${s.fpsLow.toFixed(0).padStart(6)}  ${s.fps1Low.toFixed(0).padStart(5)}  ${String(hitches(s, targetFps)).padStart(7)}` +
+      `  ${t(s, 'GPUTime', 7)}  ${t(s, 'RenderThreadTime', 6)}  ${t(s, 'GameThreadTime', 6)}  ${g(s, 'TemporalSuperResolution')}  ${lumen.toFixed(2).padStart(5)}` +
+      `  ${bar.pass ? 'PASS' : 'FAIL'}`,
   );
+}
+for (const { name, s } of results) {
+  const bar = barCheck(s, targetFps);
+  if (!bar.pass) console.log(`  ${name}: ${bar.notes.join('; ')}`);
 }

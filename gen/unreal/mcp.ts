@@ -39,6 +39,9 @@ interface McpToolResult { content?: McpContent[]; isError?: boolean }
 interface JsonRpcResponse { result?: unknown; error?: { message?: string } }
 
 const MCP_URL = env('UNREAL_MCP_URL') ?? 'http://127.0.0.1:8000/mcp';
+// Node's fetch gives up waiting for response headers after 300 s anyway, so stay just under it and report it clearly.
+// A single tool call that needs longer must be split (e.g. retarget_library.ts --limit batches).
+const CALL_TIMEOUT_MS = Math.min(Number(env('UNREAL_MCP_TIMEOUT_S')) || 290, 290) * 1000;
 let session: string | null = null;
 let nextId = 1;
 
@@ -54,9 +57,17 @@ async function rpc(method: string, params: unknown, notify = false): Promise<unk
   const body = notify ? { jsonrpc: '2.0', method, params } : { jsonrpc: '2.0', id: nextId++, method, params };
   let res: Response;
   try {
-    res = await fetch(MCP_URL, { method: 'POST', headers, body: JSON.stringify(body) });
-  } catch {
-    throw new McpUnreachableError(`cannot reach Unreal MCP at ${MCP_URL}. Is the editor open with the MCP server running?`);
+    res = await fetch(MCP_URL, { method: 'POST', headers, body: JSON.stringify(body), signal: AbortSignal.timeout(CALL_TIMEOUT_MS) });
+  } catch (e) {
+    // Only a refused connection means "no editor". A timeout or a dropped connection means the editor is there but
+    // busy or blocked (e.g. a modal dialog): that is a failure, never "editor not running, try later".
+    const code = isRecord(e) && isRecord(e['cause']) ? e['cause']['code'] : undefined;
+    if (code === 'ECONNREFUSED') {
+      throw new McpUnreachableError(`cannot reach Unreal MCP at ${MCP_URL}. Is the editor open with the MCP server running?`);
+    }
+    const timedOut = isRecord(e) && e['name'] === 'TimeoutError';
+    throw new Error(`Unreal MCP ${method}: ${timedOut ? `no answer in ${CALL_TIMEOUT_MS / 1000} s` : errorMessage(e)}. ` +
+      'The editor may be busy or blocked by a dialog: look at it before retrying.');
   }
   session = res.headers.get('mcp-session-id') ?? session;
   if (notify) return null;

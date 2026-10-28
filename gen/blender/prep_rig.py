@@ -43,7 +43,6 @@ bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
 bpy.context.view_layer.update()
 
 mn, mx = bbox(meshes)
-root = arm.data.bones[0]
 result = {
     "armature": arm.name, "bones": len(arm.data.bones), "scale_factor": round(factor, 4),
     "armature_scale": [round(v, 4) for v in arm.scale], "size_m": [round(mx[i] - mn[i], 3) for i in range(3)],

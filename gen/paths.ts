@@ -1,5 +1,5 @@
 // Where generated files go. The kit holds tools only; every generated file belongs to the active project:
-//   <MEGAJAM_PROJECT>\Generated\<images|assets|audio|characters|shots>\
+//   <MEGAJAM_PROJECT>\Generated\<images|assets|audio|characters|shots|vfx>\
 // Set MEGAJAM_PROJECT=C:\dev\<ProjectName> in the kit's .env (or the environment). Scripts refuse to run
 // without it rather than writing into the kit. --out on any script still overrides.
 import { existsSync, readdirSync } from 'node:fs';
@@ -9,11 +9,17 @@ import { fileURLToPath } from 'node:url';
 export const KIT: string = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 if (existsSync(join(KIT, '.env'))) process.loadEnvFile(join(KIT, '.env'));
 
-export type GeneratedKind = 'images' | 'assets' | 'audio' | 'characters' | 'shots';
+export type GeneratedKind = 'images' | 'assets' | 'audio' | 'characters' | 'shots' | 'vfx';
 
 export function fail(msg: string): never {
   console.error(`FAIL: ${msg}`);
   process.exit(1);
+}
+
+/** 'heavy wooden chest' -> 'HeavyWoodenChest' (asset names). maxWords keeps names short when built from a prompt. */
+export function pascal(s: string, maxWords = Infinity): string {
+  return s.replace(/[^a-zA-Z0-9]+/g, ' ').trim().split(' ').slice(0, maxWords)
+    .map((w) => (w[0]?.toUpperCase() ?? '') + w.slice(1)).join('');
 }
 
 /** Message of anything thrown (catch variables are `unknown`). */

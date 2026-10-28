@@ -2,7 +2,7 @@
 # Run via: node gen/unreal/py.ts gen/unreal/py/import_skeletal.py --arg fbx=C:/.../model.fbx
 #            --arg folder=/Game/Characters/Explorer --arg name=SK_Explorer [--arg scale=100] [--arg yaw=0]
 #            [--arg materials=1] [--arg skeleton=/Game/.../SKEL_X]
-# Replaces existing assets of the same name. Prints size (cm) and bone count.
+# Replaces existing assets of the same name (refuses if something else references them). Prints size (cm) and bone count.
 import unreal
 
 fbx = ARGS["fbx"]
@@ -12,10 +12,19 @@ scale = float(ARGS.get("scale", "1"))
 yaw = float(ARGS.get("yaw", "0"))
 materials = ARGS.get("materials", "1") == "1"
 
-for suffix in ("", "_Skeleton", "_PhysicsAsset"):
-    path = f"{folder}/{name}{suffix}"
-    if unreal.EditorAssetLibrary.does_asset_exist(path):
-        unreal.EditorAssetLibrary.delete_asset(path)
+from megajam_tools.refs import referencers_outside
+
+# Refuses (instead of a blocking dialog) if anything else still uses the old mesh, skeleton or physics asset.
+# Checked as one set: the skeleton and physics asset reference the mesh themselves, which mustn't count.
+_eal = unreal.EditorAssetLibrary
+old = [p for p in (f"{folder}/{name}{s}" for s in ("", "_Skeleton", "_PhysicsAsset")) if _eal.does_asset_exist(p)]
+refs = referencers_outside(old)
+if refs:
+    raise RuntimeError("refusing to replace " + ", ".join(old) + ": still referenced (remove or repoint these first, "
+                       "or use a new name):\n  " + "\n  ".join(refs))
+for p in old:
+    if not _eal.delete_asset(p):
+        raise RuntimeError(f"delete failed: {p}")
 
 ui = unreal.FbxImportUI()
 ui.automated_import_should_detect_type = False

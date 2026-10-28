@@ -1,18 +1,24 @@
 #!/usr/bin/env node
 // Summarise an Unreal CSV profile (run the packaged game with -csvCaptureFrames=N -csvGpuStats).
-//   node gen/perf/csv_report.ts "<Build>\Saved\Profiling\CSV\Profile(...).csv" [--top 15] [--skip 120]
-// Prints frame/thread times (avg, p50, p95), the most expensive GPU passes, and the capture metadata.
+//   node gen/perf/csv_report.ts "<Build>\Saved\Profiling\CSV\Profile(...).csv" [--top 15] [--skip 120] [--target-fps 60]
+// Prints frame/thread times (avg, p50, p95, p99), the pacing checks from performance.md "The bar" (1% low, hitches
+// against the target), the most expensive GPU passes, and the capture metadata.
 import { readFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 import { isMain } from '../paths.ts';
 
-export interface Stat { avg: number; p50: number; p95: number }
+export interface Stat { avg: number; p50: number; p95: number; p99: number; max: number }
 export interface CsvSummary {
   frames: number;
   analysed: number;
   threads: Record<string, Stat>;
   fps: number;
+  /** fps at the p95 frame time (the slowest 5% of frames). */
   fpsLow: number;
+  /** "1% low": fps at the p99 frame time. */
+  fps1Low: number;
+  /** Every analysed frame time (ms), for hitch counting against a target. */
+  frameMs: number[];
   gpuPasses: { name: string; avg: number }[];
   metadata: Record<string, string>;
 }
@@ -20,10 +26,26 @@ export interface CsvSummary {
 const THREADS = ['FrameTime', 'GameThreadTime', 'RenderThreadTime', 'RHIThreadTime', 'GPUTime'] as const;
 
 function stat(v: number[]): Stat {
-  if (v.length === 0) return { avg: 0, p50: 0, p95: 0 };
+  if (v.length === 0) return { avg: 0, p50: 0, p95: 0, p99: 0, max: 0 };
   const s = [...v].sort((a, b) => a - b);
   const at = (p: number): number => s[Math.min(s.length - 1, Math.floor((p / 100) * s.length))] ?? 0;
-  return { avg: v.reduce((a, b) => a + b, 0) / v.length, p50: at(50), p95: at(95) };
+  return { avg: v.reduce((a, b) => a + b, 0) / v.length, p50: at(50), p95: at(95), p99: at(99), max: s[s.length - 1] ?? 0 };
+}
+
+/** Hitches as performance.md "The bar" defines them: frames longer than twice the target frame time. */
+export function hitches(s: CsvSummary, targetFps: number): number {
+  const limit = 2000 / targetFps;
+  return s.frameMs.filter((ms) => ms > limit).length;
+}
+
+/** The bar's pass/fail checks for one capture. */
+export function barCheck(s: CsvSummary, targetFps: number): { pass: boolean; notes: string[] } {
+  const notes: string[] = [];
+  const h = hitches(s, targetFps);
+  if (h > 0) notes.push(`${h} hitch(es) over ${(2000 / targetFps).toFixed(1)} ms (worst ${(s.threads['FrameTime']?.max ?? 0).toFixed(1)} ms)`);
+  if (s.fpsLow < targetFps) notes.push(`p95 ${s.fpsLow.toFixed(0)} fps is below the ${targetFps} fps target`);
+  if (s.fps > 0 && s.fps1Low < 0.8 * s.fps) notes.push(`1% low ${s.fps1Low.toFixed(0)} fps is more than 20% under the ${s.fps.toFixed(0)} fps average`);
+  return { pass: notes.length === 0, notes };
 }
 
 /** Parse a CSV profile. Cells that are not numbers (e.g. the events column) are ignored per column. */
@@ -38,6 +60,7 @@ export function summarise(file: string, skip = 120): CsvSummary {
     if (cells[0] === header[0]) continue; // repeated header row at the end
     rows.push(cells);
   }
+  // Skip the warm-up frames, but never more than a quarter of the capture (a short capture keeps 3/4 of its frames).
   const data = rows.slice(Math.min(skip, Math.floor(rows.length / 4)));
   const col = (i: number): number[] => {
     const out: number[] = [];
@@ -64,13 +87,16 @@ export function summarise(file: string, skip = 120): CsvSummary {
   m.forEach((cell, i) => {
     if (cell.startsWith('[') && i + 1 < m.length) metadata[cell.replace(/[[\]]/g, '')] = m[i + 1] ?? '';
   });
-  const ft = threads['FrameTime'] ?? { avg: 0, p50: 0, p95: 0 };
+  const ft = threads['FrameTime'] ?? stat([]);
+  const ftCol = header.indexOf('FrameTime');
   return {
     frames: rows.length,
     analysed: data.length,
     threads,
     fps: ft.avg ? 1000 / ft.avg : 0,
     fpsLow: ft.p95 ? 1000 / ft.p95 : 0,
+    fps1Low: ft.p99 ? 1000 / ft.p99 : 0,
+    frameMs: ftCol >= 0 ? col(ftCol) : [],
     gpuPasses,
     metadata,
   };
@@ -78,11 +104,13 @@ export function summarise(file: string, skip = 120): CsvSummary {
 
 const f = (n: number): string => n.toFixed(2).padStart(6);
 
-export function printSummary(s: CsvSummary, top = 15): void {
+export function printSummary(s: CsvSummary, top = 15, targetFps = 60): void {
   console.log(`frames analysed: ${s.analysed} of ${s.frames}`);
-  console.log('                      avg     p50     p95   (ms)');
-  for (const [name, v] of Object.entries(s.threads)) console.log(`${name.padEnd(18)} ${f(v.avg)}  ${f(v.p50)}  ${f(v.p95)}`);
-  console.log(`fps: avg ${s.fps.toFixed(0)}, p95-frame ${s.fpsLow.toFixed(0)}`);
+  console.log('                      avg     p50     p95     p99     max   (ms)');
+  for (const [name, v] of Object.entries(s.threads)) console.log(`${name.padEnd(18)} ${f(v.avg)}  ${f(v.p50)}  ${f(v.p95)}  ${f(v.p99)}  ${f(v.max)}`);
+  console.log(`fps: avg ${s.fps.toFixed(0)}, p95-frame ${s.fpsLow.toFixed(0)}, 1% low ${s.fps1Low.toFixed(0)}`);
+  const bar = barCheck(s, targetFps);
+  console.log(`the bar at ${targetFps} fps: ${bar.pass ? 'PASS' : `FAIL: ${bar.notes.join('; ')}`}`);
   if (s.gpuPasses.length) {
     console.log('\ntop GPU passes (avg ms):');
     for (const g of s.gpuPasses.slice(0, top)) console.log(`  ${f(g.avg)}  ${g.name}`);
@@ -99,12 +127,12 @@ export function printSummary(s: CsvSummary, top = 15): void {
 if (isMain(import.meta.url)) {
   const { values: o, positionals } = parseArgs({
     allowPositionals: true,
-    options: { top: { type: 'string', default: '15' }, skip: { type: 'string', default: '120' } },
+    options: { top: { type: 'string', default: '15' }, skip: { type: 'string', default: '120' }, 'target-fps': { type: 'string', default: '60' } },
   });
   const file = positionals[0];
   if (!file) {
-    console.log('usage: node gen/perf/csv_report.ts <profile.csv> [--top 15] [--skip 120]');
+    console.log('usage: node gen/perf/csv_report.ts <profile.csv> [--top 15] [--skip 120] [--target-fps 60]');
     process.exit(2);
   }
-  printSummary(summarise(file, Number(o.skip)), Number(o.top));
+  printSummary(summarise(file, Number(o.skip)), Number(o.top), Number(o['target-fps']) || 60);
 }

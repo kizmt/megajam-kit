@@ -19,8 +19,8 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
-import { KIT, errorMessage, generatedDir } from './paths.ts';
-import { packOrm, parseMarkedJson, parseTripo, q, readTripoTask, run, secs, type OrmResult } from './proc.ts';
+import { KIT, errorMessage, generatedDir, pascal } from './paths.ts';
+import { packOrm, parseMarkedJson, parseTripo, readTripoTask, requireTripoCredits, run, secs, type OrmResult } from './proc.ts';
 import { applyPbr, type ApplyPbrResult } from './unreal/materials.ts';
 import { McpUnreachableError, callTool, mcpCall } from './unreal/mcp.ts';
 import { runPythonFileOrThrow } from './unreal/python.ts';
@@ -103,7 +103,6 @@ interface Manifest {
     blueprint?: BpResult;
     unreal?: { skipped: string };
   };
-  manual?: string[];
   total?: string;
   error?: string;
 }
@@ -122,7 +121,7 @@ const TPOSE_WRAPPER = (subject: string): string =>
   `to toe with margin, plain flat light-grey background, soft even lighting, no shadow, no text, no props, ` +
   `no weapons, nothing held in the hands.`;
 
-const name = o.name.replace(/[^a-zA-Z0-9]+/g, ' ').trim().split(' ').map((w) => (w[0]?.toUpperCase() ?? '') + w.slice(1)).join('');
+const name = pascal(o.name);
 const dir = join(generatedDir('characters'), name.toLowerCase());
 mkdirSync(dir, { recursive: true });
 const manifest: Manifest = { name, prompt, created: new Date().toISOString(), steps: {} };
@@ -148,9 +147,9 @@ try {
     const n = o.concepts ? Math.max(1, parseInt(o.concepts, 10) || 1) : 1;
     step('1', `T-pose concept x${n} (${o.provider})`);
     const t = Date.now();
-    const args = [q(join(KIT, 'gen', 'image.ts')), q(TPOSE_WRAPPER(prompt)), '--aspect', '3:4', '--provider', o.provider, '--n', String(n), '--out', q(dir), '--name', 'concept'];
-    if (o.style) args.push('--style', q(o.style));
-    for (const r of o.ref) args.push('--ref', q(r));
+    const args = [join(KIT, 'gen', 'image.ts'), TPOSE_WRAPPER(prompt), '--aspect', '3:4', '--provider', o.provider, '--n', String(n), '--out', dir, '--name', 'concept'];
+    if (o.style) args.push('--style', o.style);
+    for (const r of o.ref) args.push('--ref', r);
     const out = await run('node', args, 'image');
     const files = [...out.matchAll(/\[\d+\] (.+\.(?:png|jpg|webp))/g)].flatMap((m) => (m[1] ? [m[1].trim()] : []));
     const first = files[0];
@@ -167,6 +166,12 @@ try {
     manifest.steps.concept = { files: [image], supplied: true };
   }
 
+  // Balance first (prices in CLAUDE.md): model ~45, re-texture ~20, rig ~25. A run that stops half-way still bills.
+  if (!rigFbx) {
+    const retexture = !(o.task && o.pbr) && !o['no-retexture'];
+    await requireTripoCredits((task ? 0 : 45) + (retexture ? 20 : 0) + 25, 'This character');
+  }
+
   // 2. Tripo model. --for game-pc ends with a convert task; texture/rig need the original image_to_model task.
   if (rigFbx) {
     step('2', 'skipped (--rig supplied)');
@@ -177,7 +182,7 @@ try {
     if (!image) throw new Error('no concept image');
     step('2', `Tripo image-to-3D (face limit ${o.faces}) ... ~2-3 min`);
     const t = Date.now();
-    const tj = parseTripo(await run('tripo', ['make', q(image), '--for', 'game-pc', '-p', `face_limit=${o.faces}`, '-o', q(tripoOut('model')), '--name', `${name.toLowerCase()}-model`, '--json', '--yes', '--no-open'], 'tripo make'));
+    const tj = parseTripo(await run('tripo', ['make', image, '--for', 'game-pc', '-p', `face_limit=${o.faces}`, '-o', tripoOut('model'), '--name', `${name.toLowerCase()}-model`, '--json', '--yes', '--no-open'], 'tripo make'));
     task = tj.type === 'image_to_model' ? tj.task_id : readTripoTask(tj.output_dir).input?.original_model_id ?? null;
     if (!task) throw new Error(`could not find the original model task id in ${tj.output_dir}\\task.json`);
     pbrSource = tj.model_file; // full PBR maps (4 images); replaced by the re-texture below
@@ -196,7 +201,7 @@ try {
     if (!task) throw new Error('no model task');
     step('2b', 'Tripo re-texture (v3.5, detailed, delight) ... ~1 min');
     const t = Date.now();
-    const tj = parseTripo(await run('tripo', ['model', 'texture', task, '--model', 'v3.5-20260815', '--texture-quality', 'detailed', '-o', q(tripoOut('retex')), '--name', `${name.toLowerCase()}-retex`, '--json', '--yes', '--no-open'], 'tripo texture'));
+    const tj = parseTripo(await run('tripo', ['model', 'texture', task, '--model', 'v3.5-20260815', '--texture-quality', 'detailed', '-o', tripoOut('retex'), '--name', `${name.toLowerCase()}-retex`, '--json', '--yes', '--no-open'], 'tripo texture'));
     task = tj.task_id; // rig the textured model
     pbrSource = tj.model_file;
     manifest.steps.texture = { task: tj.task_id, file: tj.model_file, credits: tj.credits_consumed, time: secs(t) };
@@ -211,7 +216,7 @@ try {
     if (!task) throw new Error('no task to rig');
     step('3', `Tripo rig (--spec ${o.spec}) ... ~20 s`);
     const t = Date.now();
-    const tj = parseTripo(await run('tripo', ['anim', 'rig', task, '--spec', o.spec, '--out-format', 'fbx', '-o', q(tripoOut('rig')), '--name', `${name.toLowerCase()}-rig`, '--json', '--yes', '--no-open'], 'tripo rig'));
+    const tj = parseTripo(await run('tripo', ['anim', 'rig', task, '--spec', o.spec, '--out-format', 'fbx', '-o', tripoOut('rig'), '--name', `${name.toLowerCase()}-rig`, '--json', '--yes', '--no-open'], 'tripo rig'));
     rigFbx = tj.model_file;
     manifest.steps.rig = { fbx: rigFbx, task: tj.task_id, credits: tj.credits_consumed, time: secs(t) };
     console.log(`    ${rigFbx} (${tj.credits_consumed} credits, ${secs(t)})`);
@@ -222,7 +227,7 @@ try {
   step('3b', `Blender extract_pbr (${o.tex === '0' ? 'full resolution' : `source budget ${o.tex}px`}) from ${pbrSource}`);
   const texDir = join(dir, `${name}_tex`);
   const pbr = parseMarkedJson<PbrResult>(
-    await run('blender', ['-b', '--factory-startup', '--python', q(BL('extract_pbr.py')), '--', q(pbrSource), q(texDir), name, '--tex', o.tex], 'blender extract_pbr'),
+    await run('blender', ['-b', '--factory-startup', '--python', BL('extract_pbr.py'), '--', pbrSource, texDir, name, '--tex', o.tex], 'blender extract_pbr'),
     'PBR_JSON');
   manifest.steps.pbr = pbr;
   manifest.steps.orm = await packOrm(KIT, texDir, name); // roughness + metallic -> ORM for M_PBR_Master v2
@@ -233,7 +238,7 @@ try {
   let t = Date.now();
   const skFbx = join(dir, `SK_${name}.fbx`);
   const prep = parseMarkedJson<PrepRigResult>(
-    await run('blender', ['-b', '--factory-startup', '--python', q(BL('prep_rig.py')), '--', q(rigFbx), q(skFbx), '--height', o.height, '--rot', o.rot], 'blender prep_rig'),
+    await run('blender', ['-b', '--factory-startup', '--python', BL('prep_rig.py'), '--', rigFbx, skFbx, '--height', o.height, '--rot', o.rot], 'blender prep_rig'),
     'PREP_RIG_JSON');
   manifest.steps.prep = { ...prep, time: secs(t) };
   console.log(`    ${skFbx}  ${prep.bones} bones, ${prep.size_m.join(' x ')} m (export mode ${prep.mode})`);
@@ -286,14 +291,13 @@ try {
       if (!(e instanceof McpUnreachableError)) throw e;
       manifest.steps.unreal = { skipped: 'editor not running' };
       console.log('    editor not running: files are ready. Open the editor, then resume (no Tripo credits) with:');
-      console.log(`    node gen/character.ts --rig "${rigFbx}" --pbr "${pbrSource}" --name ${name}${o.parent ? ` --parent ${o.parent}` : ''}`);
+      console.log(`    node gen/character.ts --rig "${rigFbx}" --pbr "${pbrSource}" --name ${name} --height ${o.height} --rot=${o.rot} --max-tex ${o['max-tex']}${o.parent ? ` --parent ${o.parent}` : ''}`);
     }
   }
 
   manifest.total = secs(t0);
   save();
   console.log(`\nDone in ${manifest.total}. ${join(dir, 'manifest.json')}`);
-  if (manifest.manual) console.log(`\nMANUAL STEP (2 min, UI):\n  ${manifest.manual.join('\n  ')}`);
 } catch (e) {
   manifest.error = errorMessage(e);
   save();
