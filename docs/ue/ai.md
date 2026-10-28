@@ -15,7 +15,7 @@ against the 5.8 headers, `BaseEngine.ini`/`BaseGame.ini`, Epic's 5.8 C++ templat
 Why C++ FSM by default: Epic's `AIModuleToolset` and `StateTreeToolset` (Experimental, editor-only) only **inspect**
 assets (`list_nodes`, `get_blackboard`, `get_root_states`, `get_tasks`, `get_transitions`, ...). Nothing creates or edits
 a BT or StateTree, so an agent-authored tree means hand-editing in the editor. Python authoring of StateTree assets is
-(unverified). Pick StateTree when Scott wants to tune behaviour visually; keep every task/condition in C++.
+(unverified). Pick StateTree when the director wants to tune behaviour visually; keep every task/condition in C++.
 
 ## Core setup (any option)
 
@@ -53,9 +53,21 @@ a BT or StateTree, so an agent-authored tree means hand-editing in the editor. P
 - Movable actors that should cut holes: set the component's "Can Ever Affect Navigation" and use Dynamic generation.
 - Navigation Invokers (`UNavigationInvokerComponent`): generate nav only around agents. Only for huge worlds; skip.
 - After any level change with `Static`: confirm P still shows nav where needed, then save the level (nav data is saved).
+- **Scripted nav build (editor Python, 5.8.4):** `unreal.SystemLibrary.execute_console_command(editor_world,
+  'RebuildNavigation')` builds it, but only once nav data exists (`FNavigationSystemExec::Exec_Runtime` needs a
+  `RecastNavMesh`); before that it echoes the command and does nothing (no "Build started" log line). Spawning a
+  `NavMeshBoundsVolume` by script didn't create the RecastNavMesh; after an editor restart the map loaded with
+  `RecastNavMesh-Default` and the command worked. Check the result with P or the log, not the echo.
+- **World Settings `enable_navigation_system` always reads False: ignore it.** It is `DEPRECATED_bEnableNavigationSystem`
+  (UE 4.22); `AWorldSettings::PostLoad` moves it into `NavigationSystemConfig` and resets it on every load. The real
+  switch is `NavigationSystemConfig` (`GetNavigationSystemConfig()`). Don't set the old flag and save.
 
 ### Why won't my AI move? (check in order)
 
+0. No floor collision: a downward line trace onto the floor must hit. Script-built level meshes can have no simple
+   collision, so the navmesh builds empty and pawns fall (`editor-scripting.md`, Geometry Script). Hidden-in-game
+   stand-in actors still collide (a `SkeletalMeshActor` stand-in kept `PhysicsActor` collision and trapped an enemy in
+   `MOVE_FALLING`): set them to `NoCollision`.
 1. No nav: press P. No green = no bounds volume, or it doesn't overlap the floor, or nav not rebuilt/saved.
 2. No controller: spawned pawn with `AutoPossessAI = PlacedInWorld` (default), or `AIControllerClass` unset.
    Check `GetController()` in the log or the apostrophe debugger (no AI shown).
@@ -125,7 +137,8 @@ State enum on the controller: `Idle/Patrol, Chase, Attack, Flee, Dead`. Drive it
 - **Attack**: a looping `FTimerHandle` (e.g. 0.25 s) checks range + line of sight; play montage / fire; leave when out of
   range. Damage via `UGameplayStatics::ApplyDamage` (see `gameplay.md`).
 - **Flee**: below HP threshold, pick `GetRandomReachablePointInRadius` points that increase distance from the threat.
-- **Companion**: `MoveToActor(Player, 300)` re-issued on a 0.5 s timer only when farther than ~500.
+- **Companion**: `MoveToActor(Player, AcceptRadius)` re-issued on a short timer only when farther than a larger
+  follow distance, so it doesn't jitter at the edge (one prototype's values: 300 / 500 cm, 0.5 s).
 
 ## StateTree in C++ (if chosen)
 
@@ -140,14 +153,15 @@ State enum on the controller: `Idle/Patrol, Chase, Attack, Flee, Dead`. Drive it
   EStateTreeFinishTaskType::Succeeded)` (exactly what `CombatStateTreeUtility.cpp` does).
 - Built-in `Move To` task (`FStateTreeMoveToTask`, GameplayStateTree) and `Run Env Query` exist.
 - Send gameplay events into the tree: `StateTreeAI->SendStateTreeEvent(FGameplayTag, Payload)`.
-- Fastest start: create the project from TP_ThirdPerson and copy `Variant_Combat/AI` (`CombatEnemy`, `CombatAIController`,
-  `CombatStateTreeUtility`, `ST_CombatEnemy` asset). Debug with the StateTree Debugger (see docs).
+- Reference only: read `Variant_Combat/AI` (`CombatEnemy`, `CombatAIController`, `CombatStateTreeUtility`,
+  `ST_CombatEnemy`) for the pattern, then write our own classes and tree; the jam forbids lightly modified templates
+  (CLAUDE.md). Debug with the StateTree Debugger (see docs).
 
 ## Recommended setup for a jam enemy
 
 1. `AEnemyCharacter : ACharacter` - HP, `TakeDamage`, attack montage, `OnDeath` delegate. Ctor: `AIControllerClass`,
    `AutoPossessAI = PlacedInWorldOrSpawned`, `bOrientRotationToMovement = true`, `MaxWalkSpeed` from a data asset.
-   Tick off (`PrimaryActorTick.bCanEverTick = false`) - CharacterMovement ticks itself.
+   Actor tick off is fine: see `gameplay.md` "Character and CharacterMovementComponent" (Tick).
 2. `AEnemyAIController : AAIController` - ctor creates `UAIPerceptionComponent` + `UAISenseConfig_Sight`
    (radius ~1500-2500, half-angle 60-80, `bDetectNeutrals = true`) and Hearing. Binds `OnTargetPerceptionUpdated`.
    Tick off unless needed (verify path following still runs - it is its own component).

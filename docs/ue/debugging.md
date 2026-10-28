@@ -2,7 +2,8 @@
 
 The goal: the agent proves every fix with a log line or a screenshot ("done means seen") and finds the
 cause of a problem from evidence, not guesses. Budgets live in `performance.md`; this note is the *how*.
-Facts marked "verified" were checked on GIZMO (the kit's test project + its packaged build) on 2026-10-24.
+Facts marked "verified" were checked on the target PC (the kit's test project + its packaged build) on 2026-10-24.
+`<Build>` = the packaged build folder, `C:\dev\Builds\<Project>\Windows` (`scripts\package.ps1`); the kit's docs use it in this sense.
 
 ## Triage: when X happens, do Y
 
@@ -19,7 +20,7 @@ Facts marked "verified" were checked on GIZMO (the kit's test project + its pack
 | Memory climbing / 8 GB VRAM worry | `stat memory`, `stat rhi` | `memreport -full`, diff two reports |
 | Actor not where expected / no hit | `show collision`, `DrawDebug*` at the trace | Visual Logger to scrub frames |
 | AI/pathing wrong | Gameplay Debugger (`'` key), numpad categories | `show navigation` |
-| Packaged build worse than PIE | Packaged smoke test (below) + `-trace` | Grey material = missing usage flag (performance.md) |
+| Packaged build worse than PIE | Packaged smoke test (below) + `-trace` | Grey material = missing usage flag (materials.md) |
 
 ## A. Logs
 
@@ -27,8 +28,8 @@ Facts marked "verified" were checked on GIZMO (the kit's test project + its pack
 - Editor: `<Project>\Saved\Logs\<Project>.log`. A second editor instance writes `<Project>_2.log`.
   Older runs are renamed `<Project>-backup-YYYY.MM.DD-HH.MM.SS.log`. Engine keeps 10 files / 5 days
   (`[LogFiles] MaxLogFilesOnDisk=10, PurgeLogsDays=5` in BaseEngine.ini).
-- Packaged Development build: next to the build, `<Build>\Windows\<Game>\Saved\Logs\<Game>.log`
-  (verified: `<Build>\Windows\<Project>\Saved\Logs\<Project>.log`). Not in %LOCALAPPDATA%.
+- Packaged Development build: next to the build, `<Build>\<Game>\Saved\Logs\<Game>.log`
+  (verified: `<Build>\<Project>\Saved\Logs\<Project>.log`). Not in %LOCALAPPDATA%.
 - Packaging (BuildCookRun) log: wherever our package script writes it (test project: `Saved\Logs\package-*.log`).
   Success marker: `BUILD SUCCESSFUL` and `AutomationTool exiting with ExitCode=0 (Success)`.
 - Epic docs say "`.txt`"; on 5.8.4 the files are `.log`. Trust disk.
@@ -41,14 +42,14 @@ PowerShell: `Select-String <log> -Pattern ': (Error|Warning):' | group Line | so
 
 **Our own logging (C++):**
 ```cpp
-// Header: DECLARE_LOG_CATEGORY_EXTERN(LogMegajam, Log, All);   .cpp: DEFINE_LOG_CATEGORY(LogMegajam);
-UE_LOG(LogMegajam, Display, TEXT("Door %s opened by %s"), *GetName(), *GetNameSafe(Instigator));
+// Header: DECLARE_LOG_CATEGORY_EXTERN(LogMyGame, Log, All);   .cpp: DEFINE_LOG_CATEGORY(LogMyGame);
+UE_LOG(LogMyGame, Display, TEXT("Door %s opened by %s"), *GetName(), *GetNameSafe(Instigator));
 ```
 - Verbosity: Fatal (crashes) > Error (red) > Warning (yellow) > Display (console + file) > Log (file only)
   > Verbose > VeryVerbose. Use **Display** for "done means seen" proof lines so they show everywhere.
-- One category per project (`LogMegajam`); grep for it. Prefix proof lines e.g. `[PROOF] ...`.
-- Change at runtime: console `log LogMegajam Verbose` (or MCP `SetVerbosity`). Command line:
-  `-LogCmds="LogMegajam Verbose, LogTemp Warning"`. Permanent: `DefaultEngine.ini [Core.Log] LogMegajam=Verbose`.
+- One category per project (`LogMyGame`); grep for it. Prefix proof lines e.g. `[PROOF] ...`.
+- Change at runtime: console `log LogMyGame Verbose` (or MCP `SetVerbosity`). Command line:
+  `-LogCmds="LogMyGame Verbose, LogTemp Warning"`. Permanent: `DefaultEngine.ini [Core.Log] LogMyGame=Verbose`.
 - `UE_LOGFMT` (structured, `#include "Logging/StructuredLog.h"`) is fine but `UE_LOG` is enough.
 - `-log` on a packaged exe opens a live log console window; `-ABSLOG=C:\path\run.log` writes to a chosen file.
 
@@ -56,7 +57,7 @@ UE_LOG(LogMegajam, Display, TEXT("Door %s opened by %s"), *GetName(), *GetNameSa
 **Play In Editor** runtime errors ("Accessed None trying to read property..."), Map Check
 (Build > Map Check, or console `MAP CHECK`), asset load errors. Read it after every PIE that misbehaves.
 
-**Scary but harmless (all seen on GIZMO):**
+**Scary but harmless (all seen on the target PC):**
 - `LogWindows: Failed to load 'aqProf.dll'` / `'VtuneApi.dll'` - optional profiler hooks.
 - `LogHttp: Warning: [FHttpManager::Shutdown] Unbinding delegates ... datarouter` - telemetry on exit.
 - `LogLayoutService: Warning: ... "UnrealEd_Layout_v1.5" was not found` - editor layout version.
@@ -64,9 +65,8 @@ UE_LOG(LogMegajam, Display, TEXT("Door %s opened by %s"), *GetName(), *GetNameSa
 - Packaging: `Warning: Visual Studio compiler 14.51.x is not a preferred version` - builds fine.
 
 **Real problems (act on these):**
-- `LogMaterial: Warning: ... Failed to compile Material for platform PCD3D_SM6` (seen on a test project
-  `M_Chest`, the FBX importer's auto material, since replaced by `MI_Chest` from `M_PBR_Master` and deleted by the
-  pipeline): renders default material. Open the material, fix the error, re-save.
+- `LogMaterial: Warning: ... Failed to compile Material for platform PCD3D_SM6` (e.g. the FBX
+  importer's auto material): renders default material. Open the material, fix the error, re-save.
 - `EnsureFailed: Error: Ensure condition failed: ...` followed by many `LogOutputDevice: Error: [Callstack]`
   lines - that block is **one** ensure and its stack, not 30 errors.
 - Blueprint `Accessed None`, `LogLinker`/`LogStreaming` "failed to load"/"can't find" a package, any `Fatal`.
@@ -83,10 +83,17 @@ UE_LOG(LogMegajam, Display, TEXT("Door %s opened by %s"), *GetName(), *GetNameSa
   `<Project>.log` copy, `UEMinidump.dmp`, `CrashReportClient.ini`. Ensures also create one.
 - **Reading a callstack:** top frames are the engine's assert machinery; scan down to the **first frame in
   our module** (`UnrealEditor-<Game>.dll` in editor, `<Game>.exe` packaged). That function + line is the bug.
-- **`UnknownFunction []` frames** (verified on GIZMO) = no symbols for that module. Our own module's PDB is
+- **`UnknownFunction []` frames** (verified on the target PC) = no symbols for that module. Our own module's PDB is
   built with the editor target, so our frames should resolve. Engine frames need the launcher option
   *UE 5.8 > Options > "Editor symbols for debugging"* (large download, (unverified) tens of GB) - only
-  install it if a crash is inside the engine and you can't tell why.
+  install it if a crash is inside the engine and you can't tell why (an install: the user's call).
+- **Naming engine frames without symbols (first step):** `<PCallStack>` in `CrashContext.runtime-xml` gives
+  `module base + offset`. Match each offset to the nearest exported symbol from `dumpbin /exports <dll>` (then
+  `undname`): most engine functions are `*_API` exports, so this named a whole chain in a minute. It is a hint only:
+  a non-exported function resolves to its neighbour. A ~15-line PowerShell script does it; a kit script is planned.
+- **MCP `ECONNREFUSED`:** check `Get-Process UnrealEditor` and the log's last line (`LogExit: Exiting.` = clean exit,
+  not a crash) before diagnosing; then ask the director to reopen the editor. (Live Coding then a map load is a known crash:
+  `cpp.md`.)
 - **Packaged Development PDBs (verified):** BuildCookRun stages them by default ("Copying DebugFiles"):
   `<Build>\<Game>\Binaries\Win64\<Game>.pdb` (test project: 370 MB, bigger than the 337 MB exe).
   Rule: **keep the PDB next to the exe it was built with**; a PDB from another build is useless.
@@ -109,7 +116,7 @@ UE_LOG(LogMegajam, Display, TEXT("Door %s opened by %s"), *GetName(), *GetNameSa
   Shipping. Wrap calls in `#if ENABLE_DRAW_DEBUG` + a cvar/bool so they're off for the final build video.
   `FlushPersistentDebugLines(World)` clears persistent ones.
 - **Visual Logger** (Window > Developer Tools > Visual Logger): records per-actor logs + shapes over time,
-  scrub the timeline after PIE. `UE_VLOG(this, LogMegajam, Log, TEXT("..."))`,
+  scrub the timeline after PIE. `UE_VLOG(this, LogMyGame, Log, TEXT("..."))`,
   `UE_VLOG_SEGMENT(this, Cat, Log, Start, End, FColor::Red, TEXT(""))`,
   `UE_VLOG_LOCATION(this, Cat, Log, Loc, Radius, Color, TEXT(""))`, `UE_VLOG_BOX(...)`.
   Free when not recording; compiled out unless `ENABLE_VISUAL_LOG`. Best for AI/movement bugs that happen
@@ -125,17 +132,19 @@ UE_LOG(LogMegajam, Display, TEXT("Door %s opened by %s"), *GetName(), *GetNameSa
   `PlayersOnly`, `ToggleDebugCamera` (or `;`), `BugIt` (logs a `BugItGo x y z p y r` line + screenshot),
   `BugItGo ...` to jump back to that exact spot. Use `BugIt` to make a repro reproducible.
 - **Screenshots as proof:** `HighResShot 1` writes to `Saved\Screenshots\` (unverified path in 5.8);
-  prefer our MCP viewport capture.
+  prefer our MCP viewport capture. During PIE, `HighResShot` sent through MCP `run_console_command` shoots the
+  **editor** viewport; `unreal.SystemLibrary.execute_console_command(pie_world, 'HighResShot ...')` shoots the game.
 
 ## D. Profiling
 
-Read `performance.md` for budgets. Workflow: **measure in packaged Development, at the real resolution.**
+Read `performance.md` for budgets and "The bar" (the pass/fail target). Workflow: **measure in packaged Development, at the real resolution.**
 
 - `stat fps`, `stat unit` (Frame/Game/Draw/GPU/RHIT/DynRes ms), `stat unitgraph` (spikes over time).
 - `stat game` (tick costs), `stat gpu` (per-pass GPU ms), `stat scenerendering` (draw calls, mesh passes),
   `stat rhi` (RHI memory/draws), `stat streaming` (texture pool use), `stat memory`.
-- `stat hitches` logs frames over `t.HitchFrameTimeThreshold` (seconds) - leave it on during a playthrough
-  and grep the log afterwards. `stat none` clears all.
+- `stat hitches` logs frames over `t.HitchFrameTimeThreshold` (milliseconds, default 60;
+  `EnginePerformanceTargets.cpp`). Set it to 2000 / target fps (60 fps: 33.3) so it matches "The bar"; leave it on
+  during a playthrough and grep the log afterwards. `stat none` clears all.
 - `ProfileGPU` (Ctrl+Shift+,): one-frame GPU breakdown; editor opens the GPU Visualizer, packaged dumps
   the tree to the log. Look for the biggest pass (Lumen, shadows, post, Nanite).
 - **Unreal Insights** (verified present: `Engine\Binaries\Win64\UnrealInsights.exe`):
@@ -166,16 +175,18 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FScoreTest, "Megajam.Score.Combo",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
 bool FScoreTest::RunTest(const FString&) { TestEqual(TEXT("x3 combo"), ScoreFor(3), 300); return true; }
 ```
-- **AutomationTestToolset MCP** (editor-only, experimental; enabled via `AllToolsets` in a test project):
+- **AutomationTestToolset MCP** (editor-only, experimental; enabled via `AllToolsets`, SETUP step 2):
   `DiscoverTests()` first (async, several seconds) > `ListTests(NameFilter="Megajam")` >
   `RunTests([...])` or `RunTestsByFilter("StartsWith:Megajam")` (also `^Foo`, `Bar$`, `Group:Name`) >
   `GetTestStatus()` / `GetTestResults()` (JSON with per-test errors) > `StopTests()`.
   Window > Test Automation (Session Frontend) is the same backend.
+  **A filter that matched zero tests is not a pass:** report the test names that ran with the result, and if none
+  matched, say so (and write the test if the behaviour has none).
 - Command line equivalent (editor, headless): `UnrealEditor-Cmd.exe <uproject> -ExecCmds="Automation
   RunTests Megajam; Quit" -unattended -nullrhi -log` (Automation subcommands verified in source:
-  `List`, `RunTests`, `RunFilter`, `RunAll`, `Quit`; the full run (unverified) on GIZMO).
+  `List`, `RunTests`, `RunFilter`, `RunAll`, `Quit`; the full run (unverified) on the target PC).
 - **Packaged smoke test** (Development only: `-seconds=N` is compiled out of Shipping; it quits after N
-  seconds of accumulated game time - verified in LaunchEngineLoop.cpp; not yet run on GIZMO):
+  seconds of accumulated game time - verified in LaunchEngineLoop.cpp; not yet run on the target PC):
 ```powershell
 $g='MyGame'; $b="C:\dev\Builds\$g\Windows"; $log="$b\$g\Saved\Logs\$g.log"
 $p = Start-Process "$b\$g\Binaries\Win64\$g.exe" -PassThru -ArgumentList `
@@ -194,11 +205,47 @@ Select-String $log -Pattern '\[PROOF\]|Log file closed'   # proof lines + clean 
 - **Scripted PIE captures:** `register_slate_post_tick_callback` + `LevelEditorSubsystem.editor_request_begin_play()`,
   then each tick `UnrealEditorSubsystem.get_game_world()` and `SystemLibrary.execute_console_command(world,
   "HighResShot 1920x1080 filename=<abs path>")` on a timeline; write a result JSON at the end and poll for it. The
-  first PIE start can take 2+ minutes (shaders). Turn off editor background throttling first (`editor-scripting.md`).
+  first PIE start can take 2+ minutes (shaders). Needs "Use Less CPU when in Background" off (SETUP step 8).
 - `HighResShot` drops stat text and debug strings. For proof shots of stats use `Shot showui filename=<abs path>`,
   but in PIE that captures the whole editor window; use the packaged game for HUD shots.
-- An uncooked `-game` launch (`UnrealEditor.exe <project> -game`) was unreliable for captures (missing actors, wrong
-  camera). Use scripted PIE or the packaged exe.
+- **Measure motion and timing in `-game`, not PIE.** With the editor in the background PIE ran at 3-8 fps (game dt
+  ~0.33 s), so foot-slide and timing numbers were meaningless. A later prototype ran tests as
+  `UnrealEditor.exe <project> -game -ExecCmds="py <test>.py"` at ~160 fps: the script finds the world through
+  `unreal.ObjectIterator(unreal.PlayerController)`, drives the pawn with `add_movement_input` from
+  `register_slate_post_tick_callback` (no OS input, so no key injection), writes JSON and quits. For foot slide,
+  measure net start-to-end slip per plant (foot bones + `contact_*` curves), not summed per-frame motion (adds jitter).
+  (An earlier prototype found uncooked `-game` unreliable for captures, with missing actors and a wrong camera; the
+  scripted harness above, with a camera placed in the level, worked. If actors are missing, use scripted PIE or the
+  packaged exe.)
+- **`-game` Python harness facts (5.8.4):**
+  - `EditorAssetLibrary` calls crash the `-game` process; `unreal.load_asset` works.
+  - Python can't spawn into the game world: borrow a camera actor placed in the level.
+  - `PlayerController.un_possess()` resets the view target: call `set_view_target_with_blend(cam, 0)` again before
+    each shot, and set the FOV with `cam.camera_component.set_field_of_view`.
+  - Single-node playback: `set_animation` re-initialises the instance and shots right after it show the reference
+    pose. Call it once per clip, then only `set_position(t)`; set
+    `visibility_based_anim_tick_option=ALWAYS_TICK_POSE_AND_REFRESH_BONES`. Single node skips the ABP (layers, bone
+    modifiers, slots, root motion): for the real path play montages on the ABP under
+    `GameplayStatics.set_global_time_dilation(w, 0.1)` and take a `HighResShot` every 1/20 s of game time.
+  - Frame-stepped `HighResShot`s can't capture other windows; screen capture can (below). Use them for comparisons.
+  - Kit harness: `gen/test/game_test.ps1 -Script <test>.py` launches `-game`, runs the test and prints its result lines.
+- **AI in PIE stills: `un_possess()`, not `destroy_actor()`.** Destroying an AIController from Python left the AI
+  running (it chased and killed the player between shots). `controller.un_possess()` (not `unpossess`) stops it; check
+  the pawn location and the combat log before each shot.
+- **Fixed-camera captures at a set size and FOV** (e.g. 3840x2160 at FOV 80; MCP `CaptureViewport` uses the viewport's
+  size and FOV 90): spawn or reuse a `CameraActor` with the FOV set, then
+  `unreal.AutomationLibrary.take_high_res_screenshot(3840, 2160, "<abs path, no extension>", camera_actor, False,
+  False, unreal.ComparisonTolerance.LOW, "", 0.5, True)`. It pilots the viewport, writes `<path>.png` and releases
+  the pilot. With the editor in the background the request waits until the viewport draws: one MCP `CaptureViewport`
+  call forces the draw (`editor_invalidate_viewports()` did not).
+- **Particles in editor captures:** the editor world doesn't tick while the editor is unfocused, so placed Niagara
+  systems show nothing. Before each capture, on every `NiagaraActor`'s component: `nc.reinitialize_system();
+  nc.advance_simulation_by_time(1.0, 1/60)`. Also wait for any edited system to compile (`editor-scripting.md`).
+- **Finding events in a clip:** don't aim frame grabs from log times (the log-to-clip offset varied ~0.9 s between
+  runs). Detect them numerically first: e.g. count near-white pixels per frame at 192x108 and flag spikes over the
+  local median; that found every hit flash, and the grabs hit first time.
+- **Contact sheets:** `fps=1,scale=400:-2,eq=gamma=1.8,tile=4x3`. For labels use `drawtext` with `fontfile=`
+  (without it, it segfaulted on fontconfig): recipe in `cinematics-video.md` "ffmpeg recipes".
 - **Screen captures of a packaged build** (look comparisons per render variant): launch the exe with the variant's
   `-DPCVars`, wait for a known log line, call `SetProcessDPIAware()` first (otherwise a 150%-scaled 4K desktop captures
   as 2560x1440), then grab the screen. Before every grab, check the foreground window belongs to the game **by process
@@ -214,6 +261,16 @@ Select-String $log -Pattern '\[PROOF\]|Log file closed'   # proof lines + clean 
   `naturalWidth / devicePixelRatio` in a small script and say on the page that it is true 1:1.
 - **Logging timed states:** when a timed state ends (a grab, a stun), log how long it lasted and why it ended. It turns
   "it doesn't work" into a measurable report.
+
+## Recording the screen safely
+
+The kit's single statement of this rule (`cinematics-video.md` links here). Record only with
+`gen/test/record_window.ps1` (or `gen/test/autoclip.ps1`, which launches `-game` with an autoplay flag and records
+through it). Raw `ddagrab`, the NVIDIA App, Game Bar and OBS are **not for agent use**: they record **whatever is on
+screen**, not the game: a prototype captured the
+editor, the desktop after the game quit, and once a private chat window. The script records only while the game is
+alive, focused and uncovered, and cuts back to the last clean frame. Still look at the first and last frame of every
+clip; **delete at once any clip that shows anything other than the game**, and say so.
 
 ## G. Rare launch crashes: method (from a prototype)
 
@@ -234,16 +291,15 @@ Test whether players see it at all: every recorded crash had a screen recorder r
 
 - "Done means seen": proof = a `Display`-level `[PROOF]` log line or a viewport capture with
   `AddOnScreenDebugMessage`/`DrawDebug` visible. Strip or gate debug drawing before the final video.
-- **Conflict:** performance.md caps the zip at 1 GB, but a Development build ships a ~370 MB PDB.
-  Zip **without** `*.pdb` for itch; archive the PDB with the build date beside the build folder.
+- PDBs and the itch zip: SETUP step 7 and `performance.md` "Budgets". Keep each PDB with its build.
 - **Conflict risk:** all of section C, `stat`, cheats and `-seconds` disappear in Shipping. We package
   Development; if anyone switches to Shipping for the final upload, the smoke test stops working.
 
 ## Verified against
 
-- GIZMO 2026-10-24: `<Project>\Saved\Logs\` (names, backups, `_2` instance, UTC timestamps),
+- The target PC, 2026-10-24: `<Project>\Saved\Logs\` (names, backups, `_2` instance, UTC timestamps),
   `Saved\Crashes\UECC-*` (an ensure in `AssetManagerTypes.cpp`, `UnknownFunction` frames, no engine PDBs),
-  packaged `<Build>\Windows\` (log path, staged PDB, no CrashReportClient, 0 errors).
+  packaged `<Build>` (log path, staged PDB, no CrashReportClient, 0 errors).
 - Engine source/config 5.8: `DrawDebugHelpers.h`, `EngineDefines.h`, `AssertionMacros.h`, `VisualLogger.h`,
   `Engine.h` (AddOnScreenDebugMessage), `CheatManager.h`, `GameplayDebuggerConfig.cpp` (keys),
   `LaunchEngineLoop.cpp` (`-seconds`), `GenericPlatformOutputDevices.cpp` (`-LOG=`/`-ABSLOG=`),

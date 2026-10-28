@@ -31,11 +31,11 @@ agent configs, MCP settings, prompt libraries and scripts; gameplay is made in t
 |---|---|---|---|
 | **Hit-stop** (freeze on impact) | `AActor::CustomTimeDilation` on attacker and victim, restored by a world timer | light 0.05-0.07 s, heavy 0.10-0.15 s, dilation 0.02 | Local: the rest of the world keeps moving. World timers run on global time, so `CustomTimeDilation` doesn't slow them. Use a small value, not 0 (some movement code divides by delta time) |
 | **Slow motion** (kill, last enemy) | `UGameplayStatics::SetGlobalTimeDilation(World, 0.25)` | 0.25 for 0.3-0.5 s real time | World timers are scaled by global dilation: a timer of `real * 0.25` restores after `real` seconds. Sound is not slowed by default |
-| **Camera shake** | `UDefaultCameraShakeBase` subclass (EngineCameras plugin, on by default) with a root pattern; `APlayerController::ClientStartCameraShake(Class, Scale)` | Perlin: rotation amplitude 0.5-2 deg, frequency 10-25, 0.15-0.3 s, short blend out | Perlin for impacts, `UWaveOscillatorCameraShakePattern` for directional punches, `UCompositeCameraShakePattern` to combine. Third person: shake rotation more than location. `UGameplayStatics::PlayWorldCameraShake` for explosions with falloff |
+| **Camera shake** | `UDefaultCameraShakeBase` subclass (EngineCameras plugin, on by default) with a root pattern; `APlayerController::ClientStartCameraShake(Class, Scale)` | Perlin: rotation amplitude 0.5-2 deg, frequency 10-25, 0.15-0.3 s, short blend out | Perlin for impacts, `UWaveOscillatorCameraShakePattern` for directional punches, `UCompositeCameraShakePattern` to combine. Third person: shake rotation more than location. **`UPerlinNoiseCameraShakePattern::RotationAmplitudeMultiplier` defaults to 0** (location only): set it to 1 or the rotation amplitudes do nothing (*proven*). No asset per value: `PlayerCameraManager->StartCameraShake(UDefaultCameraShakeBase::StaticClass(), Params)` with `FAddCameraShakeParams::Initializer` building the pattern (multipliers, amplitudes, frequencies, duration, blend out) from the feedback entry. `UGameplayStatics::PlayWorldCameraShake` for explosions with falloff |
 | **Field-of-view kick** | Camera `FieldOfView` driven by `UKismetMathLibrary::FloatSpringInterp` each tick | +3 to +6 deg on dash or heavy hit, spring stiffness 150-300, damping 0.4-0.6 | Kick the spring's velocity or target, let it settle. Keep `FFloatSpringState` per value |
-| **Hit flash** (target turns white) | `UMeshComponent::SetOverlayMaterial` (unlit translucent, emissive by a Custom Primitive Data value) + `SetCustomPrimitiveDataFloat(Index, 1)`, fade to 0 | 0.06-0.1 s | Overlay draws over every slot without touching the base material. Reserve CPD indexes per project (one prototype used 1 for camera fade) |
+| **Hit flash** (target turns white) | Default: the master material's built-in flash, `SetCustomPrimitiveDataFloat(0, 1)` (`FlashAmount`), fade to 0; `FlashColor` / `FlashStrength` on the MI (`materials.md` "Master material"). Meshes not on the master: `UMeshComponent::SetOverlayMaterial` (unlit translucent, emissive by a CPD value) | 0.06-0.1 s | CPD 0 is taken by `FlashAmount`: reserve other CPD indexes per project from 1 up (a vector parameter takes **4 consecutive slots**). The overlay draws over every slot without touching the base material; built by script, it needs the right usage flags (`materials.md` "Master material", usage flags) |
 | **Squash and stretch** | Mesh relative scale driven by `FloatSpringInterp` (or `VectorSpringInterp`) | land: Z 0.8 / XY 1.1, spring back over ~0.2 s | For stylized characters and pickups. Scale the mesh component, never the capsule |
-| **Knockback** | `ACharacter::LaunchCharacter(Velocity, bXYOverride, bZOverride)` | light 80, finisher 600 (*proven*, melee prototype) | Big knockback on light hits pushes the target out of the next swing's reach |
+| **Knockback** | `ACharacter::LaunchCharacter(Velocity, bXYOverride, bZOverride)` | small on light hits, large on the finisher | A big push on a light hit moves the target out of reach of the next hit |
 | **Controller rumble** | `APlayerController::PlayDynamicForceFeedback(Intensity, Duration, ...)` (no asset needed) or `ClientPlayForceFeedback(UForceFeedbackEffect*, Params)` | light 0.3 x 0.08 s, heavy 0.7 x 0.15 s | Large motors for weight, small for texture |
 | **Particles** | `UNiagaraFunctionLibrary::SpawnSystemAtLocation` / `SpawnSystemAttached` | burst at the hit point, along the hit normal | Pool frequent effects (`ENCPoolMethod::AutoRelease`). Recipes: `vfx.md` |
 | **Sound** | `UGameplayStatics::PlaySoundAtLocation(World, Sound, Loc, Volume, Pitch)` / `SpawnSoundAttached` | pitch random 0.9-1.1 per play; layer whoosh + impact + body | Repetition kills feel: 3+ variations or pitch variance. Recipes: `audio-ui.md` |
@@ -45,6 +45,9 @@ agent configs, MCP settings, prompt libraries and scripts; gameplay is made in t
 | **UI punch** | Widget render transform scale via a spring or a UMG animation | 1.0 -> 1.15 -> 1.0 over 0.15 s | Score, health and button presses |
 | **Damage numbers / hit markers** | World-space widget or HUD draw at the projected hit point | rise and fade over 0.6 s | Optional; genre-dependent |
 | **Lingering marks** | Decals (`UGameplayStatics::SpawnDecalAtLocation`), debris that stays | a few seconds | Aftermath: the world remembers the hit |
+
+**One action, one dominant feedback:** when events coincide (a kill and a deflect off the wall), play the stronger,
+never both.
 
 ## Pattern: a feedback player (write it in the project, during the jam)
 
@@ -61,9 +64,10 @@ Feel's core idea in Unreal terms, described so the session can write it quickly:
 
 ## Juice pass checklist (one pass per verb, after the mechanic works)
 
-1. List the player verbs (attack, hit, get hit, kill, dodge, jump, land, pick up, open, win, lose) and the important
-   world events.
-2. For each, write the four beats (anticipation, impact, reaction, aftermath) and pick 3+ channels.
+1. List the player verbs **that exist in this game** (for example attack, hit, get hit, kill, dodge, jump, land, pick
+   up, open, win, lose) and the important world events. Don't juice a verb the game lacks; if the design needs a
+   missing one (a dodge, say), build it first.
+2. For each verb that exists, write the four beats (anticipation, impact, reaction, aftermath) and pick 3+ channels.
 3. Add them in order of frequency and importance: hit and get-hit first, then kill, then movement, then UI.
 4. Record a clip after each verb and watch it at full speed. Too much? Cut the duration before the amplitude.
 5. Check readability: the player can still see the target and the threat during shake and flashes.

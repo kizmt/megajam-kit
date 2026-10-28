@@ -1,8 +1,19 @@
 # PCG: procedural placement (UE 5.8.4)
 
-Read `worldbuilding.md` > PCG first (the supervised MCP workflow). This note is the next level down: what the
-nodes do, which plugins, Epic's skill rules, the PCGToolset tool list, and recipes for dressing a small level with
-our Nanite props. Use PCG for rule-based placement only; hero props are placed by hand.
+The kit's single note on PCG: the supervised MCP workflow, what the nodes do, which plugins, Epic's skill rules,
+the PCGToolset tool list, and recipes for dressing a small level with our Nanite props. Use PCG for rule-based
+placement only; hero props are placed by hand.
+
+## Supervised agent workflow (mandatory; PCG via MCP is Experimental)
+
+1. Load `PCGToolset` and **`Skill_PCGGraphGeneration` first** (without it the agent misreads concepts).
+2. Find a similar example graph (PCG SampleContent, PCGPrimitives examples, project graphs) and adapt it; build new
+   only if none fits.
+3. The director selects the assets/actors to use in the editor; don't let the agent search broadly.
+4. Plan / list nodes to change before executing; execute in small steps; supervise.
+5. Use **Dataview** (`GetNodeDataView`) to inspect generated point attributes (the agent can't read them otherwise).
+Other skills: `Skill_InstantLevelOperations` (quick batch placement without a graph: try first for simple jobs),
+`Skill_PCGShapeGrammarDefinition` (modules along a spline), `Skill_PCGInstancingOnMeshActor` (surface detail).
 
 ## Plugins and status (read from the .uplugin files on this PC)
 
@@ -18,8 +29,7 @@ our Nanite props. Use PCG for rule-based placement only; hero props are placed b
 - **Gotcha:** `PCGToolset` defaults its example/primitive/instant folders to `/PCGPrimitives/Examples`,
   `/PCGPrimitives/Primitives`, `/PCGPrimitives/Instants` (`PCGToolsetSettings.cpp`). If **PCGPrimitives is not
   enabled**, `Skill_PCGGraphGeneration` gets empty example/primitive lists and the agent falls back to raw native
-  nodes. Enable PCGPrimitives in the jam project (Edit > Plugins, restart) before any PCG work. The kit's test project
-  project currently enables only `ModelContextProtocol`, `AllToolsets`, `ModelingToolsEditorMode`.
+  nodes. Enable PCGPrimitives in the jam project (Edit > Plugins, restart) before any PCG work.
 - Folders are configurable: Project Settings > Plugins > PCG Toolset (Subgraph / Example Graph / Instant Graph
   Directories). Add `/Game/PCG` to Example Graph Directories once we have our own graphs worth reusing.
 
@@ -78,7 +88,7 @@ our Nanite props. Use PCG for rule-based placement only; hero props are placed b
 
 ## Splines as input
 
-- Put a Spline Component on an actor (or let the agent call `DrawSpline` so Scott draws it), give the actor a
+- Put a Spline Component on an actor (or let the agent call `DrawSpline` so the director draws it), give the actor a
   **tag**, read it with **Get Spline Data** (Actor Filter by tag). Splines are not inside the volume automatically.
 - Open spline = path (props along it: OnSpline + Distance mode). Closed spline = area (OnHorizontal fills the
   interior, `InteriorSampleSpacing`). Difference with a spline-derived shape keeps a walkway clear.
@@ -91,7 +101,7 @@ our Nanite props. Use PCG for rule-based placement only; hero props are placed b
   meshes inside of HISMs"), as long as `bAllowDescriptorChanges` stays true. Our Nanite props => ISM: correct.
 - One ISM per (mesh, descriptor) per component: 5 prop meshes = ~5 draw batches regardless of instance count.
 - Materials: instances use the mesh's `MI_<Name>`; master material needs the **instanced** usage flag (see
-  `performance.md`; missing flag = grey in packaged build). No per-instance material overrides.
+  `materials.md`; missing flag = grey in packaged build). No per-instance material overrides.
 - Collision on instances follows the descriptor/mesh (convex hull). For tiny clutter, turn collision off in the
   spawner's descriptor to save physics cost (unverified exact field name; check in Details).
 
@@ -110,8 +120,9 @@ our Nanite props. Use PCG for rule-based placement only; hero props are placed b
 ## Performance
 
 - Point count is the cost. Start sparse (PointsPerSquaredMeter 0.01-0.05 for props this size), increase later.
-  Check the Dataview count before spawning: thousands of 25k-tri props is fine with Nanite, millions of points
-  is an editor freeze.
+  Check the Dataview count before spawning: thousands of instances of a few props are fine with Nanite (one
+  prototype's props measured ~25k tris); millions of points is an editor freeze. The real limit is unique props'
+  texture memory (8 GB VRAM, `performance.md` "Budgets").
 - Order: sample -> cheap filters (Density Filter) -> Self Pruning -> spawn. Filter before expensive nodes.
 - Volume Sampler and Mesh Sampler (Poisson) scale badly; keep volumes tight to the play area.
 - GPU path (Beta; GPU spawner Experimental): runtime-only instances, no collision/navigation/HLOD. **Don't use.**
@@ -124,7 +135,7 @@ our Nanite props. Use PCG for rule-based placement only; hero props are placed b
 - Tool graphs ship in `/PCG/EdMode/` (`DrawSpline/SpacingTool`, `SplineMeshTool`, `Paint/PlaceTool`,
   `Volume/ScatterTool`, `DrawSplineSurface/AreaTool`). A graph appears in a tool only if its Compatible Tool Tags
   are set. Empty tool list = Editor Preferences > PCG Editor Mode Settings > Reset To Defaults.
-- Useful for Scott to hand-paint clutter with our props; the agent doesn't drive it.
+- Useful for the director to hand-paint clutter with our props; the agent doesn't drive it.
 
 ## Where Epic's graphs live (on disk; content path in brackets)
 
@@ -159,7 +170,7 @@ fills `{Subgraphs}`, `{Nodes}`, `{Examples}`, `{Instant Graphs}` at load time fr
 - Attribute names must match explicitly between nodes (`OutputAttributeName` -> downstream `InputSource`);
   unnamed outputs are called `None`.
 - Node comments: real newlines, not `\n` escapes; verify with `GetNodeInfo`.
-- **On errors after `ExecuteGraphInstance`: do NOT auto-fix** ("error messaging is not reliable"); report to Scott
+- **On errors after `ExecuteGraphInstance`: do NOT auto-fix** ("error messaging is not reliable"); report to the director
   with suggested fixes and wait.
 - One graph per session unless asked; prefer programmatic (scripted) tool calling for whole-graph builds;
   no screenshot feedback loops unless asked.
@@ -173,7 +184,7 @@ Sampling_Radius; max 4 iterations.
 `.AssetName` suffix, e.g. `"/Game/Props/Rock/SM_Rock.SM_Rock"`; pass as plain strings in JSON params.
 
 **Skill_PCGAssetZoo:** lines assets up with `/PCGPrimitives/Examples/Utilities/Asset_grid_with_Frame`; handy
-for Scott to review a batch of generated props side by side.
+for the director to review a batch of generated props side by side.
 
 ## PCGToolset MCP tools (`UPCGToolset`, `UPCGSpatialToolset`)
 
@@ -187,7 +198,7 @@ for Scott to review a batch of generated props side by side.
 - Data: `GetNodeDataView(PCGVolume, Node, PinLabel="Out", AttributeName, StartIndex, EndIndex)`. First call enables
   inspection; re-execute, then read. **Never run it/Execute on two volumes sharing a graph at once: freeze.**
 - Comments: `AddCommentBox`, `UpdateCommentBox`, `RemoveCommentBox`. Other: `DrawSpline(ActorLabel, ActorTag,
-  bRedraw, bClosedSpline)` (waits for Scott to draw). Spatial: `RunPCGInstantGraph(Graph, Params)` (fire-and-forget).
+  bRedraw, bClosedSpline)` (waits for the director to draw). Spatial: `RunPCGInstantGraph(Graph, Params)` (fire-and-forget).
 
 ## Recipes (node chains; build by adapting the named example)
 
@@ -195,7 +206,7 @@ for Scott to review a batch of generated props side by side.
    PCG Volume over the room -> World Ray Hit Query (Ignore PCG Hits) -> Surface Sampler (PointsPerSquaredMeter
    0.02, PointExtents ~ prop half-size) -> Normal To Density + Density Filter (drop slopes/walls) ->
    Transform Points (yaw 0-360, scale 0.8-1.2) -> Bounds Modifier -> Self Pruning (LargeToSmall) ->
-   Static Mesh Spawner (Weighted: Scott's 3-5 SM_ props, from a graph param).
+   Static Mesh Spawner (Weighted: the director's 3-5 SM_ props, from a graph param).
 2. **Props along a path spline** (start from `TPL_Sampler_Spline` / `Basics_SpawnAssetsAlongSpline_as_a_Tool`):
    Get Spline Data (tag `PCG_Path`) -> Spline Sampler (OnSpline, Distance, DistanceIncrement 300-600,
    bProjectOntoSurface on) -> Transform Points (side offset +-200 Y, random yaw) -> Self Pruning -> Spawner.

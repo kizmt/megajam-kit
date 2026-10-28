@@ -1,20 +1,48 @@
 # Performance rules (UE 5.8.4, RTX 4060 8 GB)
 
 The goal: never dig a hole we can't climb out of in 93 hours. These rules come from Epic's 5.8 docs
-(links at the bottom) plus what we measured on GIZMO. Check them when adding content, not after the
+(links at the bottom) plus what we measured on the target PC. Check them when adding content, not after the
 game feels slow.
 
-## Display + render defaults (measured 2026-10-24 on an empty test level, packaged, RTX 4060, 4K monitor)
+## The bar (single definition; other docs point here)
 
-Target: **100+ fps at 4K output** on the RTX 4060. Measure with `node gen/perf/bench.ts` (launches the packaged
-build per variant, cvars via `-DPCVars`, no repackage) and `node gen/perf/csv_report.ts <csv>`.
+Smoothness and reach come before raw frame rate: no render lag, no visible frame drops, and weaker PCs can still
+play. The right frame rate depends on the game, so the bar has a fixed part and a per-game part.
+
+**Every game (fixed).** Packaged build on the target PC (RTX 4060, 4K output), measured with `gen/perf/bench.ts
+--target-fps <target>`, which prints PASS/FAIL per variant:
+- **No hitches:** no frame longer than twice the target frame time (after the skipped warm-up frames). Usual
+  causes: shader/PSO compiles, asset loads or spawns mid-play, a garbage-collection spike.
+- **Steady pacing:** the 1% low (p99 frame time) within 20% of the average fps.
+- **At or above the target:** the slowest 5% of frames (p95) at or above the game's target fps.
+- **A settings menu that scales:** quality preset, resolution scale, frame cap and vsync, applied and saved through
+  `UGameUserSettings` (`SetOverallScalabilityLevel`, `SetResolutionScaleNormalized`, `SetFrameRateLimit`,
+  `SetVSyncEnabled`, then `ApplySettings` and `SaveSettings`). This is what lets a weaker PC play. Applying a preset
+  overwrites the shipped mix (full Lumen: High GI/reflections/shadows; Lumen Lite: Medium GI/reflections, High
+  shadows; Epic elsewhere) and `GameUserSettings.ini`
+  keeps it, so the menu's default/"recommended" preset must reproduce the shipped mix (or ship High overall).
+  On a Lumen game the presets scale the lighting too: **Medium is Lumen Lite** (weaker PCs keep dynamic bounce
+  light), **Low turns Lumen off** (unshadowed sky light). Check that the Medium and Low looks still read.
+
+**Per game (chosen at the style lock, recorded in the project's `DECISIONS.md`):**
+- **Target fps** on the target PC at 4K output with the shipped defaults: about 60 for a slow, heavy-looking game,
+  120 or more for fast action. Until it's chosen, use 60.
+- **Low-end check:** the same target on the Low preset at 1080p output (`--res 1920x1080` plus a variant setting the
+  `sg.*` groups to 0). The target PC on Low is still far faster than a low-end PC; this checks that the settings
+  really scale. (Unverified: that `-DPCVars` applies `sg.*`. Confirm it the first time in the game log or with a
+  visible difference. If it doesn't, use `-ExecCmds="scalability 0"` instead, also untested.)
+
+(`node gen/perf/bench.ts` launches the packaged build per variant, cvars via `-DPCVars`, no repackage;
+`node gen/perf/csv_report.ts <csv> --target-fps <target>` summarises a single run.)
+
+## Display + render defaults (measured 2026-10-24 on an empty test level, packaged, RTX 4060, 4K monitor)
 
 | Variant (4K output, internal 1080p unless noted) | avg fps | p95 fps | GPU ms |
 |---|---|---|---|
 | UE defaults (Epic, TSR history 200%, template clouds, motion blur) | 64 | 61 | 14.8 |
 | + TSR history 100% | 81 | 76 | 11.6 |
 | + no volumetric clouds, no motion blur ("lean") | 98 | 88 | 9.7 |
-| **lean + High GI/reflections/shadows (kit default)** | **120** | **108-110** | **7.5** |
+| **lean + High GI/reflections/shadows (Lumen-path default)** | **120** | **108-110** | **7.5** |
 | lean + internal 1440p (Epic) | 71 | 66 | 13.5 |
 | lean + internal 1440p + High | 83 | 76 | 11.5 |
 | lean + internal 1620p (75%) | 61 | 56 | 16.0 |
@@ -28,20 +56,18 @@ Facts:
   stretches it (soft). With it the window is true 3840x2160 (verified with `-ExecCmds="HighResShot 1"` -> 3840x2160 PNG).
   The CSV/log `systemresolution` metadata still says 2560x1440: it is recorded before DPI awareness is set. Ignore it.
 - In WindowedFullscreen (the default mode) the saved `ResolutionSizeX/Y` is ignored; the desktop resolution is used.
-- Unreal stores `<Build>\<Project>\Saved\Config\Windows\GameUserSettings.ini` on the first run; it overrides
-  `DefaultGameUserSettings.ini` afterwards. Delete it when testing new defaults.
+- Unreal stores `<Build>\<Project>\Saved\Config\Windows\GameUserSettings.ini` on the first run (`<Build>` as defined
+  in `debugging.md`); it overrides `DefaultGameUserSettings.ini` afterwards. Delete it when testing new defaults.
 
-Config (SETUP step 7b applies it): `DefaultEngine.ini` `[/Script/Engine.RendererSettings] r.DefaultFeature.MotionBlur=False`,
-`[/Script/Engine.UserInterfaceSettings] bAllowHighDPIInGameMode=True`; `DefaultScalability.ini`
-`[AntiAliasingQuality@3]` and `@Cine` `r.TSR.History.ScreenPercentage=100`; `DefaultGameUserSettings.ini`
-`[ScalabilityGroups] sg.GlobalIlluminationQuality=2 sg.ReflectionQuality=2 sg.ShadowQuality=2`.
-**Don't place a VolumetricCloud** (use SkyAtmosphere + a cheap sky). The empty test scene is the floor: real content
-adds cost, so re-bench after each big content round and keep ~8 ms GPU headroom in mind.
+The config behind the "lean" rows is SETUP step 7b (this table is the Lumen path at 1080p internal; the no-Lumen
+path is in "Render paths"). **Don't place a VolumetricCloud** (use SkyAtmosphere + a cheap sky). The empty test
+scene is the floor: real content adds cost, so re-bench after each big content round against the GPU frame budget
+("Bench lessons").
 
 ## Render paths (measured on a prototype, packaged, 4K output, RTX 4060)
 
-One data point, not a rule: a stylized 3D platformer race prototype (12 characters running an obstacle course, glossy pastel look), ~550 m course, benched on every render path on the same
-frame. Other genres and looks will land differently; use the method (same frame, true 1:1, something moving) and
+One data point, not a rule: a stylized prototype (glossy look, 12 animated characters on screen, a ~550 m open
+level), benched on every render path on the same frame. Other genres and looks will land differently; use the method (same frame, true 1:1, something moving) and
 re-measure. avg / p95 fps:
 
 | Path | fps | Look |
@@ -50,9 +76,13 @@ re-measure. avg / p95 fps:
 | Lumen GI + SSR + SMAA 1080p | 157 / 147 | Soft, but dithered speckle on silhouettes |
 | No Lumen + TSR 1080p | 132 / 124 | Dark undersides until the bounce stand-ins are added (`lighting.md`) |
 | No Lumen + SMAA 1080p | 217 / 199 | Fastest, but lower detail (see below) and dark undersides |
-| **No Lumen + TSR 1260p + bounce stand-ins** | **122 / 117** | **Chosen: smooth shadows in motion, crisp, close to the Lumen look** |
+| **No Lumen + TSR 1260p + bounce stand-ins** | **122 / 117** | **Best balance for that game: smooth shadows in motion, crisp, close to the Lumen look** |
 | No Lumen + TSR 1440p | 103 / 99 | Slightly sharper than 1260p, no headroom |
 | Lumen + TSR 1440p / 1620p / native 4K | 77 / 66 / 43 | Crisper, unplayable budgets |
+
+**Lumen Lite** (Medium GI + Medium reflections: Irradiance final gather + SSR; `lighting.md` "Scalability") wasn't on
+this prototype's bench. Epic: each Lumen level costs roughly half the one above, and Medium targets 60 fps on low-end
+PCs. `bench.ts`'s built-in comparison includes it (`lumenlite-1080p`): measure it at the style lock with the others.
 
 Facts behind the table:
 - **Grain under moving characters is Lumen GI noise, not shadows or resolution.** Same VSM settings with GI off gave
@@ -69,23 +99,42 @@ Facts behind the table:
   `r.AllowOcclusionQueries=0` (small open scenes) took p95 173 -> 190 fps. When GPU ms < frame ms, read the render
   thread column before trimming the GPU.
 - `r.DynamicGlobalIlluminationMethod` / `r.ReflectionMethod` are read every frame (unless a PPV overrides them), so
-  `bench.ts` variants with `-DPCVars` compare paths without repackaging. `-DPCVars` also sets game cvars registered
-  after startup (non-cheat), so autoplay switches work as bench variants.
+  `bench.ts` variants with `-DPCVars` compare paths without repackaging.
 - A canvas HUD with outlined text cost ~0.5 ms at 4K. Measure the HUD on its own when it lands.
 - Bloom off and lower VSM resolution changed p95 by 0-4 fps (noise) on this content.
 - **Many animated characters:** enable the Animation Budget Allocator plugin (stable, ships with 5.8, off by
   default; `a.Budget.Enabled=1`, `a.Budget.BudgetMs`) and use its budgeted skeletal mesh component for non-player
   characters. 12 characters needed ~0.6 ms of animation, under a 1 ms budget, so it only matters at larger counts.
 
+### Bench lessons (packaged, 4K output, RTX 4060)
+
+- **On the 4060 at 4K output, a near-empty Lumen HWRT room already costs most of a high-fps budget** (measured: p95
+  108-110 on the empty test level above, less in a real room): budget from the bench, not the template level. Over
+  ~5% background GPU load (`nvidia-smi` before and after) is a dirty result.
+- **TSR at 4K output costs ~2.3 ms whatever the internal resolution.** GPU frame budget for everything else ≈
+  1000 / target fps − ~2.3 ms TSR − ~1 ms margin: 60 fps ≈ 13 ms, 90 fps ≈ 8 ms, 120 fps ≈ 5 ms.
+- **"Lumen ms" undercounts with async compute.** With `r.Lumen.AsyncCompute 1` the CSV showed only ~0.45 ms of Lumen
+  passes, because screen probe gather (~1.1 ms) runs on the compute queue and its time hides inside "Lights". With
+  `r.Lumen.AsyncCompute 0` Lumen was ~2.3 ms; async compute saved only ~0.3 ms. Compare the GPU-total delta against a
+  no-Lumen variant, or bench Lumen variants once with async off.
+- `-ExecCmds="stat gpu"` drew nothing in the packaged build. A game cvar that runs the command from the player
+  controller ~1 s after BeginPlay works.
+- `r.Lumen.ScreenProbeGather.DownsampleFactor` defaults to **16** in 5.8.4 (probe tile size in pixels). Lower values
+  mean more probes and more cost: 2 is not a cheap setting.
+- `r.Lumen.Reflections.Allow 0` with `r.ReflectionMethod 1` falls back to SSR (on purpose, in
+  `ShouldRenderScreenSpaceReflections`).
+- Game cvars from a static `FAutoConsoleVariableRef` in the game module are set by `-DPCVars` in a packaged build
+  (verified), so game switches work as bench variants.
+
 ## Budgets (packaged build, 4K output)
 
 | Thing | Budget | Why |
 |---|---|---|
-| Frame | 100+ fps (10 ms) at 4K output; `stat unit` after every big change, `bench.ts` per milestone | Fix slowness the round it appears |
-| Unique generated props | ~20-40 for a 5-10 min game | Each is ~25k tris + four 2K textures |
+| Frame | "The bar" above (no hitches, steady pacing, p95 at the game's target); `stat unit` after every big change, `bench.ts` per milestone | Fix slowness the round it appears |
+| Unique generated props | Set by texture memory (8 GB VRAM), not a count. Estimate from one prototype: ~20-40 for a 5-10 min game | Each carries three textures (colour, normal, ORM); a prototype's props measured ~25k tris |
 | Textures per prop | 2K hero, 1K small/background (`--tex 1024`) | Texture memory is the real 8 GB limit |
 | Dynamic shadow-casting lights | Keep few (sun + a handful) | Each one re-renders shadows |
-| Packaged zip | under 1 GB; zip excludes the ~350 MB `.pdb` (`package.ps1` keeps it beside the build) | itch limit |
+| Packaged zip | under 1 GB; zip excludes the ~350 MB `.pdb` (`package.ps1` keeps it beside the build) | The jam's size limit |
 
 ## Geometry
 
@@ -97,23 +146,23 @@ Facts behind the table:
 - Nanite skeletal meshes: use animation LODs, not geometry LODs; morph targets unsupported.
 - Many copies of one prop (rocks, crates, trees): place as **instances** (instanced static mesh / PCG), not hundreds of
   separate actors.
-- Collision: imported props get one auto **convex hull** (cheap). Never use "complex as simple" on generated meshes.
-  For hollow/walk-in shapes, build simple boxes/capsules.
+- Collision: imported props get one auto **convex hull** (cheap). For openings and walk-in shapes use authored
+  boxes or `asset.ts --hulls N`; complex-as-simple only on a static low-poly mesh (`physics.md`).
 
 ## Materials and shaders
 
 - **One master material + instances** (`M_PBR_Master`, `MI_<Name>`). Never per-asset materials: each new material
   is a new set of shaders to compile and a new stall.
-- Master material must have usage flags set (Nanite, skeletal, instanced). A flag missing in a **packaged** build
-  = default grey material. `materials.ts` sets them.
+- Master material usage flags: a flag missing in a **packaged** build = default grey material (details and the full
+  flag list: `materials.md`). `materials.ts` sets them.
 - Shader compiles after a material change make things render grey for a while in the editor. Wait before judging a screenshot.
 
 ## Textures and memory
 
 - Streaming pool is shared by all textures; over budget = blurry textures (engine drops top mips). Watch for
   blurriness after adding many props; `--tex 1024` for anything small or far.
-- Normal maps: `TC_Normalmap`, sRGB off. Roughness/metallic: grayscale, sRGB off. (`materials.ts` handles it.)
-- Possible later win: pack roughness/metallic into one texture (ORM) to cut texture count per prop.
+- Normal maps: `TC_Normalmap`, sRGB off. AO/roughness/metallic are packed into one ORM texture (`TC_Masks`, sRGB off;
+  `gen/blender/pack_orm.py`), so each prop has 3 textures. (`materials.ts` handles the settings.)
 
 ## CPU / gameplay code
 
@@ -129,7 +178,7 @@ Facts behind the table:
 - In editor: viewport > Show FPS; console `stat unit` (frame / game / draw / GPU ms), `stat gpu`, `stat rhi`.
   Game ms highest = CPU/gameplay bound; GPU highest = rendering bound.
 - `MegajamTools.run_console_command` can issue these from scripts.
-- Final truth is the **packaged** build on GIZMO (Epic: profile on target hardware). Package daily from day 2.
+- Final truth is the **packaged** build on the target PC (Epic: profile on target hardware). Package daily from day 2.
 - Deep dive: Unreal Insights (CPU/GPU timing per frame), RenderDoc (single GPU frame).
 
 ## Sources (5.8)
@@ -138,5 +187,5 @@ Facts behind the table:
 - Common memory and CPU performance considerations: https://dev.epicgames.com/documentation/en-us/unreal-engine/common-memory-and-cpu-performance-considerations-in-unreal-engine?application_version=5.8
 - Profiling intro: https://dev.epicgames.com/documentation/en-us/unreal-engine/introduction-to-performance-profiling-and-configuration-in-unreal-engine?application_version=5.8
 - Texture streaming configuration: https://dev.epicgames.com/documentation/en-us/unreal-engine/texture-streaming-configuration-in-unreal-engine?application_version=5.8
-- Measured on GIZMO 2026-10-24: generated props import with 1 LOD, Nanite off, one convex hull; enabling Nanite
+- Measured on the target PC 2026-10-24: generated props import with 1 LOD, Nanite off, one convex hull; enabling Nanite
   took ~0.7 s per mesh; MIs needed the Nanite usage flag.

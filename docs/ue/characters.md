@@ -1,7 +1,7 @@
 # Characters and animation (UE 5.8.4)
 
 The riskiest part of the pipeline. Generated character (Tripo rig) + Epic's stock animations, retargeted with IK Rig.
-Everything here was checked against engine headers, the Python stub and template content on GIZMO, plus Epic's 5.8 docs
+Everything here was checked against engine headers, the Python stub and template content on the target PC, plus Epic's 5.8 docs
 and Tripo's API docs (list at the bottom). Anything not checked is marked (unverified).
 
 ## Decisions
@@ -10,12 +10,13 @@ and Tripo's API docs (list at the bottom). Anything not checked is marked (unver
 - **`ACharacter` in C++** (see `gameplay.md`). The Anim Blueprint does the anim graph only. Gameplay state (attacking,
   stunned, dead) is decided in C++ and reaches animation as **montages** or as variables on a C++ `UAnimInstance` parent.
 - **Default animation source: Epic's template set, retargeted.** Retarget `ABP_Unarmed` (with its blend space and
-  idle/jump/fall/land) plus the attack montages from the Third Person template onto the Tripo skeleton in one batch.
-  We don't author a state machine. Tripo's own preset animations are the fallback, and the source for extra emotes.
+  idle/jump/fall/land) from the Third Person template onto the Tripo skeleton in one batch; add the attack montages
+  if the game has them (step 7 below). We don't author a state machine. Tripo's own preset animations are the
+  fallback, and the source for extra emotes.
 - **Rig in Tripo with a known bone convention:** `tripo anim rig --spec unreal` (Mannequin bone names) or `--spec mixamo`.
   UE's auto-characterizer recognizes both (UE5/UE4 and Mixamo templates). The default `tripo` spec is not a known
   template, so auto-setup would fail and the chains would have to be hand-built.
-- **No Nanite on characters, no Motion Matching / Game Animation Sample, no runtime retargeting.**
+- **No Nanite on characters, no Motion Matching, no runtime retargeting** (see "Motion Matching" below).
 - Materials: **`MI_<Name>` of the master material** (it has `bUsedWithSkeletalMesh`). Import with materials off, then
   `set_material`. A missing usage flag shows as default grey in a packaged build.
 - Names (see `naming.md`): `SK_`, `SKEL_`, `PHYS_`, `ABP_`, `BS_`, `AM_`, `AS_`, `IK_`, `RTG_`.
@@ -29,10 +30,10 @@ and Tripo's API docs (list at the bottom). Anything not checked is marked (unver
 | Import anything (GLB, FBX) with default importer | `MegajamTools.import_any` | Goes through **Interchange**, which handles FBX by default in 5.8 (`Interchange.FeatureFlags.Import.FBX` = true) |
 | Inspect mesh | `SkeletalMeshTools.get_bone_names / get_bone_parent / get_bone_children / get_bounds / get_skeleton / get_lod_count / get_vertex_count / get_morph_target_names` | `get_bone_names` = root first. Use it to check the rig before retargeting |
 | Materials, sockets | `get_material_slots / set_material`, `add_socket(mesh, socket, bone) / set_socket_transform / ...` | Sockets for weapons and hand props |
-| Physics asset | `get_physics_asset / assign_physics_asset`; PhysicsToolsets plugin has `CreateFromMesh, SetCapsule, AddBody...` | PhysicsToolsets is a separate experimental plugin (check it's enabled) |
+| Physics asset | `get_physics_asset / assign_physics_asset`; PhysicsToolsets plugin has `CreateFromMesh, SetCapsule, AddBody...` | PhysicsToolsets is Experimental, enabled through `AllToolsets` (`physics.md`) |
 | IK Rig, Retargeter, batch retarget | **No toolset.** Use editor Python: `IKRigController`, `IKRetargeterController`, `IKRetargetBatchOperation` (all in the stub) | See script below |
 | Anim BP / Blend Space / Montage assets | Python: `AnimBlueprintFactory` (target_skeleton, parent_class, preview_skeletal_mesh), `BlendSpaceFactory1D` / `BlendSpaceFactoryNew`, `AnimMontageFactory`; `BlendSpace.sample_data` / `blend_parameters` are writable; `BlueprintEditorLibrary.reparent_blueprint / compile_blueprint` | Creating the assets is scriptable |
-| **Anim graph / state machine nodes** | **Not scriptable** (no toolset covers anim graphs) | Editor UI only. That's why we retarget `ABP_Unarmed` instead of authoring one |
+| **Anim graph / state machine nodes** | Node edits **are scriptable** via the editor's BlueprintTools over MCP (`find_nodes` / `delete_node` / `connect_pins`; `read_graph_dsl` can't read AnimGraphs): `gen/unreal/abp.ts` | Authoring a whole state machine is not practical by script. That's why we retarget `ABP_Unarmed` instead of authoring one |
 | AnimationAssistantToolset | Sequencer + Control Rig only (level sequences, keyframing, `bake_to_control_rig`, FBX to/from rig) | Useless for gameplay characters; only for cutscenes |
 
 ## Skeletal mesh import essentials
@@ -42,19 +43,20 @@ and Tripo's API docs (list at the bottom). Anything not checked is marked (unver
 - **One Skeleton per character.** First import creates `SKEL_`; later animation-only FBX imports must pass
   `skeleton=<that Skeleton>` or they create a duplicate skeleton and nothing will share.
 - **Scale check (do it every time):** `get_bounds(mesh)`: a human is ~180 cm tall (box_extent.z ~ 90). 1.8 or 18000
-  means a unit-scale problem. Our Blender export settings fix the 100x case (see `PIPELINE.md`).
+  means a unit-scale problem. `gen/blender/prep_rig.py` fixes it (step 3 below; `PIPELINE.md` "Hard-won facts").
 - **Facing:** UE is X-forward, Z-up. The Mannequin mesh faces +Y and the Character BP rotates the mesh component
   yaw -90 and drops it by the capsule half-height (template capsule 42 x 96). Do the same in the BP subclass, then
   confirm with a PIE screenshot that the character runs face-first.
 - **Root bone:** the mesh pivot is the root bone (FBX pipeline doc). Mixamo-convention rigs have `Hips` as root (no
   ground-level `root`). That's fine for in-place locomotion. Root motion needs a ground-level root, so stick to
-  in-place animations (see Root motion).
+  in-place animations (see "Root motion vs in place" below).
 - **Blender export gotchas** (community knowledge, unverified for 5.8 Interchange): untick *Add Leaf Bones*. An armature
   object that isn't named `Armature` gets imported as an extra root bone. Don't apply transforms that rescale the armature
-  after skinning.
+  after skinning, except `prep_rig.py`'s cm workflow, which applies the x100 rig scale on purpose (`PIPELINE.md`
+  "Hard-won facts").
 - **`gen/blender/prep.py` is built for static props** (single mesh, pivot at base, decimation). Don't run it blind on a
   rigged character: joining or re-pivoting can break the rig. Reduce polycount at generation (`--faces`) **before** rigging.
-  First try importing Tripo's rigged FBX directly. Go through Blender only if the scale/axis check fails.
+  Rigged characters always go through `gen/blender/prep_rig.py` before import (step 3 of the recommended path below).
 - **Physics asset:** `create_physics_asset=True` gives one capsule per major bone. It's needed for per-bone hits, ragdoll and
   accurate bounds. Without one, tick "Component Use Fixed Skel Bounds" on the mesh component (Epic optimization page).
 - **Morph targets:** Tripo rigs have none. Leave off.
@@ -134,8 +136,8 @@ project lacks it, add the Third Person feature pack via Content Drawer > Add):
   `GroundSpeed`, `ShouldMove` (velocity + current acceleration) and `IsFalling` from the CharacterMovementComponent.
   It also has a **Control Rig node using `CR_Mannequin_FootIK`**, which looks up Manny bone names (`ik_foot_l`,
   `foot_l`, `ball_l`, `calf_l`, `thigh_l`, `pelvis`). On a skeleton without those names that node does nothing useful or
-  errors, so delete it in the retargeted copy (UI) unless the rig is `--spec unreal` (unverified whether Tripo's unreal
-  spec includes the `ik_foot_*` bones).
+  errors, so delete it in the retargeted copy: `node gen/unreal/abp.ts strip-footik <ABP path>` (step 8 below; needed
+  for Tripo `--spec unreal` rigs too).
 - `Anims/Unarmed/Attack/MM_Attack_01..03, MM_ChargedAttack`, `Jump/MM_Dash, MM_WallJump`, walk/jog 8-way sets.
 - Montages with sections: `Variant_Combat/Anims/AM_ComboAttack`, `AM_ChargedAttack`; `Variant_Platforming/Anims/AM_Dash`.
   Their C++ driver is `Variant_Combat/CombatCharacter.cpp` (template source), a good pattern to copy.
@@ -170,16 +172,21 @@ protected:
 - Hand-built graph (only if retargeting the ABP fails; editor UI): AnimGraph = State Machine > `Slot 'DefaultSlot'` >
   Output Pose. States: `Locomotion` (Blend Space player, input GroundSpeed), `JumpStart` > `FallLoop` > `Land`.
   Transitions: `bIsFalling`, "time remaining" for Land > Locomotion.
-- **Blend Space:** 1D, axis Speed 0..MaxWalkSpeed (template 500): idle at 0, walk ~ 150-250, run at max. Mismatched
-  sample speeds cause foot sliding. `BS_Idle_Walk_Run` is already this.
+- **Blend Space:** samples sit at the speeds their clips actually move; mismatched sample speeds cause foot sliding.
+  The template's `BS_Idle_Walk_Run` (read from the 5.8.4 asset) is **2D: Direction -180..180 by Speed 0..600**, with
+  idle at 0, walk at **300** and jog at **600** cm/s in 8 directions. The template character's `MaxWalkSpeed` is 500,
+  so it never reaches the full jog. A custom blend space or clip set: read its samples
+  (`bs.get_editor_property('sample_data')`) before tuning `MaxWalkSpeed` and the walk/run speeds in the tuning
+  DataAsset.
 - **Montages** (attack, interact, hit react): play from C++ as the template does:
   `GetMesh()->GetAnimInstance()->Montage_Play(M, 1.f)` + `Montage_SetEndDelegate(...)`, sections via
   `Montage_JumpToSection`. Or use `ACharacter::PlayAnimMontage`. **A montage only shows if the ABP has a Slot node for
-  its slot** (`DefaultSlot`). This is the #1 "montage does nothing" cause. Attack hit timing: C++ `UAnimNotify` subclass
-  (template: `AnimNotify_DoAttackTrace`). Native notifies avoid BP VM calls.
+  its slot** (`DefaultSlot`). This is the #1 "montage does nothing" cause. Attack hit detection: a C++ notify state that sweeps
+  every tick of the active window, not a single-frame `UAnimNotify` trace (`animation-library.md` "Combat animation
+  pattern"). Native notifies avoid BP VM calls.
 - **Root motion vs in place:** locomotion **in place** (Manny's are; for Tripo use `--animate-in-place`). Root motion only
   for a dodge/lunge montage, with the ABP set to "Root Motion from Montages Only" (the default). Details are in
-  `gameplay.md`. Root motion also blocks the parallel anim update (optimization doc).
+  `gameplay.md`.
 
 ## Tripo's own animations (fallback / extras)
 
@@ -212,12 +219,12 @@ protected:
   `NativeThreadSafeUpdateAnimation`.
 - Measure with `stat anim` / `stat unit` (see `performance.md`).
 
-## Game Animation Sample / Motion Matching
+## Motion Matching
 
-Exists (5.8 version on Fab, 500+ anims): Motion Matching, Pose Search databases, Choosers, Pose History, State Tree,
-experimental Offset Root Bone. Using your own character means a child of `CBP_Sandbox_Character`, `ABP_GenericRetarget`
-and an RTG from its UEFN mannequin. It's a large interdependent **Blueprint** system, so it conflicts with C++ gameplay
-and a 93-hour budget. **Skip.** At most, migrate a few of its AnimSequences and batch-retarget them like the template's.
+Motion Matching (Pose Search databases, Choosers, Pose History) needs a large animation database and an
+interdependent setup, which conflicts with C++ gameplay and a 93-hour budget. Use a plain state machine. Clips cut for
+Motion Matching slide as plain sequences unless you add root lock, distance matching and pose-matched entries: recipe
+in `animation-library.md` "Library clips".
 
 ## Recommended path for a generated character
 
@@ -228,7 +235,9 @@ not the rig (the rig FBX wires its colour image as the normal map). The steps st
 
 `[S]` = scriptable (MCP/Python/CLI), `[UI]` = editor UI needed, `[V]` = verify with screenshot/PIE.
 
-1. `[S]` Concept image in **T-pose**, front view (`-p template=t_pose`). Generate with a face cap (`--faces`).
+1. `[S]` Concept image in **T-pose**, front view (`character.ts --concepts N` prompts for it through `gen/image.ts`).
+   If the picked concept is A-pose, fix it with Tripo's `-p template=t_pose` image-to-image pass (manual: `PIPELINE.md`
+   "Characters"). Generate the model with a face cap (`--faces`).
 2. `[S]` `tripo anim check` (free) > `tripo anim rig --spec unreal --out-format fbx` (fallback `--spec mixamo`).
    Default rig model is v3.0 (best for humanoids). Non-humanoid: rig type from the check, and Manny retargeting is
    out. Use Tripo presets only.
@@ -241,8 +250,9 @@ not the rig (the rig FBX wires its colour image as the normal map). The steps st
    means build chains with `set_retarget_root` + `add_retarget_chain` from the bone list (or `[UI]` in the IK Rig editor).
 6. `[S]` `RTG_Manny_To_<Name>`: set rigs/meshes, auto-map, auto-align target pose. `[UI][V]` Open it, compare poses,
    play `MM_Idle` and a jog, fix the retarget pose/root scale if arms clip or feet float.
-7. `[S]` `run_batch_retarget` on `ABP_Unarmed` + `AM_ComboAttack` (+ any extra montages/anims), referenced assets on,
-   suffix `_<Name>`.
+7. `[S]` `run_batch_retarget` on `ABP_Unarmed`, referenced assets on, suffix `_<Name>` (`retarget_setup.py`).
+   Extra montages (e.g. `AM_ComboAttack`) if the game has them: `retarget_setup.py --arg anims=<ABP>,<montage>,...`,
+   or `gen/unreal/retarget_library.ts` for library clips.
 8. `[S]` In the new ABP, delete the `CR_Mannequin_FootIK` Control Rig node (confirmed needed for Tripo
    `--spec unreal` rigs: without it the feet twist). Wire Slot 'DefaultSlot' → Output Pose. Compile.
    Optional `[S]`: reparent to the C++ `UAnimInstance` parent.
@@ -255,9 +265,24 @@ not the rig (the rig FBX wires its colour image as the normal map). The steps st
 Budget: steps 2-10 are ~1-2 h for the first character (estimate), mostly in step 6 visual fixes. Later characters reuse
 `IK_Manny` and the script.
 
+## Held props
+
+- Library and generated clips (e.g. Uthana) often have open hands. A held prop needs a grip pose layered after the montage
+  slot, and the prop mesh origin at the grip point.
+- Clipping, in this order: (1) posture: don't push the prop arm out, put other attachments on the off-hand side;
+  (2) keep the hand out of walls by moving the character, because no prop correction fixes a hand inside a wall;
+  (3) only then rotate the prop about the grip point (never the wrist bone). Do this in
+  `RegisterOnBoneTransformsFinalizedDelegate`, not actor Tick: Tick runs before animation and lags one pose.
+- Measure along the prop from the grip. A trace starting inside a wall reports no hit, so also check the hand's
+  distance against the capsule radius.
+- Acceptance after any pose, grip or prop change, in `-game`: a scripted wall-hug walk with the wall on each side
+  (hand never inside, prop at most single frames), and every montage stepped against a traced floor (death clips are
+  the usual offenders: `gameplay.md` "Montages and attached props").
+- Secondary-motion props (pendulums): damp relative to the attach point, not world velocity, or walking reads as drag.
+
 ## Lessons from a prototype: stylized (non-human) characters
 
-Only relevant for non-human proportions. From a stylized 3D platformer race prototype (12 characters running an obstacle course, glossy pastel look): a short, stubby, rounded character
+Only relevant for non-human proportions. From one prototype: a short, stubby, rounded stylized character
 (~1.2 m, short arms and legs) built with the kit pipeline. Human-proportioned characters retarget cleanly without this.
 
 - **Tripo's auto-rig can be wrong for non-human proportions.** Diagnosis in Blender showed the shoulder joint ~15 cm
@@ -267,23 +292,23 @@ Only relevant for non-human proportions. From a stylized 3D platformer race prot
   reskin the arm along upperarm/lowerarm/hand with no finger weights, strip arm/leg weights from the body, then
   rebuild with `character.ts --rig <fixed.fbx> --pbr <glb>`. Check joint-to-mesh offsets before importing any
   non-human character.
-- **Always smooth after scripted weight edits.** Hard cut-offs (100% arm bones, stripped body weights) left 676 edges
-  with a weight step above 0.5 (the original rig: 121), which creased and blotched the body when bones moved. A
-  12-iteration Laplacian smoothing of all weights except the arm core and lower legs, then top-4 influences and
-  renormalise: 243 edges, p99 step 0.38. Report the step statistics and check a bent pose with a reflective matcap.
+- **Always smooth after scripted weight edits.** Hard cut-offs (100% arm bones, stripped body weights) leave sharp
+  weight steps between neighbouring vertices, which crease and blotch the body when bones move. Laplacian-smooth all weights except the arm core
+  and lower legs, then keep the top 4 influences and renormalise. Report the step statistics before and after, and
+  check a bent pose with a reflective matcap.
 - **Human animations on a stubby body look stiff; tune the retarget, then add procedural motion.** 5.8's IK
   retargeter default op stack has no IK Chains op (Pelvis Motion, FK Chains, Run IK Rig, Root Motion, Remap Curves),
   so stride warping has no goals. Lengthen the stride with the FK Chains op's per-chain `rotation_alpha` (edit via
-  `rc.get_op_controller(i).get_settings()` / `set_settings()`, then rerun the batch retarget): legs 1.6, arms 0.7 worked,
-  plus speeding up the run animation with movement speed (up to 1.8x). Then add a procedural waddle, lean, bounce
-  and squash-and-stretch on jumps and landings, with all amounts in the tuning DataAsset.
+  `rc.get_op_controller(i).get_settings()` / `set_settings()`, then rerun the batch retarget): legs above 1, arms below 1
+  (start around legs 1.5, arms 0.7 and tune by eye), plus speeding up the run animation with movement speed. Then add a
+  procedural waddle, lean, bounce and squash-and-stretch on jumps and landings, with all amounts in the tuning DataAsset.
 - **Procedural bone edits in C++ with no graph logic: an anim instance proxy.** Override
   `FAnimInstanceProxy::Evaluate_WithRoot`, call `EvaluateAnimationNode_WithRoot`, then edit `Output.Pose` (use `FCSPose`
   for component space); read game state in `PreUpdate` (game thread); return the proxy from `CreateAnimInstanceProxy`.
   The ABP only needs reparenting to the C++ anim instance class. Use it for look-at, reach, lean and squash.
 - **Judge reach and attack poses from the gameplay camera.** A grab that pointed the hands straight at the target was
   hidden behind the character's own body from a chase camera. Wrapping the hands round the target's sides and
-  stretching the arms (cartoon style, capped ~2.5x and eased) made it read.
+  stretching the arms (cartoon style, capped and eased) made it read.
 - **Re-running a batch retarget with `overwrite_existing_files=True` breaks the cook.** The anims are overwritten in
   place, but the blend space is saved pointing at temporary `<anim>_<Suffix>1` packages that never exist, and an
   orphan `ABP_..._<Suffix>1` appears. The editor shows nothing wrong; the cook fails ("BlendSpace ... has a sample with
@@ -291,9 +316,7 @@ Only relevant for non-human proportions. From a stylized 3D platformer race prot
   the source blend space) and delete the orphan. Grep the anim folder for `_<Suffix>1` before packaging.
 - **Single-node animation in editor scripts:** call `override_animation_data` only. Setting `animation_mode =
   ANIMATION_SINGLE_NODE` as a raw property first makes `SetAnimationMode` see no change, so the mesh stays in T-pose.
-- **The camera collides with characters by default** (Pawn and CharacterMesh profiles block `ECC_Camera`). Characters
-  behind the player pull the spring arm into the player's back. Set the capsule and mesh to ignore `ECC_Camera` in
-  the character constructor.
+- **The camera collides with characters by default:** set capsule and mesh to ignore `ECC_Camera` (`gameplay.md` "Cameras").
 - **Per-character colour variants from one model:** a tint mask in the base colour's alpha (master material v3,
   `UseTintMask`) and one tintable material instance whose children change only `Tint`. Generated "off-white" bodies
   come out beige, so divide each target tint by the measured body colour (linear) or every variant darkens.
@@ -310,7 +333,7 @@ Only relevant for non-human proportions. From a stylized 3D platformer race prot
 - Python names (snake_case methods, `AutoMapChainType.FUZZY`, `RetargetSourceOrTarget.SOURCE/TARGET`, factories, `BlendSample`, `reparent_blueprint`): `<Project>\Intermediate\PythonStub\unreal.py`.
 - `NativeUpdateAnimation`, `NativeThreadSafeUpdateAnimation`, `TryGetPawnOwner`, `Montage_Play`: `Engine/Source/Runtime/Engine/Classes/Animation/AnimInstance.h`. URO/visibility tick: `.../Components/SkinnedMeshComponent.h`.
 - Template content and ABP internals (state machines, slot, vars, Control Rig bones): `Templates/TemplateResources/High/Characters/Content/Mannequins/` (strings of `ABP_Unarmed.uasset`, `CR_Mannequin_FootIK.uasset`); montages in `Templates/TP_ThirdPerson/Content/Variant_*`; `CombatCharacter.cpp`; capsule/MaxWalkSpeed in `TP_ThirdPersonCharacter.cpp`.
-- Tripo rig specs, rig models, presets, limits: Tripo API docs (below) and `tripo docs --topic examples/animation` on GIZMO, 2026-10-24.
+- Tripo rig specs, rig models, presets, limits: Tripo API docs (below) and `tripo docs --topic examples/animation` on the target PC, 2026-10-24.
 
 ## Sources (5.8)
 
@@ -322,5 +345,4 @@ Only relevant for non-human proportions. From a stylized 3D platformer race prot
 - Animation Blueprints / Blend Spaces / Montages / Root motion: https://dev.epicgames.com/documentation/en-us/unreal-engine/animation-blueprints-in-unreal-engine?application_version=5.8 , `blend-spaces-in-unreal-engine`, `animation-montage-in-unreal-engine`, `root-motion-in-unreal-engine` (same URL pattern)
 - Animation optimization: https://dev.epicgames.com/documentation/en-us/unreal-engine/animation-optimization-in-unreal-engine?application_version=5.8
 - Nanite (skeletal section): https://dev.epicgames.com/documentation/en-us/unreal-engine/nanite-virtualized-geometry-in-unreal-engine?application_version=5.8
-- Game Animation Sample: https://dev.epicgames.com/documentation/en-us/unreal-engine/game-animation-sample-project-in-unreal-engine?application_version=5.8 , https://www.unrealengine.com/tech-blog/download-the-latest-game-animation-sample-project-now-updated-for-ue-5-8
 - Tripo: https://developers.tripo3d.com/en/docs/animations-rig.md , `animations-retarget.md`, `animations-rig-check.md`

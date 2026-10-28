@@ -7,9 +7,12 @@ Python stub or headers before writing an API call from memory.
 
 ## Rules that bite
 
-- **No tool runs arbitrary Python.** `ProgrammaticToolset.execute_tool_script` is a sandbox that only batches
-  other tools. For real `unreal` Python, add a tool to `MegajamTools`, or use `run_console_command` with
-  `py "C:/path/script.py"` (fire-and-forget: errors only show in the Output Log).
+- **Arbitrary Python goes through `MegajamTools.run_python(code)`.** It runs a Python string in the editor and
+  returns `OK`/`ERROR` plus everything printed and the traceback. (Epic's `ProgrammaticToolset.execute_tool_script`
+  is a sandbox that only batches other tools.) Pattern from a prototype: keep each script in a file under the
+  project's `Generated/scripts/*.py`, bind inputs as globals, then send `exec(open(path).read())` through
+  `run_python`, so the script is versioned and re-runnable. `run_console_command` with `py "C:/path/script.py"`
+  also works but is fire-and-forget (errors only reach the Output Log).
 - **MCP calls are serial.** Tools run on the game thread, and Epic says clients must not overlap calls. This is
   why one session drives the editor. Do the next call after the previous one returns.
 - **Read results.** Many tools report failure in the payload, not as an MCP error. `mcp.ts` throws on `isError`;
@@ -21,14 +24,24 @@ Python stub or headers before writing an API call from memory.
   montage notifies and skeleton curve metadata, in two prototypes. Always save each edited asset with
   `save_loaded_asset(x, only_if_is_dirty=False)`, then **check the disk**: `git status` (or the file's timestamp)
   must show that `.uasset` modified. Reading the asset back in the same editor proves nothing.
+- **Assert every `load_asset`.** It returns None for a wrong path, and many setters then do nothing silently (a
+  material instance with a None parent renders the engine's grey checker with no error; a CDO property set to
+  `load_asset(wrong_path)` became None with no error).
+- **Blueprint CDO edits reach instances only after a compile.** Set the defaults on
+  `get_default_object(bp.generated_class())`, then `BlueprintEditorLibrary.compile_blueprint(bp)` (again, even if you
+  just compiled), then save, and only then place or spawn instances. Instances copy only the properties listed at
+  compile time (`CustomPropertyListForPostConstruction`), so a default set after the compile reads back fine on the
+  CDO but spawns as the old value (seen on an Actor BP and an Anim BP). Respawn instances placed before the edit.
+- **Opening an asset editor can write `Config/DefaultEditor.ini`** (a blend space editor wrote preview-scene
+  settings). Run `git status Config/` after any scripted asset-editor open and revert what you didn't mean to change.
 - **Not during PIE.** Asset and level tools act differently while Play-In-Editor runs. Stop PIE first.
 - **Python runs only in the editor** (embedded Python 3.11.8). It is not available in PIE, standalone or packaged
   builds, so gameplay code is C++.
 
 ## A. Python in the editor
 
-Setup: Python Editor Script Plugin (on in our project). Turn on **Project Settings > Plugins > Python > Developer
-Mode** and restart; the editor then writes the stub `<Project>/Intermediate/PythonStub/unreal.py` (~34 MB).
+Setup: Python Editor Script Plugin (on in our project). Turn on **Editor Preferences > Plugins > Python > Developer
+Mode** (per user; SETUP step 2) and restart; the editor then writes the stub `<Project>/Intermediate/PythonStub/unreal.py` (~34 MB).
 **Search it, don't read it.** Every Python call below was checked there.
 
 Ways to run Python:
@@ -38,7 +51,8 @@ Ways to run Python:
 | `py "C:/x/script.py"` or `py <one statement>` (console) | One-off scripts; through `MegajamTools.run_console_command` |
 | `init_unreal.py` in any `Content/Python` folder | Runs at editor startup. Ours registers `MegajamTools` |
 | `UnrealEditor-Cmd.exe P.uproject -run=pythonscript -script="C:\\x.py"` | Headless batch. It loads no level, so call `load_level` yourself |
-| `unreal.PythonScriptLibrary.execute_python_command_ex(cmd, mode)` | Runs code and returns `(command_result, log_output)`. Best base for a `run_python` tool |
+| `MegajamTools.run_python(code)` (MCP) | The default for agent scripts: returns status, output and traceback |
+| `unreal.PythonScriptLibrary.execute_python_command_ex(cmd, mode)` | Runs code and returns `(command_result, log_output)` |
 
 Search paths: `Content/Python` folders of the project, the engine and every enabled plugin, plus Additional
 Paths / `UE_PYTHONPATH`. The interpreter is isolated by default.
@@ -67,6 +81,10 @@ Import task fields: `filename`, `destination_path`, `destination_name`, `automat
 `replace_existing`, `save`, `options`; results come back in `imported_object_paths`. Gotcha in the stub:
 **`destination_name` is ignored by Interchange**, which handles most formats in 5.8. Check
 `imported_object_paths` and rename if needed, and don't assume the name you asked for.
+**Animation-only FBX import ignores `import_mesh=False`:** `FbxFactory` + `FbxImportUI` (`import_mesh=False`,
+`mesh_type_to_import=FBXIT_ANIMATION`, skeleton set) goes through Interchange in 5.8 and still makes a SkeletalMesh,
+a PhysicsAsset and the animation named `<name>_Anim` (on the given skeleton, and correct). Delete the
+non-AnimSequence outputs and rename the animation. Driving the Interchange pipeline settings directly is untried.
 
 Other notes: Epic no longer supports defining a `BlueprintFunctionLibrary` in Python (the types are transient
 and break on save/load). Old `remove_lo_ds`-style names were renamed (`remove_lods`). Prefer engine types
@@ -127,9 +145,11 @@ are often required even when the docs call them optional. Found so far: `EditorA
 `collision_channels: []`. If a call fails with "input param X is required", pass an empty/zero value, and add
 the case to PIPELINE.md.
 
-Tests (Epic's convention): `ToolCallTestCase` in Python, and `LiveCodingToolset.CompileLiveCoding` before
-running `AutomationTestToolset` (`DiscoverTests`, then `RunTests`). For the jam, one real call plus a read-back
-is enough.
+Tests (Epic's convention): `ToolCallTestCase` in Python, and a Live Coding compile before running
+`AutomationTestToolset` (`DiscoverTests`, then `RunTests`). For the jam, one real call plus a read-back is enough.
+The `unreal-mcp` skill names `LiveCodingToolset.CompileLiveCoding`, but no such toolset was registered in a 5.8.4
+prototype's MCP build: use the console command `LiveCoding.Compile` and wait for "Live coding succeeded" in the log
+(`cpp.md`).
 
 ## C. Build it in the editor instead of generating it?
 
@@ -138,7 +158,7 @@ is enough.
 | **Modeling Mode** (Shift+5; plugin on) | Beta | Manual level blockout: boxes, ramps, stairs, Extrude Polygon/Path, PolyEdit push/pull, booleans. Output is a Static Mesh in the folder set in Quick Settings | The agent is driving: it's a mouse-driven UI with no tools for it |
 | **Geometry Scripting** (Python/BP) | Beta (per docs) | Generated simple geometry the agent can script: walls, floors, arches, pipes, blockout kits, boolean cutouts, collision. Output is a real StaticMesh asset, so it works with Nanite | Organic or detailed props: use `gen/asset.ts` |
 | **Editor Utility Widgets** | Production | A button panel for a person (e.g. "rebuild level") | Agent-only work: a toolset tool is faster and testable |
-| **Scriptable Tools** (needs Scriptable Tools Editor Mode plugin, off) | Beta | Custom click-in-viewport tools for a person | Almost always in a 93 h jam |
+| **Scriptable Tools** (needs Scriptable Tools Editor Mode plugin, off) | Beta (`features.md`) | Custom click-in-viewport tools for a person | Almost always in a 93 h jam |
 
 Geometry Script from Python (all verified in the stub):
 
@@ -161,6 +181,25 @@ sm, outcome = GS.GeometryScript_NewAssetUtils.create_new_static_mesh_asset_from_
 - Check `outcome` (`GeometryScriptOutcomePins`) before going on, then load the asset and screenshot it.
 - Update an existing asset with `GeometryScript_AssetUtils.copy_mesh_to_static_mesh`; give it simple collision with
   `GeometryScript_Collision.set_static_mesh_collision_from_mesh`.
+- **Check collision on every generated level mesh.** A prototype's 27 script-built boxes had no simple collision
+  (`CTF_UseDefault`): traces passed through the floor and the navmesh built empty, unnoticed for three rounds.
+  Fix: `StaticMeshEditorSubsystem.add_simple_collisions(sm, unreal.ScriptCollisionShapeType.BOX)`. Prove it with a
+  downward line trace onto each walkable piece.
+- `create_new_static_mesh_asset_from_mesh` is on `GeometryScript_NewAssetUtils`, not `GeometryScript_AssetUtils`.
+- Triangle count: `DynamicMesh.get_triangle_count()`. (`GeometryScript_MeshQueries.get_num_triangle_ids` doesn't
+  exist; the stub spells it `get_num_triangle_i_ds`.)
+- **`append_simple_extrude_polygon` shades its top face as a dome:** every top vertex is a rim vertex sharing normals
+  with the sides, so normals tilt to z ~ 0 at the edge. Call `GeometryScript_Normals.set_per_face_normals(mesh)`
+  after the extrude.
+- **Triangle winding:** a triangle's front face is `(c-a) x (b-a)`, not `(b-a) x (c-a)` (UE is left-handed). Don't
+  assume it: read it from the engine (the first triangle of an `append_box` faces out).
+- `GeometryScript_MeshQueries.get_mesh_volume_area` returns `(surface_area, volume)`: the volume is `[1]`. A negative
+  volume means the mesh is inside out (a quick check after `append_sweep_polygon`).
+- `append_buffers_to_mesh` is in `GeometryScript_MeshEdits`; there is no `GeometryScript_MeshBasicEdits`.
+- **Moving a box's vertices keeps its UV topology.** `append_box` then `set_vertex_position` (thin wedges) gave
+  smeared stripes after `set_per_face_normals` + box projection: one triangle kept UV elements shared with a
+  neighbouring face. Build such shapes with `append_buffers_to_mesh`, separate vertices per face, so every face is one
+  projection island.
 - Assign `MI_*` from `M_PBR_Master` afterwards; generated meshes have no material and no useful UVs (box-project
   UVs with `GeometryScript_UVs` if textures matter).
 - Don't ship `DynamicMeshActor` / `GeneratedDynamicMeshActor` in the level. Their component has no Nanite, Lumen
@@ -171,9 +210,10 @@ sm, outcome = GS.GeometryScript_NewAssetUtils.create_new_static_mesh_asset_from_
 Skills are named instruction packs served by `AgentSkillToolset` (`ListSkills` returns path to description,
 `GetSkills([paths])` returns instructions, plus `CreateSkill` and `UpdateSkill`). Call `ListSkills` when starting
 unfamiliar editor work; Epic ships `blueprint_basics`, `material_basics`, `default_outdoor_lighting`, and
-`unreal_skill_best_practices`.
+`unreal_skill_best_practices`, plus the Niagara (`vfx.md`) and PCG (`pcg.md`) skills.
 
-Our own skill, as a Python class (version-controlled with the plugin, which is better than a UAsset from `CreateSkill`):
+Template for our own skill, as a Python class (version-controlled with the plugin, which is better than a UAsset
+from `CreateSkill`). **Not created yet:** the plugin has no `skills/` package; add it only if editor sessions need it.
 
 ```python
 # MegajamTools/Content/Python/megajam_tools/skills/kit_conventions.py
@@ -202,11 +242,9 @@ session must follow.
 
 ## E. Gotchas found on a prototype (5.8.4)
 
-- **Scripted asset edits may not mark the asset dirty, so the save silently skips it.** `map_key()` / `unmap_all()` on
-  an InputMappingContext didn't dirty it: `EditorAssetLibrary.save_loaded_asset(imc)` (default
-  `only_if_is_dirty=True`) skipped it, and the packaged game had no bindings for the new actions. Always save scripted
-  edits with `save_loaded_asset(x, only_if_is_dirty=False)`, and verify by reading the asset back after an editor
-  restart. `duplicate_asset()` of an InputAction copies its triggers: clear `triggers` on the copy.
+- **Unsaved scripted edits** (rule and check: "Rules that bite" above). Example: `map_key()` / `unmap_all()` on an
+  InputMappingContext didn't dirty it, so the packaged game had no bindings for the new actions.
+  `duplicate_asset()` of an InputAction copies its triggers: clear `triggers` on the copy.
 - **A struct read from an array property is a copy.** `path.waypoints[i].anchor = a` changes nothing. Rebuild the
   list and set the whole property: `set_editor_property('waypoints', new_list)`.
 - **Scripted level rebuilds silently break references** held by other actors (e.g. path points anchored to rebuilt
@@ -219,10 +257,37 @@ session must follow.
 - `EditorAssetLibrary.delete_asset` can return True while the file stays on disk until the editor closes.
 - **Nanite triangle counts:** `StaticMesh.get_num_triangles(0)` returns the fallback mesh, not the source. Copy to a
   DynamicMesh with `copy_mesh_from_static_mesh` (read LOD `MAX_AVAILABLE`) and use `get_triangle_count()`.
-- **Python odds and ends:** `unreal.Color(...)` positional order is (b, g, r, a): use keywords.
-  `EditorPerformanceSettings` is reachable only via `unreal.find_object(None,
-  "/Script/UnrealEd.Default__EditorPerformanceSettings")`, and its throttle flag only by the C++ name
-  `bThrottleCPUWhenNotForeground`. Turn it off for scripted PIE, or PIE runs at ~3 fps with the editor in the background.
+- **Positional order traps: always pass keywords.** `unreal.Rotator(a, b, c)` is **(roll, pitch, yaw)**, unlike C++
+  `FRotator(Pitch, Yaw, Roll)`: `Rotator(-10, yaw, 0)` set the pitch to `yaw` and a test's camera turn did nothing.
+  Write `unreal.Rotator(pitch=..., yaw=...)`. `unreal.Color(a, b, c, d)` is (b, g, r, a).
+- **Python odds and ends:**
+  - `EditorActorSubsystem.get_all_level_actors()` doesn't return WorldSettings: use
+    `UnrealEditorSubsystem.get_editor_world().get_world_settings()` (e.g. to set the game mode).
+  - Actor labels differ from object names (label "DirectionalLight", name `DirectionalLight_0`; label "SM_SkySphere",
+    name `StaticMeshActor_0`). Match on `get_name()` when removing template actors.
+  - `AddComponentByClass` is not exported to Python. Add components with MCP `ActorTools.add_component(owner,
+    {refPath: "/Script/Engine.RotatingMovementComponent"}, name)` and set them with `ObjectTools.set_properties`
+    (camelCase names, e.g. `rotationRate`, `pivotTranslation`).
+  - `ExponentialHeightFogComponent` properties are read-only in the stub: use its `set_*` functions.
+  - `EditorPerformanceSettings` is reachable only via `unreal.find_object(None,
+    "/Script/UnrealEd.Default__EditorPerformanceSettings")`, and its throttle flag only by the C++ name
+    `bThrottleCPUWhenNotForeground` ("Use Less CPU when in Background": the user's setting, SETUP step 8; read it,
+    don't change it without asking).
+- **Wait for Niagara compiles before a capture** (a compiling system draws nothing): `vfx.md` "Niagara over MCP".
+- **Blend spaces built from Python play the reference pose until resampled.** Samples set via `set_editor_property`
+  look right in the asset, but the runtime data is rebuilt only by `UBlendSpace::ValidateSampleData()` +
+  `ResampleData()` (the blend space editor calls them when it opens); neither is exposed to Python. Fix: a small C++
+  editor helper (Modify, ValidateSampleData, ResampleData, MarkPackageDirty) called before saving. Opening the editor
+  also works but writes `Config/DefaultEditor.ini` (see Rules).
+- **Anim state machines can't be authored with the Python graph tools.** `BlueprintGraphEditor` creates nodes and links
+  pins, but can't add states, transitions or transition rules. A prototype used a small project editor module
+  (add_state, add_transition with rule bool / blend time / inertialization / priority, expose_pin, link_pins,
+  get_inner_graph) and built the whole ABP from a re-runnable script. A kit editor plugin for this is a candidate.
+- **AnimGraph Transform (Modify) Bone: a shown pin overrides the node's value.** Setting `Rotation` in the node struct
+  did nothing because the Rotation pin is shown by default and its zero default wins. To hide it from Python:
+  changing `show_pin` on an element of `get_editor_property('show_pin_for_properties')` doesn't stick; `p.copy()`
+  the element, change the copy, set the whole array, then reconstruct the node. The reconstruct writes the old pin
+  default back into the struct, so set the value **after** hiding the pin.
 - **MCP `call_tool` shape:** `toolset_name` + `tool_name` (the short name) + `arguments`; `toolset` / `tool` keys fail
   with "Missing required parameter".
 - **AnimGraphs can be edited with BlueprintTools** (`find_nodes`, `delete_node`, `connect_pins`, `compile_blueprint`),
@@ -230,22 +295,17 @@ session must follow.
 - **AnimBlueprint parent class:** `get_editor_property("parent_class")` fails; use
   `BlueprintEditorLibrary.get_blueprint_parent_class`, and `reparent_blueprint` to change it.
 
-### Recipe: rounded track pieces and props from Geometry Script (free, no generation)
+### Recipe: rounded blockout pieces and props from Geometry Script (free, no generation)
 
 `append_box` with PER_FACE polygroups, then `apply_mesh_polygroup_bevel` (subdivisions 3, round weight 1),
 `compute_split_normals` at 50 degrees. Multi-material meshes: `copy_mesh_to_static_mesh` with `replace_materials`.
-**Collision:** a new Geometry Script static mesh asset has **no simple collision**, and character movement only sweeps
-simple shapes, so characters fall through it. For a few low-poly walkable pieces set
-`body_setup.collision_trace_flag = CTF_USE_COMPLEX_AS_SIMPLE` when saving; decoration gets `NoCollision`.
+**Collision:** the new asset has no simple collision; add and prove it as in section C ("Check collision on every
+generated level mesh"), and give decoration `NoCollision`.
 
 ## Kit issues found while writing this
 
-- `MegajamTools.run_console_command` calls deprecated `unreal.EditorLevelLibrary.get_editor_world()`. Switch to
-  `unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_editor_world()`. It also returns `True` as a
-  status, which goes against Epic's "return data, raise on failure" rule (harmless).
-- Missing tool worth adding: `run_python(code: str) -> str` built on
-  `PythonScriptLibrary.execute_python_command_ex`, returning the result and captured log, so errors come back
-  instead of only reaching the Output Log.
+- `MegajamTools.run_console_command` returns `True` as a status, which goes against Epic's "return data, raise on
+  failure" rule (harmless). (It now uses `UnrealEditorSubsystem.get_editor_world()`, and `run_python` exists.)
 
 ## Verified against
 

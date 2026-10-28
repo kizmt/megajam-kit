@@ -19,7 +19,7 @@ Jam rules forbid shipping a lightly modified template, so take the patterns belo
 | `UGameInstance` | Lives from launch to quit and survives `OpenLevel` | Only if data must cross level loads, such as settings or a run timer |
 
 - In the GameMode constructor, set `DefaultPawnClass`, `PlayerControllerClass`, and optionally `HUDClass`,
-  `GameStateClass` and `PlayerStateClass`. Point them at the **BP subclasses** (`BP_PlayerCharacter`), because the
+  `GameStateClass` and `PlayerStateClass`. Point them at the **BP subclasses** (`BP_<Name>`), because the
   BP is where the meshes are assigned. Then set the GameMode in World Settings > GameMode Override or in Project
   Settings > Maps & Modes.
 - Do not hard-code asset paths in C++. The templates leave mesh and anim BP references to the derived Blueprint.
@@ -42,44 +42,46 @@ Jam rules forbid shipping a lightly modified template, so take the patterns belo
 - **Data-driven tuning:** put speed, jump and air control in a `UPrimaryDataAsset` (for example
   `UPlayerTuningData`), reference it with `UPROPERTY(EditDefaultsOnly) TObjectPtr<UPlayerTuningData> Tuning`, and
   copy the values onto `GetCharacterMovement()` in `BeginPlay`. Constructor defaults are only fallbacks.
-- `ACharacter` keeps its actor tick, and the CMC ticks as a component. That is correct, so leave it. Our tick-off rule
-  is for our own actors and our own logic. Don't put polling in the character's `Tick`.
+- **Tick:** an `ACharacter`'s actor tick may be off (`PrimaryActorTick.bCanEverTick = false`, our default for player
+  and enemies alike); `UCharacterMovementComponent` ticks as its own component, so movement and path following keep
+  working. Don't put polling in the character's `Tick`.
 - **Root motion:** skip it unless an animation must drive the movement, such as a dodge or a climb. The animation
   needs "Enable Root Motion", and the AnimBP needs Root Motion Mode. "Root Motion from Montages Only" is the sane
   choice: play the montage with `PlayAnimMontage`. While the character walks or falls, the Z axis of root motion is
-  ignored and gravity still applies. Root-motion modes push the anim graph update onto the game thread, which costs CPU.
+  ignored and gravity still applies. Only "Root Motion from Everything" forces the anim update onto the game thread
+  (`UAnimInstance::NeedsImmediateUpdate`); "from Montages Only" keeps the parallel update.
 
-## Verified recipe: third-person player (built and play-tested in a test project, 2026-10-24)
+## Example: third-person player
 
-Write it fresh in the jam project (no pre-jam gameplay code in the kit); this is the layout that worked first time.
-Expect ~15 min including one full build.
+A structure, not defaults for every genre: pick the verbs and numbers the game needs. Write it fresh in the jam
+project (no pre-jam gameplay code in the kit).
 
-- `UPlayerTuningData : UPrimaryDataAsset`: RunSpeed 600, WalkSpeed 300 (the retargeted Manny blend space plays
-  walk at 300 and jog at 600), JumpZVelocity 500, AirControl 0.35, TurnRate 500, BrakingDecelerationWalking 2000,
-  CameraDistance 400, bCameraLag + CameraLagSpeed 12. `EditDefaultsOnly, BlueprintReadOnly`, `ClampMin` metas.
+- `UPlayerTuningData : UPrimaryDataAsset`: run and walk speeds (match them to the blend space's sample speeds:
+  `characters.md` "Blend Space"), JumpZVelocity, AirControl, TurnRate, BrakingDecelerationWalking, CameraDistance,
+  bCameraLag + CameraLagSpeed (start from the template's values). `EditDefaultsOnly, BlueprintReadOnly`, `ClampMin` metas.
 - `APlayerCharacter : ACharacter` (`UCLASS(Abstract)`): capsule 42/96, controller rotation off, orient to
-  movement, spring arm + camera (template pattern), `TObjectPtr` UPROPERTYs for Tuning and five `UInputAction`s
-  (Move, Look, MouseLook, Jump, Walk). `BeginPlay` → `ApplyTuning()` copies the asset onto the CMC and boom (and logs
+  movement, spring arm + camera (template pattern), `TObjectPtr` UPROPERTYs for Tuning and one `UInputAction` per
+  verb. `BeginPlay` → `ApplyTuning()` copies the asset onto the CMC and boom (and logs
   it). `SetupPlayerInputComponent` warns for each unassigned action (null actions bind silently), binds Walk
-  `Started`/`Completed` → `SetWalking(true/false)` which swaps `MaxWalkSpeed`. Walk/Shift = hold to walk.
+  `Started`/`Completed` → `SetWalking(true/false)` which swaps `MaxWalkSpeed`.
 - `AMainPlayerController`: `TArray<TObjectPtr<UInputMappingContext>> DefaultMappingContexts`, added in
   `SetupInputComponent` for local players. `AMainGameMode`: sets `PlayerControllerClass` as a fallback.
-- Thin BPs (editor Python, no graph logic): `BP_Player<Name>` (mesh, ABP class, mesh Z = -capsule half-height,
-  yaw 270, input actions, DA), `BP_MainPlayerController` (IMC_Default + IMC_MouseLook), `BP_MainGameMode`
+- Thin BPs (editor Python, no graph logic): `BP_<Name>` (mesh, ABP class, mesh Z = -capsule half-height,
+  yaw -90 (= 270) for a +Y-facing mesh, input actions, DA), `BP_MainPlayerController` (IMC_Default + IMC_MouseLook), `BP_MainGameMode`
   (pawn + controller) → World Settings GameMode Override.
 - Python facts: no factory for `InputAction` in the stub, so duplicate an existing bool action
   (`IA_Jump` → `IA_Walk`) and set `value_type`/`triggers`; `imc.map_key(action, key)` with
   `key.set_editor_property("key_name", "LeftShift")`; data assets via `DataAssetFactory` + `data_asset_class`;
   BPs via `BlueprintFactory` + `parent_class`, then set CDO properties (`get_default_object`) and compile.
 - Verify in PIE from script: pawn/controller/game mode classes, `MaxWalkSpeed` before/after `set_walking(True)`,
-  foot bone Z ≈ 15, log has no `LogPlayerCharacter` warnings.
+  feet on the floor, no warnings from the player's log category.
 
 ## Enhanced Input (the only input path in 5.8)
 
 - **Never** use the legacy `BindAxis` / `BindAction(FName, IE_Pressed...)` or the ActionMappings in Project Settings.
   Those are old-version patterns.
-- Add `"EnhancedInput"` to the module's `PublicDependencyModuleNames` in Build.cs (the template does). The plugin is
-  on by default.
+- Add `"EnhancedInput"` to the module's Build.cs dependencies (the template uses Public; Private is fine too, see
+  `cpp.md` "Modules"). The plugin is on by default.
 - Assets: one `UInputAction` (IA_) per verb, with Value Type Bool, Axis1D, Axis2D (FVector2D) or Axis3D. One
   `UInputMappingContext` (IMC_) maps keys to actions, with per-key **modifiers** and **triggers**.
   - WASD into one Axis2D `IA_Move`: W = no modifier. S = `Negate`. D = `Swizzle Input Axis Values` (YXZ).
@@ -96,7 +98,7 @@ void AMyPlayerController::SetupInputComponent()
     if (!IsLocalPlayerController()) return;
     if (auto* Subsys = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
     {
-        Subsys->AddMappingContext(DefaultMappingContext, /*Priority*/ 0);   // UPROPERTY(EditAnywhere) TObjectPtr<UInputMappingContext>
+        Subsys->AddMappingContext(DefaultMappingContext, /*Priority*/ 0);   // UPROPERTY(EditDefaultsOnly) TObjectPtr<UInputMappingContext>
     }
 }
 ```
@@ -117,7 +119,7 @@ if (auto* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 - `ETriggerEvent` values: `Triggered` (every frame while the trigger is met, so use it for axes), `Started`
   (first frame), `Ongoing` (for example, a Hold before its threshold), `Canceled` (released before Hold completed),
   `Completed` (Triggered to None).
-- Input-action UPROPERTYs are `EditAnywhere` on the C++ class and assigned in the BP subclass. A null action
+- Input-action UPROPERTYs are `EditDefaultsOnly` on the C++ class and assigned in the BP subclass. A null action
   silently does nothing, so check the BP first when "input doesn't work".
 - Swap contexts for modes (gameplay, menu, vehicle) with `AddMappingContext` / `RemoveMappingContext` (`ClearAllMappings()` also exists).
   When several contexts map the same key, the higher priority wins.
@@ -135,13 +137,15 @@ if (auto* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent))
   - What pulls the arm in is mostly **small props and pawns**, not walls. Set small props (crates, shelves, sconces,
     decals with collision) and characters (`characters.md`) to ignore `ECC_Camera`; keep walls and large geometry
     blocking.
-  - **Pull in fast, ease out slowly.** Compress the arm immediately when blocked and interpolate it back out over
-    ~0.5-1 s (a small `USpringArmComponent` subclass, or interp `TargetArmLength`), or the camera pops.
-  - A **shorter arm** (~240 cm) with an over-the-shoulder `SocketOffset` suits rooms better than the template's 400.
+  - **Pull in fast, ease out slowly.** Compress the arm immediately when blocked and interpolate it back out
+    (a small `USpringArmComponent` subclass, or interp `TargetArmLength`), or the camera pops.
+  - A **shorter arm** than the template's 400 with an over-the-shoulder `SocketOffset` suits rooms better (one
+    prototype's value: ~240 cm).
   - When the arm compresses near zero (backing into a wall), the near clip plane slices through the player and the
     body shows its hollow inside. Fix both ways: raise the camera over the shoulder as the arm shortens (scale
-    `SocketOffset.Z` up as length drops), and **dither-fade the character** when the camera is within ~60-80 cm
-    (masked material, `DitherTemporalAA` into Opacity Mask, a `Fade` scalar set per tick from camera distance).
+    `SocketOffset.Z` up as length drops), and **dither-fade the character** when the camera gets close (one
+    prototype's fade distance: ~60-80 cm; masked material, `DitherTemporalAA` into Opacity Mask, a `Fade` scalar
+    set per tick from camera distance).
     Fade any pawn between the camera and the player the same way, since it no longer pushes the arm in.
 - **First person (simple):** a `UCameraComponent` attached to the capsule at eye height (about +60 Z), with
   `bUsePawnControlRotation = true`. Hide the body mesh from its owner with `GetMesh()->SetOwnerNoSee(true)`. If you
@@ -162,8 +166,7 @@ if (auto* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent))
   `OnActorBeginOverlap` (actor) with `AddDynamic` to a `UFUNCTION()`. A handler without `UFUNCTION()` never fires.
   The overlap delegate signature is `(UPrimitiveComponent* OverlappedComp, AActor* Other, UPrimitiveComponent*
   OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& Sweep)`.
-- **Hit events** (`OnComponentHit`) on blocking contacts need "Simulation Generates Hit Events". Resting contact
-  can fire them every frame, so filter.
+- **Hit events** (`OnComponentHit`) from physics contacts: `physics.md` "Hit and overlap events".
 - Turn off overlap events on static set dressing, because they cost CPU. Trigger volumes should be a box or sphere
   component with the `Trigger` profile, not a mesh.
 - Custom channel: add it in Project Settings > Collision, then use `ECC_GameTraceChannel1..` in code
@@ -247,13 +250,26 @@ public:
 
 ## Level transitions (brief)
 
-- `UGameplayStatics::OpenLevel(this, FName("L_Main"))`, or `OpenLevelBySoftObjectPtr(this, LevelSoftPtr)`, which
+- `UGameplayStatics::OpenLevel(this, FName("Main"))`, or `OpenLevelBySoftObjectPtr(this, LevelSoftPtr)`, which
   survives renames. Everything except the GameInstance is destroyed. Our scope is one playable space, so use this
   mainly for menu to game and game to credits.
 - Packaged builds only include maps listed in Project Settings > Packaging > "List of maps to include". A missing
   map is a classic "works in PIE, black screen in build" bug (unverified for 5.8 UI wording).
 - To restart the level: `OpenLevel` with the current level name. Reset the GameMode state rather than relying on
   leftovers.
+
+## Montages and attached props
+
+- **Never let a full-body montage play under locomotion.** Lock movement for the montage's full
+  `UAnimSequenceBase::GetPlayLength`, or let input stop it with a blend-out (`Montage_Stop(BlendOut, M)`).
+- **`ACharacter::PlayAnimMontage` returns the unscaled length.** It calls `Montage_Play` with the default
+  `EMontagePlayReturnType::MontageLength`, ignoring both the play rate and `RateScale`. Timers derived from it (stagger, lock) desync from a
+  montage with `RateScale` != 1: call `Montage_Play(M, Rate, EMontagePlayReturnType::Duration)`, or divide by the rate.
+  Simpler still: retime the clip itself and keep `RateScale` at 1.
+- **Attached props on death:** death clips are made for an empty hand, so a held prop drives through the floor.
+  Detach it to physics (simple collision, `PhysicsActor` profile, the hand's velocity) when it nears a traced floor.
+  Component world bounds and the capsule bottom are not floor tests (a tilted mesh's AABB dips below; the capsule
+  floats ~2 cm up).
 
 ## Verification lessons (from a prototype)
 
@@ -263,7 +279,7 @@ public:
 - **Autoplay hooks are great for captures and benchmarks but bypass input.** Keep an autoplay cvar (the player driven
   by bot logic) and test input separately with real keys (`docs/ue/debugging.md` F).
 - **After any scripted level rebuild, run a full autoplay playthrough**: rebuilds can silently break references, and
-  a prototype's characters ran back to the start for a whole round before anyone noticed.
+  on one prototype, characters silently headed back to their start point and nobody noticed for minutes.
 
 ## Verified against
 

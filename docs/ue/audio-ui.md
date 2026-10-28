@@ -2,7 +2,7 @@
 
 Audio is a judged category: cheap wins are variation (no sound repeats identically), correct 3D placement,
 no spam, music that fades instead of cutting, and working volume sliders. UI must be readable, event-driven, and
-never leave the player stuck without a cursor. Logic in C++; WBP_/MS_ assets are layout/sound-design wrappers.
+never leave the player stuck without a cursor. Logic in C++; WBP_/MSS_ assets are layout/sound-design wrappers.
 
 ## Audio
 
@@ -44,13 +44,13 @@ if (MusicComp) { MusicComp->bIsUISound = false; MusicComp->FadeIn(1.5f, 1.f); }
 - Key fields: `bSpatialize` ("Enable Spatialization"), `SpatializationAlgorithm`, `StereoSpread` ("3D Stereo Spread":
   distance between L/R when a stereo asset is spatialized), `NonSpatializedRadiusStart/End` (blend to non-spatialized
   when the listener is close: good for big sources like waterfalls), `bEnableOcclusion` (costs line traces; leave off).
-- **Our WAVs are stereo.** A spatialized stereo sound is placed as two emitters spread `StereoSpread` apart, and Epic
+- **`gen/audio.ts` outputs stereo by default.** A spatialized stereo sound is placed as two emitters spread `StereoSpread` apart, and Epic
   applies a 6 dB cut to spatialized stereo ("Normalize 3D Stereo Sounds"). Result: vaguer position and quieter than
-  expected. Rule: **3D one-shots (impacts, footsteps, enemy barks) should be mono** - downmix at generation/import
-  time (also halves memory). Keep stereo for music, UI, 2D stingers and wide ambient beds. (Mono-for-3D is our rule;
+  expected. Rule: **3D one-shots (impacts, footsteps, enemy barks) should be mono** - generate them with
+  `node gen/audio.ts sfx ... --mono` (also halves memory). Keep stereo for music, UI, 2D stingers and wide ambient beds. (Mono-for-3D is our rule;
   Epic's attenuation page describes the stereo behaviour but makes no recommendation.)
 
-### Concurrency (stop spam) (`USoundConcurrency`)
+### Concurrency (stop spam) (`USoundConcurrency`, `SCON_`)
 
 - Asset with `FSoundConcurrencySettings`: `MaxCount`, `bLimitToOwner`, `ResolutionRule` (default
   `StopFarthestThenOldest`; others: `PreventNew`, `StopOldest`, `StopLowestPriority`, `StopQuietest`, ...),
@@ -61,7 +61,8 @@ if (MusicComp) { MusicComp->bIsUISound = false; MusicComp->FadeIn(1.5f, 1.f); }
 ### Volume sliders (Sound Classes + Sound Mix)
 
 - Create `SCL_Master` with children `SCL_Music`, `SCL_SFX`, `SCL_Voice`, `SCL_UI`; set the class on every sound asset
-  (our tool can set it by folder). One `MIX_Settings` sound mix.
+  (in the editor, or a short editor script setting `sound_class_object` per folder; the kit's import doesn't set it).
+  One `MIX_Settings` sound mix.
 ```cpp
 // On slider change (Volume 0..1). Fade 0 so the slider feels immediate.
 UGameplayStatics::SetSoundMixClassOverride(this, MIX_Settings, SCL_Music, Volume, 1.f, /*FadeIn*/ 0.f, /*bApplyToChildren*/ true);
@@ -72,8 +73,11 @@ UGameplayStatics::PushSoundMixModifier(this, MIX_Settings); // pushing again is 
 
 ### MetaSounds vs Sound Cues
 
-- **Prefer MetaSounds (`MS_`) for anything beyond "play this wave"**; play plain SoundWaves directly otherwise.
+- **Prefer MetaSounds (`MSS_`) for anything beyond "play this wave"**; play plain SoundWaves directly otherwise.
   Sound Cues (`SC_`) still work in 5.8 (not deprecated) but add nothing we need.
+- **Exception: random variants made by script.** A Sound Cue from `SoundCueFactoryNew` with `initial_sound_waves`
+  set to 2+ waves comes out wired under a Random node in one factory call (`SoundCueFactoryNew.cpp`); a MetaSound
+  needs its graph built node by node.
 - Status: the 5.8 Metasound plugin descriptor is `IsBetaVersion: false`, enabled by default; Epic's MetaSounds Quick
   Start page still carries a Beta caution. Treat as usable; test in the packaged build.
 - Jam uses: random pick from a wave array (Random Get node) + random pitch/volume (~0.95-1.05) for footsteps/impacts;
@@ -86,7 +90,7 @@ UGameplayStatics::PushSoundMixModifier(this, MIX_Settings); // pushing again is 
 - From C++ a MetaSound Source (`UMetaSoundSource : USoundWaveProcedural`) is just a `USoundBase`: same play calls.
   Parameters go through the audio component (`IAudioParameterControllerInterface`):
 ```cpp
-UAudioComponent* C = UGameplayStatics::SpawnSoundAttached(MS_Engine, GetRootComponent());
+UAudioComponent* C = UGameplayStatics::SpawnSoundAttached(MSS_Engine, GetRootComponent());
 C->SetFloatParameter(TEXT("Speed"), Speed);   // also SetIntParameter, SetBoolParameter, SetObjectParameter
 C->SetTriggerParameter(TEXT("Explode"));     // fires a Trigger input
 ```
@@ -98,6 +102,15 @@ C->SetTriggerParameter(TEXT("Explode"));     // fires a Trigger input
 - Voice budget: `FAudioQualitySettings::MaxChannels` defaults to 32 (Project Settings > Audio > Quality). Concurrency +
   attenuation (inaudible sounds get virtualized) keep you under it; raise only if sounds audibly drop out.
 - Debug: `au.3dVisualize.Enabled 1`, `stat soundwaves`, `au.Debug.Sounds 1` (cvar names unverified for 5.8).
+- **Proving sounds play, with no microphone or listening** (tested in `-game`): a screen recorder captures video only,
+  and `unreal.AudioMixerBlueprintLibrary` is missing from Python in `-game`, but the main submix has the same calls:
+  `sm = unreal.load_asset('/Engine/EngineSounds/Submixes/MasterSubmixDefault')`,
+  `sm.start_recording_output(world, secs)`, then
+  `sm.stop_recording_output(world, unreal.AudioRecordingExportType.WAV_FILE, name, folder)`. The game must still be
+  running at stop (record a few seconds less than the clip). Check the WAV's 100 ms RMS around each logged event
+  (it jumped 8-12 dB at every swing, hit and kill), then listen. The WAV can also be muxed onto the clip, lined up
+  by the log's start time. Set `au.NeverDisableSubmixes 1` first or silence is dropped and the WAV drifts
+  (`cinematics-video.md` D1).
 - Music/long VO: stream cache loading behaviour `ESoundWaveLoadingBehavior` (`Inherited`, `RetainOnLoad`, `PrimeOnLoad`,
   `LoadOnDemand`, `ForceInline`). Set music to **Load On Demand** (set on the SoundWave or its Sound Class); short SFX
   can stay default. Compression is per wave (`ESoundAssetCompressionType`: BinkAudio, RADAudio, ADPCM, PCM, Opus,
@@ -235,9 +248,3 @@ Functions (C++ names; the MCP may expose them snake_cased):
 - Audio mixing (hub): https://dev.epicgames.com/documentation/en-us/unreal-engine/audio-mixing-in-unreal-engine?application_version=5.8
 - Common UI: https://dev.epicgames.com/documentation/en-us/unreal-engine/common-ui-plugin-for-advanced-user-interfaces-in-unreal-engine?application_version=5.8
 - CommonUI + Enhanced Input (Experimental): https://dev.epicgames.com/documentation/en-us/unreal-engine/using-commonui-with-enhnaced-input-in-unreal-engine?application_version=5.8
-
-## Kit notes / contradictions
-
-- `naming.md` has no prefix for Sound Concurrency: use `SCON_` (proposed; add to naming.md).
-- Kit brief calls MetaSounds "Beta in 5.8"; the 5.8 plugin descriptor says not beta (quick start page still says Beta).
-- `gen/audio.ts` outputs stereo only: add a mono option for 3D one-shots (see Attenuation).

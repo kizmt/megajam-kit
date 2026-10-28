@@ -23,14 +23,16 @@ in 5.8. Keep physics props few, simple-collided and asleep when idle. Collision 
 - **Simple** = boxes/spheres/capsules/convex hulls (physics + most traces). **Complex** = the triangle mesh
   (complex traces only).
 - Epic 5.8: "if you are using UseComplexAsSimple you cannot simulate the object." **Never** set
-  "Use Complex Collision As Simple" on anything dynamic (and per `performance.md`, not on generated props at all).
-- One hull around a concave shape (chair, arch, cup, crate with open top) fills the hollow: things rest on air.
-  Fix with convex decomposition via MCP:
+  "Use Complex Collision As Simple" on anything dynamic (static, low-poly shapes that are passed through are the only exception: see below).
+- One hull around a concave shape (chair, arch, cup, crate with open top) fills the hollow: things rest on air, and
+  an arch's opening blocks (a prototype's characters could only pass around its posts). Fix with convex decomposition
+  via MCP:
   `editor_toolset.toolsets.static_mesh.StaticMeshTools.generate_convex_collisions(mesh, hull_count=4,
   max_hull_verts=16, hull_precision=100000)` - replaces existing collision. Use 4-8 hulls for props the player
   interacts with; leave background props at 1 hull. More hulls = more cost per contact.
 - `remove_collisions(mesh)` for pure decoration (grass, small clutter): no collision is the cheapest collision.
-- Walk-in/hollow shapes the player moves through: hand-placed boxes (blockout) beat any decomposition.
+- Shapes passed through or under (arches, gates, tunnels, walk-in hollows): hand-placed boxes beat any decomposition;
+  complex-as-simple is acceptable only for a static, low-poly mesh. Check with a line trace through the opening.
 - Nanite and complex collision: complex (per-poly) collision of a Nanite mesh may come from the fallback mesh rather
   than full detail (unverified for 5.8). Irrelevant if we stick to simple collision.
 
@@ -69,7 +71,8 @@ Mesh->AddTorqueInRadians(Torque);
 - `OnComponentHit` from physics contacts needs **Simulation Generates Hit Events** (`SetNotifyRigidBodyCollision(true)`,
   BodyInstance `bNotifyRigidBodyCollision`). Without it: blocking happens, event never fires. `NormalImpulse` is only
   filled for simulating bodies - use it to scale impact sounds and ignore tiny taps.
-- Overlaps need **Generate Overlap Events** on **both** components plus an Overlap response. Bind with a UFUNCTION:
+- Overlap rules (both components, skeletal-mesh default, delegate signature): `gameplay.md` "Collision". Hit handler,
+  bound with a UFUNCTION:
 
 ```cpp
 // .h: UFUNCTION() void OnHit(UPrimitiveComponent* HitComp, AActor* Other, UPrimitiveComponent* OtherComp,
@@ -116,12 +119,11 @@ Mesh->OnComponentHit.AddDynamic(this, &AMyProp::OnHit);   // in BeginPlay (not t
 
 - Small fast bodies (thrown items, physics projectiles) tunnel through thin walls. Turn on **CCD**:
   `SetUseCCD(true)` / BodyInstance `bUseCCD`. Costs more; only on the few that need it. Projectiles: prefer
-  `UProjectileMovementComponent` + sweeps over simulated bodies (gameplay.md).
+  `UProjectileMovementComponent` + sweeps over simulated bodies.
 
 ## Destruction (Chaos, Geometry Collections)
 
-- Workflow: Fracture mode (Shift+6) > select static mesh > Generate **New** (makes a Geometry Collection asset, `GC_`
-  (unverified prefix - not in naming.md)) > Uniform Voronoi (min/max sites) > Fracture. Preview with Explode Amount.
+- Workflow: Fracture mode (Shift+6) > select static mesh > Generate **New** (makes a Geometry Collection asset, `GC_`) > Uniform Voronoi (min/max sites) > Fracture. Preview with Explode Amount.
   Breaks on impact or via strain: Physics Field (`FS_MasterField`) or C++ `ApplyExternalStrain`,
   `ApplyBreakingLinearVelocity`, `CrumbleActiveClusters` on `UGeometryCollectionComponent`. Break callback:
   `SetNotifyBreaks(true)` + `OnChaosBreakEvent`.
@@ -140,8 +142,8 @@ Mesh->OnComponentHit.AddDynamic(this, &AMyProp::OnHit);   // in BeginPlay (not t
 
 ## Vehicles, cloth, ragdolls (brief)
 
-- **Chaos Vehicles**: `ChaosVehiclesPlugin` (Experimental, off by default). The Vehicle template is the starting
-  point; don't build from scratch in a jam. Only if the game is about driving.
+- **Chaos Vehicles**: `ChaosVehiclesPlugin` (Experimental, off by default). Use the Vehicle template as reference
+  only (the jam forbids lightly modified templates); write our own classes from its pattern. Only if the game is about driving.
 - **Cloth**: Chaos Cloth (enabled by default) on skeletal meshes, painted in the Cloth Panel / cloth asset. Costly to
   author; skip unless a character already ships with cloth.
 - **Ragdoll on death**: needs a Physics Asset (`PHYS_`) on the skeletal mesh. C++:
@@ -152,7 +154,7 @@ Mesh->OnComponentHit.AddDynamic(this, &AMyProp::OnHit);   // in BeginPlay (not t
 
 ## Performance and determinism
 
-- Budget (no measured number yet on GIZMO): aim **< ~100 awake simulating bodies**, a few hundred total (unverified -
+- Budget (no measured number yet on the target PC): aim **< ~100 awake simulating bodies**, a few hundred total (unverified -
   measure with `stat physics` / `stat chaos` and Chaos Visual Debugger). Sleeping bodies are near free; awake contacts
   are what cost. Instanced clutter: collision off unless it matters (`pcg.md`).
 - Sub-stepping (Project Settings > Physics > **Substepping**, Max Substep Delta Time, Max Substeps): improves stiff
@@ -177,10 +179,6 @@ Mesh->OnComponentHit.AddDynamic(this, &AMyProp::OnHit);   // in BeginPlay (not t
 
 ## Collision lessons (from a prototype)
 
-- **Imported generated props get one auto convex hull, and it fills openings.** An arch's single hull walled off the
-  finish line; only characters running wide around the posts could finish. For anything passed through or under
-  (arches, gates, tunnels), set complex-as-simple (if low-poly) or author box shapes, and check with a line trace
-  through the opening.
 - **Meshes built with Geometry Script have no simple collision**, so characters fall through them
   (`editor-scripting.md`). Complex-as-simple is fine for a few low-poly walkable pieces; never for dense generated meshes.
 - **Match collision to the visible shape** after swapping a mesh (e.g. a shorter bumper): a taller hidden collider
@@ -188,7 +186,7 @@ Mesh->OnComponentHit.AddDynamic(this, &AMyProp::OnHit);   // in BeginPlay (not t
 
 ## Verified against
 
-- 5.8.4 headers on GIZMO: `PrimitiveComponent.h` (AddImpulse/AddForce/AddRadialImpulse/AddTorqueInRadians, SetUseCCD,
+- 5.8.4 headers on the target PC: `PrimitiveComponent.h` (AddImpulse/AddForce/AddRadialImpulse/AddTorqueInRadians, SetUseCCD,
   SetMassOverrideInKg, SetCenterOfMass, OnComponentHit note on Simulation Generates Hit Events),
   `PhysicsEngine/PhysicsHandleComponent.h`, `PhysicsConstraintComponent.h`, `BodyInstance.h`,
   `PhysicalMaterials/PhysicalMaterial.h`, `SkeletalMeshComponent.h`, `PhysicsSettings.h`, `PhysicsSettingsCore.h`,

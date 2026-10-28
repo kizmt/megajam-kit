@@ -5,10 +5,9 @@ pillars, crates, simple buildings). Generated during the jam, these are the game
 are sourced and are not (`CLAUDE.md` compliance). Write the generators **during the jam** from this recipe; the kit
 holds knowledge, not generators for specific content.
 
-**Status:** Blender side tested on Blender 5.2.2 LTS (headless): API facts probed, and a smoke test generated an
-arched wall with bevels, wear colours, box UV0 and three `UCX_` hulls, exported it with the settings in section 6 and
-passed `gen/blender/inspect.py` (4.0 x 0.2 x 3.0 m, pivot at the corner). The Unreal import side is not yet tested:
-confirm it on first use (see Import).
+**Status:** tested end to end. Blender 5.2.2 LTS headless (API probe; an arched wall smoke test) and a prototype that
+generated crates and shelves with a baked timber texture (5 meshes + texture set in ~7 s), imported them into UE
+5.8.4 through Interchange and replaced 27 placeholders. Its corrections are folded in below.
 
 ## 1. Kit design
 
@@ -35,15 +34,18 @@ confirm it on first use (see Import).
   (`bridge_loops`), or split the wall into an outline that wraps the hole. Avoid booleans headless (n-gons, bad
   normals).
 - **Silhouette:** `bmesh.ops.bevel(bm, geom=edges, offset=0.015-0.03 (m), segments=1-2, affect='EDGES',
-  profile=0.5, clamp_overlap=True, harden_normals=True)` on outer convex edges only, never on faces that touch
-  another piece. (5.2 signature: `bevel(bmesh, geom, offset, offset_type, profile_type, segments, profile, affect,
+  profile=0.5, clamp_overlap=True)` on outer convex edges only, never on faces that touch another piece. Leave
+  `harden_normals` off: its custom normals streak flat faces once more geometry is added (seen on a prototype).
+  **The bevel replaces the faces it touches**, so anything written to faces collected earlier (UVs, materials) is
+  lost: bevel first, then collect faces. (5.2 signature: `bevel(bmesh, geom, offset, offset_type, profile_type, segments, profile, affect,
   clamp_overlap, material, loop_slide, mark_seam, mark_sharp, harden_normals, face_strength_mode, miter_outer,
   miter_inner, spread, custom_profile, vmesh_method)`; `affect` defaults to 'VERTICES', so set it.)
 - **Panels and bricks:** `inset_region` / `inset_individual` (~5 cm) then `extrude_face_region` + translate (-2 cm).
   Bricks and planks: `bisect_plane` slices plus a seeded per-face extrude.
 - **Cheap wear:** a corner colour attribute (`mesh.color_attributes.new("Wear", 'BYTE_COLOR', 'CORNER')`): white on
   bevelled convex loops, black on flat areas, times seeded noise. In UE, lerp an edge-wear layer by
-  `VertexColor.R` (Nanite supports vertex colour). Optional: G = dirt, B = tint mask.
+  `VertexColor.R` (Nanite supports vertex colour). Optional: G = dirt, B = tint mask. **Only if the material reads
+  vertex colour:** the kit's `M_PBR_Master` (v3) doesn't, so without a material change this step does nothing.
 - **Variants:** `rng = random.Random(f"{piece}_{seed}")` per piece, never the global `random`. Put the seed in the
   name (`SM_Wall_400x300_v03`).
 - **Before writing:** `remove_doubles(dist=0.0001)`, `recalc_face_normals`, `dissolve_degenerate`; optionally
@@ -51,23 +53,35 @@ confirm it on first use (see Import).
 
 ## 3. UVs and materials
 
-- **Architecture: skip UV work.** Use world-aligned materials in UE (`WorldAlignedTexture` / `WorldAlignedNormal`,
-  `TextureSize` in world units): identical texel density and no seams across pieces. Target ~512 px/m (1024 for
-  close cameras). World-aligned textures swim on moving objects: give moving props (crates that get knocked) real
-  UVs or `LocalAlignedTexture`.
-- **Still write a sane UV0:** per face, project on the dominant normal axis at world position / 100 cm. Simple in
-  bmesh, gives correct tangents. `bpy.ops.uv.smart_project` needs Edit Mode and an active object headless: avoid.
-- **No lightmap UVs** with dynamic lighting (Lumen or not): turn off Generate Lightmap UVs (`worldbuilding.md`).
+- **Default today: box-projected UV0.** `M_PBR_Master` has no world-aligned option yet (`materials.md`, item 10;
+  a master upgrade is planned), so architecture needs real UVs: per face, project on the dominant normal axis at
+  world position / tile size (e.g. 100-200 cm per tile; ~512 px/m texel density, 1024 for close cameras). Simple in
+  bmesh, gives correct tangents and consistent density across pieces.
+- **Once the master gains a world-aligned option, prefer it for architecture** (`WorldAlignedTexture` /
+  `WorldAlignedNormal`, `TextureSize` in world units): identical texel density and no seams across pieces, and keep
+  the box-projected UV0 as the fallback. World-aligned textures swim on moving objects: moving props (crates that get
+  knocked) always use real UVs.
+- **Writing UV0:** `bpy.ops.uv.smart_project` needs Edit Mode and an active object headless: avoid it.
+  Order: build, transform, bevel, **then** collect `bm.faces`, call `f.normal_update()` (transforms leave normals
+  stale) and write UVs. Check that the largest faces have a UV extent above 0; a zero extent renders as flat colour.
+- **Proud trim needs its own UVs or material.** With one shared projection (box-projected or world-aligned), piers, jambs and frames standing
+  out from a wall line up with the wall's blocks and read as see-through, especially without contact shading (no
+  SSAO/DFAO). Give trim a different scale and offset, or a different (slightly darker) material instance.
+- **No lightmap UVs** with dynamic lighting (Lumen or not): turn off Generate Lightmap UVs.
 - **Materials:** in Blender, only name slots, exactly as the UE material instances (`MI_Stone`, `MI_Trim`), in a
-  fixed order per piece type. Build the look in UE (master material, `materials.md`). Bake in Blender only for a hero
-  piece; not worth it in a jam.
+  fixed order per piece type. Build the look in UE (master material, `materials.md`).
+- **Baking a tileable texture set in Blender is cheap** (Cycles CPU, 8 samples, 1024 px, 4D noise on a torus for
+  seamless tiling: a set plus five meshes took ~7 s). Use it for any material that has no texture yet. Two checks:
+  Blender tangent normals are OpenGL, so set `flip_green_channel = True` on the UE normal texture; and compare the
+  base colour's mean against the style-lock albedo (correct with the material's Tint).
 
 ## 4. Normals and smoothing (Blender 4.1+ / 5.2)
 
 - `use_auto_smooth`, `auto_smooth_angle` and `calc_normals_split()` are gone (AttributeError). Meshes behave like
   the old auto smooth at 180 degrees; sharpness lives in the `sharp_edge` / `sharp_face` attributes.
 - Headless: `me.shade_smooth()` then `me.set_sharp_from_angle(angle=math.radians(30))` (both exist in 5.2), or mark
-  `edge.smooth = False` in bmesh on 90-degree edges. Bevel with `harden_normals=True` for clean bevel shading.
+  `edge.smooth = False` in bmesh on 90-degree edges. For hard-surface pieces with 45-degree bevels, `me.shade_flat()`
+  is simplest (every edge is hard anyway); for smooth bevels use a Weighted Normal modifier, not `harden_normals`.
 - Export with `mesh_smooth_type='FACE'`: the default `'OFF'` writes normals only and UE then warns "no smoothing
   groups". In UE keep imported normals and MikkTSpace tangents.
 
@@ -94,18 +108,32 @@ bpy.ops.export_scene.fbx(filepath=out, use_selection=True, object_types={'MESH'}
 - 5.2 defaults to note: `mesh_smooth_type='OFF'`, `use_tspace=False`, `use_triangles=False`, `add_leaf_bones=True`,
   `bake_anim=True`, `object_types` = everything: set all of them explicitly.
 - Select and activate exactly the piece and its UCX hulls before exporting (`view_layer.objects.active = ob`,
-  `ob.select_set(True)`). Check one piece faces +X in UE.
+  `ob.select_set(True)`).
+- **As UE 5.8 sees it** (tested): sizes exact (0.7 m arrives as 70 cm), Z up, no rotation, the Blender object origin
+  becomes the pivot, and **Blender +Y lands on UE -Y** (a crate built from (0,0,0) into +X +Y spans UE y -72..2).
+  Place pieces from the imported mesh's `get_bounding_box()`, not from assumed extents.
 
 ## 7. Import into UE 5.8
 
+- **5.8.4 imports FBX (and PNG) through Interchange** (tested): `Interchange.FeatureFlags.Import.FBX` is True, the log
+  says `Translation (FBXSDK)`, and `asset.get_editor_property('asset_import_data').get_class().get_name()` is
+  `InterchangeAssetImportData`. `destination_name` is ignored: assets take the FBX mesh name or the PNG file name, so
+  name them right in Blender. Pipeline properties if needed: `build_nanite`,
+  `import_collision_according_to_mesh_name`, `combine_static_meshes_behavior`, `generate_lightmap_u_vs`.
 - Import with `AssetImportTask` (`automated=True`, `replace_existing=True`), then a **post-import pass on every new
-  StaticMesh** whatever importer ran: Nanite on (`nanite_settings.enabled`), simple box collision if no UCX
-  (`StaticMeshEditorSubsystem.add_simple_collisions`), material instances by slot name, then save with
-  `only_if_is_dirty=False` and check `git status` (`editor-scripting.md`).
-- **Unverified:** whether 5.8 imports FBX through Interchange or the legacy importer by default (Epic's Interchange
-  page still calls Interchange FBX experimental). Check the first import's log; the post-import pass makes the result
-  the same either way. Interchange pipeline properties if needed: `build_nanite`, `import_collision_according_to_mesh_name`,
-  `combine_static_meshes_behavior`, `generate_lightmap_u_vs`.
+  StaticMesh**:
+  - Nanite on (`nanite_settings.enabled`).
+  - **Collision:** check `mesh.get_editor_property('body_setup').get_editor_property('agg_geom')` for `convex_elems`
+    and `box_elems` before adding any. `StaticMeshEditorSubsystem.get_simple_collision_count` ignores convex hulls
+    and reports 0 even when the UCX imported, so trusting it adds a duplicate box. Only with no hull at all:
+    `add_simple_collisions`.
+  - **Materials:** Interchange creates a material asset per slot name **in the mesh's folder**. Assign the real
+    material instance by slot name, then delete the extra non-mesh assets listed in the task's
+    `imported_object_paths`. Keep material instances in a different folder from imported meshes so names can't
+    collide.
+  - Assert every `load_asset` (`editor-scripting.md`): a grey checker that survives a recapture is a missing parent
+    or texture, not shader compilation.
+  - Save with `only_if_is_dirty=False` and check `git status` (`editor-scripting.md`).
 - Nanite on for all opaque/masked architecture; glass and other translucent parts go in a separate non-Nanite mesh.
 - LOD group "Level Architecture" for walls and floors.
 

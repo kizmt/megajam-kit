@@ -17,6 +17,7 @@ Descriptor says how the asset is used; variant is an optional letter/number.
 | Texture | `T_` | | Enum | `E_` |
 | Blueprint | `BP_` | | Struct | `F_` |
 | Widget Blueprint | `WBP_` | | Animation Blueprint | `ABP_` |
+| Level Sequence | `LS_` | | Post Process Material | `PPM_` |
 
 Source: https://dev.epicgames.com/documentation/en-us/unreal-engine/recommended-asset-naming-conventions-in-unreal-engine-projects?application_version=5.8
 
@@ -27,18 +28,16 @@ Source: https://dev.epicgames.com/documentation/en-us/unreal-engine/recommended-
 | Sound effect (SoundWave) | `SFX_` | `gen/audio.ts` |
 | Music | `MUS_` | looping |
 | Voice line | `VO_` | |
-| MetaSound Source | `MS_` | |
+| MetaSound Source | `MSS_` | not `MS_` (Epic's table uses it for Media Source) |
 | Sound Cue / Attenuation / Class / Mix | `SC_` / `ATT_` / `SCL_` / `MIX_` | |
 | Input Action / Mapping Context | `IA_` / `IMC_` | Enhanced Input |
 | IK Rig / IK Retargeter | `IK_` / `RTG_` | as in Epic's templates |
 | Data Asset | `DA_` | |
 | Material Function | `MF_` | |
 | Level / Map | `L_` (main map stays `Main`) | |
-| Level Sequence | `LS_` | |
 | Sound Concurrency | `SCON_` | |
 | Geometry Collection (destruction) | `GC_` | |
 | Niagara Effect Type | `FXT_` | systems stay `FXS_` (Epic's quick start uses `FX_`; we don't) |
-| Post Process Material | `PPM_` | listed in Epic's 5.8 docs (not in the table above) |
 | Material Parameter Collection | `MPC_` | |
 | Other master materials | `M_Glass`, `M_Decal` | allowed exceptions to the single master; still used via `MI_` |
 
@@ -48,7 +47,9 @@ Texture descriptors: `T_<Name>_BaseColor`, `_Normal`, `_Roughness`, `_Metallic`,
 ## Folders
 
 - Generated props: `/Game/Props/<Name>/` (SM_, MI_, T_*)
+- Characters (`gen/character.ts`): `/Game/Characters/<Name>/`
+- Animation library packs (`SETUP.md` 10): their own `/Game/<Pack>/` folder (Migrate keeps it)
 - Audio: `/Game/Audio/{SFX,Music,Voice}/`
-- Kit shared assets: `/Game/Kit/` (master material, default textures). Don't put game content here.
+- Kit shared assets: `/Game/Kit/` (master materials, default textures, the `gen/vfx/vfx.ts` set). Game-specific content goes elsewhere.
 - Maps: `/Game/Maps/`
 - Never move/rename assets by hand in Explorer; use the editor (or AssetTools.move) so references and redirectors stay valid.

@@ -14,7 +14,9 @@ build green (UHT warnings fail it) and keep UObjects from being garbage-collecte
   minus prefix (`MyPickup.h` holds `AMyPickup`).
 - `UENUM(BlueprintType)` must be `enum class EFoo : uint8` (UHT: "only uint8 supported" for BlueprintType). Never a raw
   `enum` as a member type.
-- No UPROPERTY/UFUNCTION inside templates, nested classes, or `#if WITH_EDITOR` (use `WITH_EDITORONLY_DATA`, and avoid it).
+- No UPROPERTY/UFUNCTION inside templates or nested classes. A UPROPERTY inside `#if WITH_EDITOR` is a UHT error
+  (use `WITH_EDITORONLY_DATA`, and avoid it). A UFUNCTION there compiles but exists only in editor builds, so keep
+  gameplay UFUNCTIONs out of it.
 - A header with only `DECLARE_DYNAMIC_*` delegates needs `UDELEGATE` on one of them or UHT skips it (`production.md`).
 
 ```cpp
@@ -119,8 +121,8 @@ protected:
 
 - Installed (launcher) engine = project builds only: Game target in **DebugGame / Development / Shipping**,
   Editor target in **DebugGame / Development**. Debug and Test need an engine source build.
-- **Development** (Editor and Game): what we use everywhere. itch submission asks for a Development build;
-  `scripts/package.ps1` packages Win64 Development. Keeps logs, `stat` commands and console.
+- **Development** (Editor and Game): what we use everywhere, including the submitted build
+  (`scripts/package.ps1` packages Win64 Development). Keeps logs, `stat` commands and console.
 - **DebugGame**: our code unoptimised, engine optimised. Only for stepping through a nasty bug in a debugger.
 - **Shipping**: strips console, stats and profiling; `check()` compiled out. Not used.
 - Command-line editor build (editor closed):
@@ -146,9 +148,9 @@ protected:
 
 - Live Coding: Ctrl+Alt+F11 in editor or IDE; patches the running editor/PIE. **Scriptable:** run the console
   command `LiveCoding.Compile` (MCP `MegajamTools.run_console_command`), then poll the Output Log for
-  `LogLiveCoding: Display: Live coding succeeded` (~7 s for one .cpp on GIZMO, verified 2026-10-24). Changes apply
+  `LogLiveCoding: Display: Live coding succeeded` (~7 s for one .cpp on the target PC, verified 2026-10-24). Changes apply
   from the next PIE session.
-- Full build with the editor closed: `scripts\build.ps1` (24 s for a 4-class module on GIZMO). It passes only with
+- Full build with the editor closed: `scripts\build.ps1` (24 s for a 4-class module on the target PC). It passes only with
   zero warnings in our files; engine/toolchain warnings are listed separately. Known engine one: 5.8's own
   `GameFramework/Character.h(798)` raises **C4996 GetMovementBase deprecated** for every `ACharacter` subclass;
   not ours, can't be fixed, ignore it. Also "Visual Studio compiler 14.51 is not a preferred version" (harmless).
@@ -158,6 +160,13 @@ protected:
   UFUNCTION, UCLASS/USTRUCT/UENUM, class members, Build.cs, new files = close editor, full build, reopen.
   (5.8 docs say Object Reinstancing, on by default, can take new functions/variables; it is the source of
   corrupted BP defaults and shutdown crashes, so we don't rely on it.)
+  **Any header edit counts, even a comment:** that is no longer "function bodies only".
+- **After Live Coding, full build before loading a map.** On a prototype, `LevelEditorSubsystem.load_level` a few
+  minutes after a patch (a world subsystem's `.cpp` with a new static cvar, plus a comment-only header edit) crashed
+  the editor in world init: `Assertion failed: Ret->IsA(T::StaticClass())` (Class.h). After `scripts\build.ps1` the
+  same map loaded cleanly. Not reproduced on purpose, but don't open or reload maps in a Live-Coded session.
+- No `LiveCodingToolset` is registered in the 5.8.4 MCP build (the `unreal-mcp` skill names one): use the
+  `LiveCoding.Compile` console command above.
 - Constructor changes in the `.cpp` do **not** reach existing instances/BP defaults after Live Coding. Full build.
 - Anything odd after a patch (stale values, BP compile errors): close editor, full build, before debugging further.
 - Fix the first compile error first; later ones are usually cascades.
