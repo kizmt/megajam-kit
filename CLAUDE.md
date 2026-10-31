@@ -120,7 +120,8 @@ director). **The target PC** is the machine the game is built and measured on (R
   hard-coded. The director tunes feel without a recompile.
 - Live Coding for function bodies only. New UPROPERTY/UFUNCTION/UCLASS = close editor, full build.
 - Fix compile errors before anything else. Never work around a broken build.
-- Target the RTX 4060 (8 GB VRAM), crisp at 4K. **Smooth first: no hitches, steady pacing, at or above the game's
+- Target the RTX 4060 (8 GB VRAM): 4K output upscaled by TSR from a 1080p-1440p internal render, never native 4K
+  (`docs/ue/performance.md`). **Smooth first: no hitches, steady pacing, at or above the game's
   target fps (chosen at the style lock, in `DECISIONS.md`), and a settings menu that scales down for weaker PCs**
   (the bar: `docs/ue/performance.md`). Run `gen/perf/bench.ts --target-fps <target>` per milestone.
 - **Choose the render path (full Lumen, Lumen Lite or no Lumen; internal resolution) with the style lock, not mid-game**: SETUP step 7b
@@ -227,6 +228,9 @@ add an entry to the project's `KIT_NOTES.md` in the same round.
 - **Only use a sourced asset whose licence allows AI use.** On Fab: the listing's "Allows usage with AI" must be Yes
   (Epic content licence section 17 bars NoAI content as input to generative AI, which includes this agent; the same
   flag is `"isAiForbidden"` at `https://www.fab.com/i/listings/<listing id>`). Check before importing any pack.
+- **The Unreal Engine EULA no longer limits AI use of the engine or MetaHuman** (Epic's 2026-10-29 update, accepted
+  by the director): engine source can be read by the agent, and MetaHuman Creator, Animator and Mesh to MetaHuman
+  output can be used with AI tools. NoAI rules for Fab and Epic content (section 17 above) are unchanged.
 - Judging (rules 9): Ambition and Innovation, Use of Theme, Fun Factor, Gameplay, Visuals, Level Design, Audio (up to 5 points each; ties re-scored with Fun Factor doubled). The amount of AI used doesn't change the score.
 - The Glass Box devlog must be submitted with the game, during the contest.
 - Content must be Teen-appropriate, contain no third-party IP, and show no trademarks except the

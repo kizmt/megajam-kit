@@ -125,6 +125,21 @@ Measured: SFX ~2 s end to end, 30 s music track ~6 s.
 | `--vocals` / `--loop` / `--mono` | Music with vocals / looping SFX / one channel (see above). |
 | `--no-unreal` | Files only, no import. |
 
+### A custom voice (ElevenLabs Voice Design)
+
+The kit has no script for this: the director makes the voice on the ElevenLabs site, then `voices` lists its id for
+`--voice`. Record the id and the prompt that made it in `DECISIONS.md`. What we learned on the rehearsal narrator
+(advice from one attempt, not yet a proven recipe):
+
+- **Look in the Voice Library first.** A shared voice with the accent already there is cheaper than designing one.
+- **Every Generate is billed, saved or not.** Agree a number of rounds with the director before starting.
+- **Accent first, described by its sound**, then age, timbre, pace and role. A bare label ("Greek accent") was
+  ignored in all previews; describe it ("strong Greek accent: rolled r's, full open vowels, even syllable-timed
+  rhythm"). Leave out quality words ("high quality", "studio"): they add nothing and dilute the accent.
+- **Guidance (prompt adherence) at 50-60%**, so the accent in the prompt carries more weight (untested value).
+- **Write the preview text in the character's own voice** (a line the narrator would say, with names and words
+  that carry the accent), not a neutral test sentence.
+
 ## Motion: Uthana (text-to-motion)
 
 No kit script yet (`gen/uthana.ts` is planned: generate with cost logged, fetch, then import, bake root, retarget).
