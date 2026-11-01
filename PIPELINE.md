@@ -126,6 +126,27 @@ Measured: SFX ~2 s end to end, 30 s music track ~6 s.
 | `--no-unreal` | Files only, no import. |
 | `--model id` | Override the model. Defaults: SFX `eleven_text_to_sound_v3` (v2 is deprecated and retired 2027-02-01; same parameters), voice `eleven_v4` (`eleven_multilingual_v2` is the old default). |
 
+### Writing sound effect prompts (SFX v3)
+
+From ElevenLabs' sound effects docs (2026-11). SFX v3 worked on our account (2026-11-01: a one-shot and a 20 s
+`--loop`); it is in limited access, and an account without it gets "Unknown model" (the script then suggests
+`--model eleven_text_to_sound_v2`).
+
+- **Describe the action, the setting and how it is performed**, not a category: `footsteps on gravel approaching
+  slowly`, not `footsteps`. Wording matters ("arguing" beat "fighting" in ElevenLabs' test); rephrase before
+  re-rolling.
+- **Sequences in order with "then"** (`sword drawn, then clashing with another blade`). v3 follows multi-part prompts
+  better than v2. **Exact counts are not followed** (`hit 4 times`): make one hit and repeat it in the game.
+- **Audio terms work:** impact, whoosh, braam (big cinematic brass hit), glitch, drone, one-shot, loop, stem. Musical
+  pieces too (`vintage brass stabs in F minor`): put stingers in the game's music key (music prompts below).
+- **Layers are separate files:** whoosh, impact and body tail as three one-shots, mixed in a MetaSound or played
+  together (`docs/ue/game-feel.md`, catalogue row "Sound"). One prompt for all three is harder to tune.
+- **Variations:** `--n 3` with the same prompt; a lower `--influence` (default 0.4) gives more varied takes, a higher
+  one more literal and alike.
+- **Cost:** a set length (`--seconds`) bills 40 credits per second, so keep one-shots short (0.5-3 s). Without
+  `--seconds` the model picks the length. Max 30 s; `--loop` gives a seamless loop for ambience.
+- v3 clips less on high sounds (chimes, whistles) than v2.
+
 ### Writing music prompts (Eleven Music)
 
 From ElevenLabs' music best practices (2026-11). Record each cue's final prompt in `DECISIONS.md` so later cues

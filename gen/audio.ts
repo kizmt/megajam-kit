@@ -94,7 +94,14 @@ interface Clip { buf: Buffer; body: Record<string, unknown> }
 async function one(): Promise<Clip> {
   const { url, body } = request();
   const res = await fetch(url, { method: 'POST', headers: H, body: JSON.stringify(body) });
-  if (!res.ok) throw new Error(`ElevenLabs HTTP ${res.status}: ${(await res.text()).slice(0, 500)}`);
+  if (!res.ok) {
+    const detail = (await res.text()).slice(0, 500);
+    // SFX v3 and Eleven v4 are in limited access in some regions: an account without them gets "Unknown model".
+    const hint = /unknown model/i.test(detail)
+      ? ' (model not available to this account: retry with --model eleven_text_to_sound_v2 for sfx or --model eleven_multilingual_v2 for voice)'
+      : '';
+    throw new Error(`ElevenLabs HTTP ${res.status}: ${detail}${hint}`);
+  }
   return { buf: Buffer.from(await res.arrayBuffer()), body };
 }
 
