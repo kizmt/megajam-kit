@@ -19,10 +19,17 @@ agent configs, MCP settings, prompt libraries and scripts; gameplay is made in t
   (target recoils, knockback, debris), aftermath (dust settles, lingering decal, UI updates).
 - **Scale by intensity:** one event type, one intensity value (light 0.3, heavy 0.7, kill 1.0) multiplied into shake
   scale, hit-stop length, rumble and particle count. Hierarchy reads better than everything at maximum.
+- **Stacked hits use trauma, not stacked shakes:** a trauma value 0-1 on the camera; each hit adds 0.3-0.6 (by
+  intensity), it decays ~1 per second, and shake scale = trauma². Squaring keeps small hits subtle and lets a flurry
+  build up; starting a new shake per hit instead jitters.
 - **The player's actions first,** then threats to the player, then ambient events. Enemy-on-enemy events get little.
 - **Restraint:** no shake on routine actions (walking, normal jumps), short durations (most impacts finish in
   < 0.25 s), and a settings toggle or slider for screen shake.
-- **Time-based, never frame-based.** Everything below is in seconds so it survives frame-rate changes.
+- **Time-based, never frame-based.** Everything below is in seconds so it survives frame-rate changes. For custom
+  smoothing, use `Alpha = 1 - FMath::Exp(-Speed * DeltaTime)` with a lerp: `FInterpTo` uses `Clamp(DeltaTime * Speed, 0, 1)`,
+  which feels different at different frame rates and snaps in one step when the product reaches 1.
+- **UI motion eases out:** panels and prompts move in ~0.3 s with an ease-out (`UKismetMathLibrary::Ease`,
+  `EEasingFunc::EaseOut`, BlendExp 3, or a UMG animation curve); a slight overshoot on rewards and buttons.
 - **Judge it from the gameplay camera at full speed** (record a clip, watch it at 1x, then frame by frame).
 
 ## Catalogue: feedback, engine call, starting values

@@ -169,6 +169,10 @@ Facts behind the table:
 - **Tick off by default** in C++ (`PrimaryActorTick.bCanEverTick = false`) unless the actor truly changes every frame.
   Use timers, events, or a tick interval instead. Epic: don't poll a value every frame for occasional changes.
 - **Pool** frequently spawned things (projectiles, pickups, VFX) instead of spawn/destroy; spread big spawns across frames.
+  Size the pool for the peak count and log a warning when it runs dry, so an undersized pool shows up in the log.
+- **Stagger enemy thinking:** decisions (target choice, path requests, line-of-sight traces) on a timer every
+  0.1-0.3 s with a random first delay per enemy, so they don't all think on the same frame. Movement and animation
+  still update every frame.
 - Heavy work in one Blueprint event runs in one frame and hitches. Keep logic in C++ (our convention anyway).
 - UI runs on the game thread: avoid per-frame bindings in widgets; update on change.
 - Load big assets asynchronously; avoid giant hard-reference chains (one asset dragging in half the game).

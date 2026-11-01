@@ -51,6 +51,30 @@ Jam rules forbid shipping a lightly modified template, so take the patterns belo
   ignored and gravity still applies. Only "Root Motion from Everything" forces the anim update onto the game thread
   (`UAnimInstance::NeedsImmediateUpdate`); "from Montages Only" keeps the parallel update.
 
+## Forgiving, responsive controls (starting values)
+
+The player judges the controls by whether a press does what they meant. These windows are invisible but make a
+platformer or action game feel fair; put every number in the tuning DataAsset. Engine hooks are from the 5.8
+headers; the patterns are unbuilt in a prototype.
+
+- **Coyote time: 0.1-0.15 s to jump after walking off a ledge.** The CMC has none: a first jump while falling is
+  refused. Record the time in `OnWalkingOffLedge_Implementation` (fires for walk-offs, not jumps) and override
+  `virtual bool CanJumpWhileFalling() const` (default `false`) to return true while `JumpCurrentCount == 0` and the
+  window is open. `JumpIsAllowedInternal` then allows the jump as a first jump.
+- **Jump buffer: 0.1 s.** A press just before landing should still jump. Store the press time when `CanJump()` is
+  false; in `Landed()` (override, call Super), `Jump()` if the press is within the window, then clear it so one
+  press gives one jump. The same idea queues the next attack during recovery or hit-stop and fires it at the combo
+  window (`animation-library.md` "Hit window").
+- **Acceleration and stopping.** Time to top speed 0.1-0.2 s for snappy, 0.3 s+ for heavy: `MaxAcceleration` ≈
+  `MaxWalkSpeed / seconds` (the template's 1500 at 500 is ~0.33 s). Stop in ~0.1-0.2 s: `BrakingDecelerationWalking`
+  ≈ speed / seconds. `GroundFriction` sets how fast direction changes (higher is snappier turns). Less control in the
+  air (`AirControl` 0.2-0.5). Friction interacts with all of these: measure the real times in a clip, don't trust the
+  arithmetic.
+- **Invincibility after a hit: 0.5-1 s for the player**, shown by a blink (~10 Hz, the master material's flash or
+  visibility) and a knockback away from the source. Enemies get little or none, or combos stop landing.
+- **Fast movers tunnel.** Move by `SetActorLocation(..., bSweep=true)`, keep `UProjectileMovementComponent`'s sweep
+  on, and set `bUseCCD` on fast simulated bodies (`FBodyInstance`).
+
 ## Example: third-person player
 
 A structure, not defaults for every genre: pick the verbs and numbers the game needs. Write it fresh in the jam
