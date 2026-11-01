@@ -122,10 +122,19 @@ character's lines in one batch on one day.
 
 ## Making a narrator or character voice
 
-The kit has no script for Voice Design yet: the director designs on the ElevenLabs site, then
-`node gen/audio.ts voices` lists the saved voice's id for `--voice`. Record the id, prompt and settings in
-`DECISIONS.md`. The rehearsal narrator (a bare "Greek accent" label, ignored in every preview) taught us the first
-rule below.
+Script it (repeatable, and the director only has to listen):
+
+```powershell
+node gen/audio.ts design "<description>" --name Narrator --preview "<100-1000 characters in character>" --seed 1 --guidance 8
+#   -> Generated\audio\VOICE_Narrator_1..3.mp3 + VOICE_Narrator.design.json (request, preview ids)
+node gen/audio.ts save <generated_voice_id> --name Narrator      # the preview the director picked; prints the voice id
+node gen/audio.ts voice "[slow, measured narration] ..." --voice <voice id> --name Line01
+```
+
+Each `design` call bills only the preview text's characters, once for all three previews. Change one thing per call (wording, `--guidance`, `--design-model eleven_ttv_v3`, `--seed`) so the director can
+compare. `save` adds a voice to the account, so save only the pick. Record the voice id, description, seed and
+settings in `DECISIONS.md`. The site's Voice Design page works too; `voices` then lists the id. The rehearsal narrator
+(a bare "Greek accent" label, ignored in every preview) taught us the first rule below.
 
 - **Write the accent into the description, using ElevenLabs' structure:**
   `Native <language>. <Gender>, <age range>. <Quality level>.` then `Persona: <2-5 words>. Emotion: <2-3 adjectives>.`
@@ -135,8 +144,9 @@ rule below.
 - **"Thick" works better than "strong"** for how much accent. Combine it with age, tone and pacing; give ages, not
   "old". Describe timbre (raspy, gravelly) separately from emotion.
 - **Guidance scale:** higher follows the prompt more closely, "recommended when accent or tone accuracy" matters; too
-  high on a niche prompt can lower audio quality. ElevenLabs' examples sit at 20-40% (UI); for an accent, start near
-  the top of that.
+  high on a niche prompt can lower audio quality or sound robotic. ElevenLabs' UI examples sit at 20-40%; the API's
+  `guidance_scale` defaults to 5 and the docs don't say how the two map. For an accent, try the default, then higher
+  (`--guidance 8`, `12`), one step per call.
 - **A quality level** ("Studio quality") belongs in the structure, but such phrases can reduce accuracy on unusual
   prompts: drop it if the accent won't come through.
 - **Preview text in the character's voice**, a full sentence or a short paragraph (100-1,000 characters): longer
@@ -146,9 +156,9 @@ rule below.
   age or pacing), or a Library voice with the right age and timbre plus an accent tag.
 - **The director can perform a line instead:** Voice Changer turns a recording into the character's voice and keeps
   the performance (timing, whispers, laughs, and the speaker's own accent). 1,000 credits per minute; not scripted.
-- The design API (`/v1/text-to-voice/design`, then `/v1/text-to-voice` to save) takes the same description plus
-  `seed`, `guidance_scale` (default 5), `loudness` and, with `eleven_ttv_v3`, reference audio. A script for it would
-  make designs repeatable.
+- `design` also takes `--loudness` (-1 to 1, default 0.5; 0 is about -24 LUFS) and `--enhance` (ElevenLabs expands a
+  short description; off by default, since our descriptions are already detailed). The API's reference-audio input
+  (`eleven_ttv_v3` only) isn't scripted. The design and save calls are untested (2026-11-01).
 
 ## Sources (read 2026-11-01)
 

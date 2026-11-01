@@ -41,6 +41,12 @@ const { values: o, positionals } = parseArgs({
     plan: { type: 'string' },
     seed: { type: 'string' },
     timestamps: { type: 'boolean', default: false },
+    preview: { type: 'string' },
+    guidance: { type: 'string' },
+    'design-model': { type: 'string' },
+    loudness: { type: 'string' },
+    enhance: { type: 'boolean', default: false },
+    description: { type: 'string' },
     out: { type: 'string' },
     'no-unreal': { type: 'boolean', default: false },
     help: { type: 'boolean', short: 'h', default: false },
@@ -54,9 +60,14 @@ const USAGE = `usage: node gen/audio.ts sfx|music|voice "<prompt or line>" [--na
        --seed N: voice, or music with --plan (the API refuses a seed with a music prompt; SFX has no seed)
        --timestamps: voice only, saves per-character timing in the .json sidecar (subtitles)
        node gen/audio.ts plan "<music prompt>" [--seconds S] [--name N]   (free; edit the JSON, then: music --plan <file>)
-       node gen/audio.ts voices`;
+       node gen/audio.ts voices
+       node gen/audio.ts design "<voice description>" --name N [--preview "<100-1000 chars in character>"] [--seed N]
+                        [--guidance 5] [--design-model eleven_ttv_v3|eleven_multilingual_ttv_v2] [--loudness 0.5] [--enhance]
+                        (3 previews; bills only the preview text's characters)
+       node gen/audio.ts save <generated_voice_id> --name N   (adds the chosen preview to the account; prints its voice id)`;
 const needsText = kindArg !== 'voices' && !(kindArg === 'music' && o.plan);
-if (o.help || (!isKind(kindArg) && kindArg !== 'voices' && kindArg !== 'plan') || (needsText && !text)) {
+const COMMANDS = ['voices', 'plan', 'design', 'save'];
+if (o.help || (!isKind(kindArg) && !COMMANDS.includes(kindArg ?? '')) || (needsText && !text)) {
   console.log(USAGE);
   process.exit(o.help ? 0 : 2);
 }
@@ -105,6 +116,69 @@ if (kindArg === 'plan') {
   console.log(`Plan written (no credits used): ${file}\nCompose: node gen/audio.ts music --plan "${file}" --seed 1 --name ${pascal(o.name ?? text, 4)}`);
   process.exit(0);
 }
+/** A file path that doesn't overwrite an earlier one (adds a time stamp if the name is taken). */
+function freshPath(dir: string, stem: string, ext: string): string {
+  const p = join(dir, `${stem}.${ext}`);
+  return existsSync(p) ? join(dir, `${stem}_${new Date().toISOString().replace(/[:.]/g, '-')}.${ext}`) : p;
+}
+
+if (kindArg === 'design') {
+  // Voice Design: 3 previews of a described voice. Listen, then `save <generated_voice_id>` the one the director picks.
+  if (!o.name) fail('design needs --name (used for the preview files and the saved voice)');
+  if (o.preview !== undefined && (o.preview.length < 100 || o.preview.length > 1000)) {
+    fail(`--preview must be 100-1000 characters (it is ${o.preview.length}); write a line or two the character would say`);
+  }
+  const body: Record<string, unknown> = { voice_description: text };
+  if (o.preview) body['text'] = o.preview; else body['auto_generate_text'] = true;
+  if (o['design-model']) body['model_id'] = o['design-model'];
+  if (o.seed !== undefined) body['seed'] = Number(o.seed);
+  if (o.guidance !== undefined) body['guidance_scale'] = Number(o.guidance);
+  if (o.loudness !== undefined) body['loudness'] = Number(o.loudness);
+  if (o.enhance) body['should_enhance'] = true;
+  await printCredits();
+  const r = await fetch(`${API}/v1/text-to-voice/design?output_format=mp3_44100_128`, { method: 'POST', headers: H, body: JSON.stringify(body) });
+  if (!r.ok) fail(`ElevenLabs HTTP ${r.status}: ${(await r.text()).slice(0, 500)}`);
+  const j = (await r.json()) as { text?: string; previews?: { audio_base_64: string; generated_voice_id: string; duration_secs?: number }[] };
+  const dir = o.out ?? generatedDir('audio');
+  mkdirSync(dir, { recursive: true });
+  const stem = `VOICE_${pascal(o.name, 4)}`;
+  const previews = (j.previews ?? []).map((p, i) => {
+    const file = freshPath(dir, `${stem}_${i + 1}`, 'mp3');
+    writeFileSync(file, Buffer.from(p.audio_base_64, 'base64'));
+    console.log(`  [${i + 1}] ${file} (${p.duration_secs?.toFixed(1) ?? '?'} s)  generated_voice_id ${p.generated_voice_id}`);
+    return { file, generated_voice_id: p.generated_voice_id };
+  });
+  const sidecar = freshPath(dir, stem, 'design.json');
+  writeFileSync(sidecar, JSON.stringify({ name: o.name, request: body, preview_text: j.text, previews, created: new Date().toISOString() }, null, 2));
+  console.log(`${previews.length} preview(s); request saved to ${sidecar}\nKeep one: node gen/audio.ts save <generated_voice_id> --name ${pascal(o.name, 4)}`);
+  process.exit(previews.length > 0 ? 0 : 1);
+}
+
+if (kindArg === 'save') {
+  // Saves a design preview as a voice on the account. The description comes from the design sidecar when one matches.
+  const gid = text;
+  if (!o.name) fail('save needs --name');
+  const dir = o.out ?? generatedDir('audio');
+  let description = o.description;
+  let others: string[] = [];
+  for (const f of readdirSync(dir).filter((n) => n.endsWith('.design.json'))) {
+    const d = JSON.parse(readFileSync(join(dir, f), 'utf8')) as { request?: { voice_description?: string }; previews?: { generated_voice_id: string }[] };
+    if (d.previews?.some((p) => p.generated_voice_id === gid)) {
+      description ??= d.request?.voice_description;
+      others = d.previews.map((p) => p.generated_voice_id).filter((id) => id !== gid);
+      break;
+    }
+  }
+  if (!description) fail(`no design sidecar in ${dir} lists ${gid}; pass --description "<the design prompt>"`);
+  const body: Record<string, unknown> = { voice_name: o.name, voice_description: description, generated_voice_id: gid };
+  if (others.length) body['played_not_selected_voice_ids'] = others;
+  const r = await fetch(`${API}/v1/text-to-voice`, { method: 'POST', headers: H, body: JSON.stringify(body) });
+  if (!r.ok) fail(`ElevenLabs HTTP ${r.status}: ${(await r.text()).slice(0, 500)}`);
+  const v = (await r.json()) as { voice_id: string };
+  console.log(`Saved voice "${o.name}": voice_id ${v.voice_id}\nUse: node gen/audio.ts voice "<line>" --voice ${v.voice_id} --name <Line>   (record the id in DECISIONS.md)`);
+  process.exit(0);
+}
+
 if (!isKind(kindArg)) fail(USAGE); // narrowed above; keeps the type checker honest
 const kind: Kind = kindArg;
 

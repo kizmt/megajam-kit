@@ -109,6 +109,8 @@ node gen/audio.ts music "calm mysterious exploration theme, harp, low strings" -
 node gen/audio.ts voice "The map was right." --name Line01      # needs TTS permission on the key
 node gen/audio.ts plan "slow ambient folk cue, 72 BPM, D dorian" --seconds 60 --name Explore   # free plan JSON
 node gen/audio.ts music --plan <Generated\audio\MUS_Explore.plan.json> --seed 1 --name Explore
+node gen/audio.ts design "<voice description>" --name Narrator --preview "<in-character text>"  # 3 previews
+node gen/audio.ts save <generated_voice_id> --name Narrator                                    # keep the pick
 ```
 
 Output: `<Project>/Generated/audio/SFX_*.mp3/.wav`, `MUS_*`, `VO_*`. Music is instrumental unless `--vocals`.
