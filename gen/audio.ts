@@ -86,7 +86,7 @@ function request(): ApiRequest {
     if (secs) body['music_length_ms'] = Math.round(Math.min(600, Math.max(3, secs)) * 1000);
     return { url: `${API}/v1/music?output_format=${o.format}`, body };
   }
-  return { url: `${API}/v1/text-to-speech/${o.voice}?output_format=${o.format}`, body: { text, model_id: o.model ?? 'eleven_multilingual_v2' } };
+  return { url: `${API}/v1/text-to-speech/${o.voice}?output_format=${o.format}`, body: { text, model_id: o.model ?? 'eleven_v4' } };
 }
 
 interface Clip { buf: Buffer; body: Record<string, unknown> }

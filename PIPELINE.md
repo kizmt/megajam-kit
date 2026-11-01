@@ -124,7 +124,25 @@ Measured: SFX ~2 s end to end, 30 s music track ~6 s.
 | `--voice id` | Voice for `voice` lines (`node gen/audio.ts voices` lists ids). |
 | `--vocals` / `--loop` / `--mono` | Music with vocals / looping SFX / one channel (see above). |
 | `--no-unreal` | Files only, no import. |
-| `--model id` | Override the model. SFX default is `eleven_text_to_sound_v3` (v2 is deprecated and retired 2027-02-01; same parameters). |
+| `--model id` | Override the model. Defaults: SFX `eleven_text_to_sound_v3` (v2 is deprecated and retired 2027-02-01; same parameters), voice `eleven_v4` (`eleven_multilingual_v2` is the old default). |
+
+### Writing voice lines (Eleven v4)
+
+From ElevenLabs' v4 and best-practices docs (2026-11). v4 is still being trained and its behaviour shifts: test the
+game's voice and key lines at the start, and regenerate the batch on one day rather than across days.
+
+- **Direct the delivery with audio tags** in square brackets before the words: `[low, gravelly voice, slow and
+  measured] The road remembers every pilgrim.` Describe the voice, not an event: v4 also makes sound effects and can
+  read an ambiguous tag (`[thunder]`, `[door]`) as one. Match tags to the voice: a calm voice won't shout convincingly.
+- **No SSML.** `<break>` and phoneme tags don't work on v4. Pause with ellipses, `[short pause]` / `[long pause]`
+  and line breaks. v4 has no Speed or Style setting: slow a narrator with tags and punctuation.
+- **CAPITALS add emphasis**, ellipses add weight. Write what is said: numbers and abbreviations spelled out
+  ("forty-two", "Doctor").
+- **Names:** IPA between slashes inside the text (`"/ˈθeɪlɪs/"`), with stress marks. Test it with the voice; if it
+  still drifts, respell phonetically.
+- **Accents:** `[strong Greek accent]` is an experimental tag; test it per voice. A voice keeps its accent when it
+  speaks its own language, but v4 drops the accent when it generates a language other than the voice's.
+- **One line per file** (`--name`), so the game can trigger, subtitle and replace lines one at a time.
 
 ### A custom voice (ElevenLabs Voice Design)
 
@@ -132,7 +150,9 @@ The kit has no script for this: the director makes the voice on the ElevenLabs s
 `--voice`. Record the id and the prompt that made it in `DECISIONS.md`. What we learned on the rehearsal narrator
 (advice from one attempt, not yet a proven recipe):
 
-- **Look in the Voice Library first.** A shared voice with the accent already there is cheaper than designing one.
+- **Try a Library voice plus a tag first.** ElevenLabs says Voice Design voices "may not be as performative or sound
+  as good" on v4. For an accented character, pick a Library voice with the right age and timbre and test a line with
+  an accent tag (cents per line). Design a voice only if that fails.
 - **Every Generate is billed, saved or not.** Agree a number of rounds with the director before starting.
 - **Accent first, described by its sound**, then age, timbre, pace and role. A bare label ("Greek accent") was
   ignored in all previews; describe it ("strong Greek accent: rolled r's, full open vowels, even syllable-timed
