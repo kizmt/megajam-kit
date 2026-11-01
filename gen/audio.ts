@@ -77,7 +77,7 @@ interface ApiRequest { url: string; body: Record<string, unknown> }
 
 function request(): ApiRequest {
   if (kind === 'sfx') {
-    const body: Record<string, unknown> = { text, loop: o.loop, prompt_influence: Number(o.influence), model_id: o.model ?? 'eleven_text_to_sound_v2' };
+    const body: Record<string, unknown> = { text, loop: o.loop, prompt_influence: Number(o.influence), model_id: o.model ?? 'eleven_text_to_sound_v3' };
     if (secs) body['duration_seconds'] = Math.min(30, Math.max(0.5, secs));
     return { url: `${API}/v1/sound-generation?output_format=${o.format}`, body };
   }

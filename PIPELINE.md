@@ -124,6 +124,7 @@ Measured: SFX ~2 s end to end, 30 s music track ~6 s.
 | `--voice id` | Voice for `voice` lines (`node gen/audio.ts voices` lists ids). |
 | `--vocals` / `--loop` / `--mono` | Music with vocals / looping SFX / one channel (see above). |
 | `--no-unreal` | Files only, no import. |
+| `--model id` | Override the model. SFX default is `eleven_text_to_sound_v3` (v2 is deprecated and retired 2027-02-01; same parameters). |
 
 ### A custom voice (ElevenLabs Voice Design)
 
