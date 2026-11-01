@@ -126,6 +126,31 @@ Measured: SFX ~2 s end to end, 30 s music track ~6 s.
 | `--no-unreal` | Files only, no import. |
 | `--model id` | Override the model. Defaults: SFX `eleven_text_to_sound_v3` (v2 is deprecated and retired 2027-02-01; same parameters), voice `eleven_v4` (`eleven_multilingual_v2` is the old default). |
 
+### Writing music prompts (Eleven Music)
+
+From ElevenLabs' music best practices (2026-11). Record each cue's final prompt in `DECISIONS.md` so later cues
+match it.
+
+- **Decide five things, or the model picks the most average answer:** genre, mood, instruments, tempo (BPM) and
+  production era, plus a key. Example: `ambient folk exploration theme, 72 BPM, D dorian, solo bouzouki over low
+  drone strings, sparse frame drum, weathered and warm, recorded in a stone chapel, instrumental`.
+- **Studio words change the mix** (`close-mic'd`, `bone-dry`, `plate reverb`, `tape saturation`); without them,
+  describe the room. Take them from the style lock so the music matches the look.
+- **One BPM and key for all the game's cues** (calm, pressure, climax), so crossfades and layers line up; the model
+  holds a stated BPM and key closely. **Intensity layers:** `solo` before an instrument gives a stem (`solo taiko
+  percussion, 72 BPM, D dorian`) to fade in over the base cue (MetaSound `Intensity`, `docs/ue/audio-ui.md`).
+- **Loops: state the bars, BPM, key and what is banned** (`four bars, no melody, just drums`). Make the length whole
+  bars: seconds = bars x beats per bar x 60 / BPM (16 bars of 4/4 at 72 BPM = 53.3 s). Asking for no intro and no
+  fade-out is our guess, untested. Check the seam: `ffmpeg -stream_loop 2 -i cue.wav -c copy cue_x3.wav`.
+- **Narrate intros, stingers and endings in order:** `start with just a drone, bring in the melody after eight bars,
+  then...`. "Just" keeps the model from filling the silence.
+- **Musical ambience:** the model also renders non-musical sound in a key and tempo (`wind through a ruined temple,
+  in D, slow`), for beds that should sit under the score.
+- **No artist or song names, and no Audio Reference uploads of other people's music** (third-party IP, jam rules).
+  Describe the sound instead.
+- Instrumental is the default; `--vocals` only for a deliberate song. Composition plans (sections, timed lyrics)
+  exist in the API; the kit doesn't use them.
+
 ### Writing voice lines (Eleven v4)
 
 From ElevenLabs' v4 and best-practices docs (2026-11). v4 is still being trained and its behaviour shifts: test the
