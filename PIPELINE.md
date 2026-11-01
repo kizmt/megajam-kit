@@ -107,6 +107,8 @@ node gen/audio.ts sfx "heavy wooden chest lid creaking open" --seconds 2.5 --nam
 node gen/audio.ts sfx "night forest ambience, crickets" --seconds 20 --loop --name ForestAmb
 node gen/audio.ts music "calm mysterious exploration theme, harp, low strings" --seconds 90 --name Explore
 node gen/audio.ts voice "The map was right." --name Line01      # needs TTS permission on the key
+node gen/audio.ts plan "slow ambient folk cue, 72 BPM, D dorian" --seconds 60 --name Explore   # free plan JSON
+node gen/audio.ts music --plan <Generated\audio\MUS_Explore.plan.json> --seed 1 --name Explore
 ```
 
 Output: `<Project>/Generated/audio/SFX_*.mp3/.wav`, `MUS_*`, `VO_*`. Music is instrumental unless `--vocals`.
@@ -118,7 +120,9 @@ Measured: SFX ~2 s end to end, 30 s music track ~6 s.
 
 | Option | Use |
 |---|---|
-| `--n 3` | Variants in parallel, named `_1`, `_2`, `_3` (1-6). Each is billed. |
+| `--n 3` | Variants, named `_1`, `_2`, `_3` (1-6), at most 2 (music) or 3 at once. Each is billed. A re-run with the same name moves the old take to `old\`. |
+| `--plan file` / `--seed N` | Music from an edited composition plan (`plan` command) / seed for voice or plan music. |
+| `--timestamps` | Voice: per-character timing in the `.json` sidecar for subtitles. |
 | `--influence 0.4` | SFX only: how closely the sound follows the prompt (ElevenLabs `prompt_influence`, 0-1). |
 | `--format mp3_44100_128` | ElevenLabs output format (`mp3_*`, `opus_*`, `wav_*`, `pcm_*`); the WAV for Unreal is made by ffmpeg either way. |
 | `--voice id` | Voice for `voice` lines (`node gen/audio.ts voices` lists ids). |
@@ -126,86 +130,8 @@ Measured: SFX ~2 s end to end, 30 s music track ~6 s.
 | `--no-unreal` | Files only, no import. |
 | `--model id` | Override the model. Defaults: SFX `eleven_text_to_sound_v3` (v2 is deprecated and retired 2027-02-01; same parameters), voice `eleven_v4` (`eleven_multilingual_v2` is the old default). |
 
-### Writing sound effect prompts (SFX v3)
-
-From ElevenLabs' sound effects docs (2026-11). SFX v3 worked on our account (2026-11-01: a one-shot and a 20 s
-`--loop`); it is in limited access, and an account without it gets "Unknown model" (the script then suggests
-`--model eleven_text_to_sound_v2`).
-
-- **Describe the action, the setting and how it is performed**, not a category: `footsteps on gravel approaching
-  slowly`, not `footsteps`. Wording matters ("arguing" beat "fighting" in ElevenLabs' test); rephrase before
-  re-rolling.
-- **Sequences in order with "then"** (`sword drawn, then clashing with another blade`). v3 follows multi-part prompts
-  better than v2. **Exact counts are not followed** (`hit 4 times`): make one hit and repeat it in the game.
-- **Audio terms work:** impact, whoosh, braam (big cinematic brass hit), glitch, drone, one-shot, loop, stem. Musical
-  pieces too (`vintage brass stabs in F minor`): put stingers in the game's music key (music prompts below).
-- **Layers are separate files:** whoosh, impact and body tail as three one-shots, mixed in a MetaSound or played
-  together (`docs/ue/game-feel.md`, catalogue row "Sound"). One prompt for all three is harder to tune.
-- **Variations:** `--n 3` with the same prompt; a lower `--influence` (default 0.4) gives more varied takes, a higher
-  one more literal and alike.
-- **Cost:** a set length (`--seconds`) bills 40 credits per second, so keep one-shots short (0.5-3 s). Without
-  `--seconds` the model picks the length. Max 30 s; `--loop` gives a seamless loop for ambience.
-- v3 clips less on high sounds (chimes, whistles) than v2.
-
-### Writing music prompts (Eleven Music)
-
-From ElevenLabs' music best practices (2026-11). Record each cue's final prompt in `DECISIONS.md` so later cues
-match it.
-
-- **Decide five things, or the model picks the most average answer:** genre, mood, instruments, tempo (BPM) and
-  production era, plus a key. Example: `ambient folk exploration theme, 72 BPM, D dorian, solo bouzouki over low
-  drone strings, sparse frame drum, weathered and warm, recorded in a stone chapel, instrumental`.
-- **Studio words change the mix** (`close-mic'd`, `bone-dry`, `plate reverb`, `tape saturation`); without them,
-  describe the room. Take them from the style lock so the music matches the look.
-- **One BPM and key for all the game's cues** (calm, pressure, climax), so crossfades and layers line up; the model
-  holds a stated BPM and key closely. **Intensity layers:** `solo` before an instrument gives a stem (`solo taiko
-  percussion, 72 BPM, D dorian`) to fade in over the base cue (MetaSound `Intensity`, `docs/ue/audio-ui.md`).
-- **Loops: state the bars, BPM, key and what is banned** (`four bars, no melody, just drums`). Make the length whole
-  bars: seconds = bars x beats per bar x 60 / BPM (16 bars of 4/4 at 72 BPM = 53.3 s). Asking for no intro and no
-  fade-out is our guess, untested. Check the seam: `ffmpeg -stream_loop 2 -i cue.wav -c copy cue_x3.wav`.
-- **Narrate intros, stingers and endings in order:** `start with just a drone, bring in the melody after eight bars,
-  then...`. "Just" keeps the model from filling the silence.
-- **Musical ambience:** the model also renders non-musical sound in a key and tempo (`wind through a ruined temple,
-  in D, slow`), for beds that should sit under the score.
-- **No artist or song names, and no Audio Reference uploads of other people's music** (third-party IP, jam rules).
-  Describe the sound instead.
-- Instrumental is the default; `--vocals` only for a deliberate song. Composition plans (sections, timed lyrics)
-  exist in the API; the kit doesn't use them.
-
-### Writing voice lines (Eleven v4)
-
-From ElevenLabs' v4 and best-practices docs (2026-11). v4 is still being trained and its behaviour shifts: test the
-game's voice and key lines at the start, and regenerate the batch on one day rather than across days.
-
-- **Direct the delivery with audio tags** in square brackets before the words: `[low, gravelly voice, slow and
-  measured] The road remembers every pilgrim.` Describe the voice, not an event: v4 also makes sound effects and can
-  read an ambiguous tag (`[thunder]`, `[door]`) as one. Match tags to the voice: a calm voice won't shout convincingly.
-- **No SSML.** `<break>` and phoneme tags don't work on v4. Pause with ellipses, `[short pause]` / `[long pause]`
-  and line breaks. v4 has no Speed or Style setting: slow a narrator with tags and punctuation.
-- **CAPITALS add emphasis**, ellipses add weight. Write what is said: numbers and abbreviations spelled out
-  ("forty-two", "Doctor").
-- **Names:** IPA between slashes inside the text (`"/ˈθeɪlɪs/"`), with stress marks. Test it with the voice; if it
-  still drifts, respell phonetically.
-- **Accents:** `[strong Greek accent]` is an experimental tag; test it per voice. A voice keeps its accent when it
-  speaks its own language, but v4 drops the accent when it generates a language other than the voice's.
-- **One line per file** (`--name`), so the game can trigger, subtitle and replace lines one at a time.
-
-### A custom voice (ElevenLabs Voice Design)
-
-The kit has no script for this: the director makes the voice on the ElevenLabs site, then `voices` lists its id for
-`--voice`. Record the id and the prompt that made it in `DECISIONS.md`. What we learned on the rehearsal narrator
-(advice from one attempt, not yet a proven recipe):
-
-- **Try a Library voice plus a tag first.** ElevenLabs says Voice Design voices "may not be as performative or sound
-  as good" on v4. For an accented character, pick a Library voice with the right age and timbre and test a line with
-  an accent tag (cents per line). Design a voice only if that fails.
-- **Every Generate is billed, saved or not.** Agree a number of rounds with the director before starting.
-- **Accent first, described by its sound**, then age, timbre, pace and role. A bare label ("Greek accent") was
-  ignored in all previews; describe it ("strong Greek accent: rolled r's, full open vowels, even syllable-timed
-  rhythm"). Leave out quality words ("high quality", "studio"): they add nothing and dilute the accent.
-- **Guidance (prompt adherence) at 50-60%**, so the accent in the prompt carries more weight (untested value).
-- **Write the preview text in the character's own voice** (a line the narrator would say, with names and words
-  that carry the accent), not a neutral test sentence.
+**How to prompt, limits, prices and licence: `docs/elevenlabs.md`** (sound effects, music with composition plans,
+voice lines on Eleven v4, designing a narrator or character voice). Read it before generating.
 
 ## Motion: Uthana (text-to-motion)
 

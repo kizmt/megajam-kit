@@ -34,7 +34,7 @@ If a note and the engine disagree, the engine wins. In a game session, add an en
 | Make particle effects | [vfx.md](vfx.md) |
 | Make actions feel good: hit-stop, shake, flash, rumble, springs, a juice pass | [game-feel.md](game-feel.md) |
 | Physics props, collision, doors, pick-up, destruction | [physics.md](physics.md) |
-| Sound, music, MetaSounds, HUD and menus (UMG/CommonUI) | [audio-ui.md](audio-ui.md) |
+| Sound, music, MetaSounds, HUD and menus (UMG/CommonUI) | [audio-ui.md](audio-ui.md); generating the audio: [../elevenlabs.md](../elevenlabs.md) |
 | Lay out the level, blockout, splines, water; make a small game feel big | [worldbuilding.md](worldbuilding.md) |
 | Generate walls, arches, stairs, props with Blender Python and import them | [procedural-assets.md](procedural-assets.md) |
 | Scatter content procedurally | [pcg.md](pcg.md) |

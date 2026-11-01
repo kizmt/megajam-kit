@@ -40,6 +40,7 @@ Non-AI tools: Blender (headless, for model clean-up and texture packing), ffmpeg
 | `PIPELINE.md` | How each asset type is produced, with the facts learned while testing the pipeline |
 | `docs/design.md` | Game, level and progression design playbook, with playtesting checks |
 | `docs/submission.md` | The submission: the rules' must-haves, the itch.io page, the devlog, the last-day order |
+| `docs/elevenlabs.md` | Prompting ElevenLabs for sound effects, music and voice; limits, prices and licence |
 | `docs/ue/` | Curated notes on UE 5.8 (C++, gameplay, materials, characters, lighting, performance and more) with links to Epic's docs |
 | `prompts/concept.md` | Jam-start procedure: concepts scored against the judging categories, cut list, schedule with freeze points |
 | `prompts/style-lock.md` | Procedure for agreeing and writing down the game's visual style |
