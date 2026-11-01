@@ -21,9 +21,8 @@ ElevenLabs changes models often: if something here fails, check the linked page 
   (out of credits): tell the director.
 - **No re-download.** ElevenLabs' history can't return SFX or music, so the local file is the only copy of a paid
   generation. `audio.ts` moves an earlier take with the same name to `old\` instead of overwriting it.
-- **Credits:** `audio.ts` prints the remaining credits before a batch when the key may read the subscription
-  (`/v1/user/subscription`). On our key it printed nothing (2026-11-01): the key probably lacks the "User: read"
-  permission; the director can add it in the key's settings.
+- **Credits:** `audio.ts` prints the remaining credits and plan before a batch (`/v1/user/subscription`; *tested*
+  2026-11-01, Creator plan). Quote them when asking the director to approve a batch.
 - **Prices to quote** (check the pricing page before a batch): SFX with a set length 40 credits per second; music about
   $0.15 per minute; a composition plan is free; Voice Design charges only the preview text's characters; Voice
   Changer and Voice Isolator 1,000 credits per minute.
@@ -158,7 +157,8 @@ settings in `DECISIONS.md`. The site's Voice Design page works too; `voices` the
   the performance (timing, whispers, laughs, and the speaker's own accent). 1,000 credits per minute; not scripted.
 - `design` also takes `--loudness` (-1 to 1, default 0.5; 0 is about -24 LUFS) and `--enhance` (ElevenLabs expands a
   short description; off by default, since our descriptions are already detailed). The API's reference-audio input
-  (`eleven_ttv_v3` only) isn't scripted. The design and save calls are untested (2026-11-01).
+  (`eleven_ttv_v3` only) isn't scripted. `design` *tested* 2026-11-01 (3 previews of 23-26 s from a 330-character
+  preview text); `save` untested.
 
 ## Sources (read 2026-11-01)
 
