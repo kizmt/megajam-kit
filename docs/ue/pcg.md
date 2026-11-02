@@ -19,7 +19,7 @@ Other skills: `Skill_InstantLevelOperations` (quick batch placement without a gr
 
 | Plugin | Status in 5.8 | Default | Why we need it |
 |---|---|---|---|
-| `PCG` (Procedural Content Generation Framework) | no beta/experimental flag (production) | **on** | Core framework |
+| `PCG` (Procedural Content Generation Framework) | no beta/experimental flag; "Production Ready" since 5.7 (release notes) | **on** | Core framework |
 | `PCGGeometryScriptInterop` | **Beta** | off | Mesh Sampler (sample points on a static mesh); PCGPrimitives depends on it |
 | `PCGToolset` | **Experimental**, editor-only | off (pulled in by `AllToolsets`) | MCP tools for graphs + the PCG skills |
 | `PCGPrimitives` | **Experimental** | off | Primitive subgraphs + example graphs the skill relies on (pulls in PCGGeometryScriptInterop, PCGBiomeCore, PCGBiomeSample, PCGExternalDataInterop) |
@@ -116,6 +116,10 @@ Other skills: `Skill_InstantLevelOperations` (quick batch placement without a gr
   that cooked builds never regenerate GenerateOnLoad components).
 - Deterministic: same graph + same seeds = same result. Component **Seed** (42) combines with each node's seed;
   change the volume seed to reroll a layout. Moving the volume changes positions-derived results.
+- **Hand fixes that survive regeneration (5.8).** Nodes can be "marked for manual editing or temporarily overridden":
+  select, exclude, modify or restore individual results non-destructively; a Data Overrides window lists them. Use it
+  to delete or nudge the one bad rock without baking the graph. Untested: check overrides survive save, reload and
+  package before relying on them.
 
 ## Performance
 
@@ -126,6 +130,7 @@ Other skills: `Skill_InstantLevelOperations` (quick batch placement without a gr
 - Order: sample -> cheap filters (Density Filter) -> Self Pruning -> spawn. Filter before expensive nodes.
 - Volume Sampler and Mesh Sampler (Poisson) scale badly; keep volumes tight to the play area.
 - GPU path (Beta; GPU spawner Experimental): runtime-only instances, no collision/navigation/HLOD. **Don't use.**
+  5.8 made GPU runtime scatter as fast as landscape GPU grass, but the objection stands; at most pure decoration.
 - Each graph change regenerates in the editor; keep volumes small while iterating.
 
 ## PCG Editor Mode (Experimental, optional)
@@ -136,6 +141,7 @@ Other skills: `Skill_InstantLevelOperations` (quick batch placement without a gr
   `Volume/ScatterTool`, `DrawSplineSurface/AreaTool`). A graph appears in a tool only if its Compatible Tool Tags
   are set. Empty tool list = Editor Preferences > PCG Editor Mode Settings > Reset To Defaults.
 - Useful for the director to hand-paint clutter with our props; the agent doesn't drive it.
+- **Known issue (UE-401568, open at 5.8.4): Paint doesn't update in real time.** Do any other action to refresh.
 
 ## Where Epic's graphs live (on disk; content path in brackets)
 
@@ -243,4 +249,7 @@ for the director to review a batch of generated props side by side.
 - Development guides: https://dev.epicgames.com/documentation/en-us/unreal-engine/pcg-development-guides?application_version=5.8
 - Generation modes: https://dev.epicgames.com/documentation/en-us/unreal-engine/using-pcg-generation-modes-in-unreal-engine?application_version=5.8
 - Node reference: https://dev.epicgames.com/documentation/en-us/unreal-engine/procedural-content-generation-framework-node-reference-in-unreal-engine?application_version=5.8
+- 5.7 release notes (framework Production Ready): https://dev.epicgames.com/documentation/en-us/unreal-engine/unreal-engine-5-7-release-notes?application_version=5.7
+- 5.8 release notes (manual editing, GPU scatter): https://dev.epicgames.com/documentation/en-us/unreal-engine/unreal-engine-5-8-release-notes
+- 5.8.4 hotfix (Paint known issue): https://forums.unrealengine.com/t/5-8-4-hotfix-released/2842775
 - PCG + LLMs via MCP: https://dev.epicgames.com/documentation/en-us/unreal-engine/working-with-pcg-and-llms-using-unreal-mcp-in-unreal-engine?application_version=5.8

@@ -49,6 +49,8 @@ a BT or StateTree, so an agent-authored tree means hand-editing in the editor. P
   - `Dynamic` - full rebuild of dirty tiles at runtime. Needed if level geometry is spawned/moved at runtime
     (runtime PCG, destructible walls). Costs CPU on change; tiles are 10 m, so small changes are cheap.
 - **Nav Modifier Volume** / `UNavModifierComponent`: mark areas (`NavArea_Null` = blocked, custom area = higher cost).
+  5.8 lets a static mesh carry its own nav area (a flag and area class on its NavCollision, e.g. "a couch that AI
+  prefers to walk around"): cheaper than hand-placed volumes on props. Untested, including from Python.
 - **Nav Link Proxy** (`ANavLinkProxy`): jumps/drops between disconnected nav. Simple links just path through; the
   character still has to physically make the jump (launch it yourself on a smart link event).
 - Movable actors that should cut holes: set the component's "Can Ever Affect Navigation" and use Dynamic generation.
@@ -127,10 +129,12 @@ virtual void OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult&
 - **NPC routines (ambient townsfolk, 6-12 NPCs): a plain C++ world subsystem was enough** on the rehearsal: it holds
   spot claims, fans out world events to the NPCs and pairs NPCs up. No Mass, StateTree or Smart Objects plugin.
   StateTree + Smart Objects were not tried, so don't make them the default. Status: StateTree and Smart Objects are
-  not beta and off by default, MassGameplay is Experimental ("Verified against"); MassCrowd, ZoneGraph and UAF
-  Experimental is the rehearsal's research, unverified here.
+  not beta and off by default, MassGameplay is Experimental ("Verified against"), and neither StateTree nor Smart
+  Objects is on Epic's 5.8 Beta or Experimental hub; Mass Avoidance is Experimental on the 5.8 hub. MassCrowd,
+  ZoneGraph and UAF Experimental is the rehearsal's research, unverified here.
 - **Mass**: ECS crowds/traffic; MassGameplay is Experimental. Skip. For 10-30 moving agents use
-  `ADetourCrowdAIController` or CharacterMovement RVO avoidance instead.
+  `ADetourCrowdAIController` or CharacterMovement RVO avoidance instead. (5.8 split out a `MassCore` module and moved
+  Mass Signals into core; nothing changes for us.)
 
 ## Patterns (C++ FSM)
 
@@ -155,12 +159,16 @@ State enum on the controller: `Idle/Patrol, Chase, Attack, Flee, Dead`. Drive it
   Conditions derive `FStateTreeConditionCommonBase::TestCondition`. Read data via `Context.GetInstanceData(*this)`.
 - **Event-driven tasks**: set `bShouldCallTick = false` in the task ctor, return `EStateTreeRunStatus::Running`, and
   finish later from a delegate with `Context.MakeWeakExecutionContext()` -> `WeakContext.FinishTask(
-  EStateTreeFinishTaskType::Succeeded)` (exactly what `CombatStateTreeUtility.cpp` does).
+  EStateTreeFinishTaskType::Succeeded)` (exactly what `CombatStateTreeUtility.cpp` does). Thread safety is yours
+  (5.6 notes): finish only from game-thread delegates (timers, perception, `OnMoveCompleted`).
 - Built-in `Move To` task (`FStateTreeMoveToTask`, GameplayStateTree) and `Run Env Query` exist.
 - Send gameplay events into the tree: `StateTreeAI->SendStateTreeEvent(FGameplayTag, Payload)`.
 - Reference only: read `Variant_Combat/AI` (`CombatEnemy`, `CombatAIController`, `CombatStateTreeUtility`,
   `ST_CombatEnemy`) for the pattern, then write our own classes and tree; the jam forbids lightly modified templates
   (CLAUDE.md). Debug with the StateTree Debugger (see docs).
+- **Editor help, 5.7-5.8.** Copy and paste tasks, conditions and transitions between states and assets; a Rewind
+  Debugger track for StateTree; "Re-Enter State" (off by default); 5.8 adds a definable starting state and flags an
+  out-of-date tree: recompile it before PIE when the flag shows.
 
 ## Recommended setup for a jam enemy
 
@@ -240,4 +248,9 @@ constructor: `GetCharacterMovement()->NavMovementProperties.bUseAccelerationForP
 - AI debugging: https://dev.epicgames.com/documentation/en-us/unreal-engine/ai-debugging-in-unreal-engine?application_version=5.8
 - EQS / Smart Objects / Mass: `environment-query-system-in-unreal-engine`, `smart-objects-in-unreal-engine`,
   `mass-entity-in-unreal-engine` (same URL pattern; not read in detail)
+- Beta / Experimental hubs: https://dev.epicgames.com/documentation/en-us/unreal-engine/beta-features?application_version=5.8 ,
+  https://dev.epicgames.com/documentation/en-us/unreal-engine/experimental-features?application_version=5.8
+- Release notes (StateTree, Mass, nav areas on meshes): 5.6 https://dev.epicgames.com/documentation/en-us/unreal-engine/unreal-engine-5-6-release-notes?application_version=5.6 ,
+  5.7 https://dev.epicgames.com/documentation/en-us/unreal-engine/unreal-engine-5-7-release-notes?application_version=5.7 ,
+  5.8 https://dev.epicgames.com/documentation/en-us/unreal-engine/unreal-engine-5-8-release-notes
 - UEFN Personas (LLM NPCs): https://dev.epicgames.com/documentation/en-us/fortnite/developing-personas-overview-in-unreal-editor-for-fortnite

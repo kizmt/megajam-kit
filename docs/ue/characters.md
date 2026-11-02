@@ -88,6 +88,10 @@ and Tripo's API docs (list at the bottom). Anything not checked is marked (unver
   (`add_default_ops`), **retarget pose**. Tripo rigs are usually **T-pose** (we prompt for T-pose). Manny is **A-pose**, so
   the target needs a retarget pose: `auto_align_all_bones(TARGET)` (ChainToChain) is the scripted fix. Otherwise
   arms clip into the body.
+- **Feet slide or float after retargeting? Try the 5.7-5.8 ops in the RTG UI.** 5.7 added crotch height, floor
+  constraints and a Stretch Limb solver; 5.8 adds a foot plane and toes on the target, a control that stops vertical
+  pelvis motion being damped on shorter characters, and separate Blend to Source, Scale Goals and Offset Goals ops.
+  Scripting them through `IKRetargeterController` is unverified.
 - **Batch retarget (new API in 5.8):** `IKRetargetBatchOperation.run_batch_retarget(IKRetargetBatchOperationInputs)`.
   `duplicate_and_retarget` is deprecated in 5.8. It handles AnimSequences, Montages, Blend Spaces and **Anim
   Blueprints** (duplicates them, sets `TargetSkeleton`, duplicates parent ABPs). With `include_referenced_assets=True` it
@@ -241,7 +245,9 @@ protected:
 Motion Matching (Pose Search databases, Choosers, Pose History) needs a large animation database and an
 interdependent setup, which conflicts with C++ gameplay and a 93-hour budget. Use a plain state machine. Clips cut for
 Motion Matching slide as plain sequences unless you add root lock, distance matching and pose-matched entries: recipe
-in `animation-library.md` "Library clips".
+in `animation-library.md` "Library clips". Reusing pre-5.8 Motion Matching content is worse still: 5.8 changed
+Chooser database defaults (BruteForce) and trajectory defaults, removed the Experimental MotionMatchingInteraction
+node and renamed stats; Motion Matching inside Choosers (5.7) is Experimental.
 
 ## Recommended path for a generated character
 
@@ -368,4 +374,5 @@ cleanly without them); the rest apply to any character.
 - Animation Blueprints / Blend Spaces / Montages / Root motion: https://dev.epicgames.com/documentation/en-us/unreal-engine/animation-blueprints-in-unreal-engine?application_version=5.8 , `blend-spaces-in-unreal-engine`, `animation-montage-in-unreal-engine`, `root-motion-in-unreal-engine` (same URL pattern)
 - Animation optimization: https://dev.epicgames.com/documentation/en-us/unreal-engine/animation-optimization-in-unreal-engine?application_version=5.8
 - Nanite (skeletal section): https://dev.epicgames.com/documentation/en-us/unreal-engine/nanite-virtualized-geometry-in-unreal-engine?application_version=5.8
+- 5.8 release notes (retargeter ops, Motion Matching changes): https://dev.epicgames.com/documentation/en-us/unreal-engine/unreal-engine-5-8-release-notes
 - Tripo: https://developers.tripo3d.com/en/docs/animations-rig.md , `animations-retarget.md`, `animations-rig-check.md`
