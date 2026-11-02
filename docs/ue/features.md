@@ -33,6 +33,8 @@ inside the game are where the risk is.
 | Texture Graph | Experimental | Procedural textures in-engine | untested |
 | PCG Editor Mode | Experimental | Faster PCG authoring | untested |
 | Dynamic Asset Selection (Choosers) | Experimental | Data-driven asset/animation picking | untested |
+| Water plugin | Experimental (`Water.uplugin`) | Sea, rivers, lakes with waves, shoreline and SLW shading for free | **works from Python** (rehearsal): many gotchas, recipe in `worldbuilding.md` "Water"; packaged perf not isolated |
+| Nanite Foliage (shape preservation `VOXELIZE`) | Experimental (Project Settings > Rendering > Nanite Foliage, editor restart) | Thin leaves that survive at distance | untested; the 5.8 doc says most voxel settings "don't actually work as intended yet" (`performance.md` "Geometry") |
 | Mutable (runtime customisation) | Production-ready per Epic; plugin file says Beta. Population add-on discontinued per the wiki: skip | Character/vehicle creators, varied NPCs from shared parts | untested; graph authoring is by hand only: `mutable.md` |
 
 Not for us: virtual production (nDisplay, ICVFX, Switchboard), XR, mobile, Datasmith/USD/ShotGrid, networking (Iris, Mover).
