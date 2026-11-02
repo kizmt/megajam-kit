@@ -24,7 +24,7 @@
 # from Python"); wait a call after loading before running it (foliage bodies arrive late).
 #   node gen\unreal\py.ts gen\unreal\py\traverse_survey.py [--arg route=C:\dev\<Project>\Generated\traverse\route.json]
 #        [--arg only=<line name>] [--arg sample=40] [--arg offsets=0,-120,120]
-# From a rehearsal script that found the invisible walls a director hit on an open route (KIT_NOTES 86).
+# From a rehearsal script that found the invisible walls a director hit on an open route.
 # Tested 2026-11-02 on the rehearsal's level (25,000 samples in ~2 s).
 import collections
 import json

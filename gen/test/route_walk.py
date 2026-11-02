@@ -14,7 +14,7 @@
 # its place, the floor under the pawn and what blocks a capsule sweep ahead).
 #   & C:\dev\megajam-kit\gen\test\game_test.ps1 -Map /Game/Maps/<Level> -Script C:\dev\megajam-kit\gen\test\route_walk.py -Tag ROUTEWALK -TimeoutSec 1500
 # The game window appears: tell the director first. A game that changes the pawn's speed itself (stamina, wear,
-# states) can undo run_speed: the walk re-applies it every tick. From a rehearsal script (KIT_NOTES 86, 97, 101, 147).
+# states) can undo run_speed: the walk re-applies it every tick. From a rehearsal script (its KIT_NOTES findings).
 # Tested 2026-11-02 on the rehearsal's level (3.2 km in ~10 min at dilation 3).
 import json
 import math
@@ -102,7 +102,7 @@ def event(kind, w, pawn, d, extra=None):
 
 
 def put(pawn, cmc, i):
-    """Teleport onto the line. End any fall first, or the landing counts from the old fall's top (KIT_NOTES 147)."""
+    """Teleport onto the line. End any fall first, or the landing counts from the old fall's top."""
     try:
         cmc.set_movement_mode(unreal.MovementMode.MOVE_WALKING)
     except Exception as ex:  # noqa: BLE001 (a pawn without walking mode still gets placed)
@@ -144,7 +144,7 @@ def tick(dt):
         return
     if st["phase"] == "settle":
         # Let the cells around the new spot stream in and the pawn land. The route's own floor must be there, not
-        # only the landscape under it: big Nanite meshes arrive long after a teleport (KIT_NOTES 101).
+        # only the landscape under it: big Nanite meshes arrive long after a teleport.
         if st["t_phase"] is None:
             st["t_phase"] = t
         q = st["P"][st["i"]]

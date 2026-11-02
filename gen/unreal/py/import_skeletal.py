@@ -4,9 +4,10 @@
 #            [--arg materials=1] [--arg skeleton=/Game/.../SKEL_X] [--arg in_place=1]
 # Replaces existing assets of the same name (refuses if something else references them). Prints size (cm) and bone count.
 # in_place=1: imports over the existing mesh instead (no delete, no referencer check), with its own skeleton and the
-# scale / rotation / translation from its asset_import_data (scale and yaw are ignored). Use it to add bones: the
-# object, material slots, physics asset and referencers stay. (Interchange reimport_asset returns None on meshes this
-# script imported: they carry legacy FbxSkeletalMeshImportData.) Untested as a kit option; the method was proven by hand.
+# scale / rotation / translation from its asset_import_data (scale, yaw and skeleton= are ignored). Use it to add
+# bones: the object, material slots, physics asset and referencers stay. (Interchange reimport_asset returns None on
+# meshes this script imported: they carry legacy FbxSkeletalMeshImportData.) Untested as a kit option; the method was
+# proven by hand.
 import unreal
 
 fbx = ARGS["fbx"]
@@ -33,6 +34,10 @@ if in_place:
                            f"({type(old_data).__name__}); it wasn't imported by this script")
 else:
     old = [p for p in (f"{folder}/{name}{s}" for s in ("", "_Skeleton", "_PhysicsAsset")) if _eal.does_asset_exist(p)]
+    # skeleton= naming the skeleton this run deletes would load None below and silently make a new skeleton.
+    if ARGS.get("skeleton", "").split(".")[0] in old:
+        raise RuntimeError(f"skeleton={ARGS['skeleton']} is one of the assets this import replaces; use in_place=1 "
+                           "to keep it, or import under a new name")
     refs = referencers_outside(old)
     if refs:
         raise RuntimeError("refusing to replace " + ", ".join(old) + ": still referenced (remove or repoint these first, "
