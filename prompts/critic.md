@@ -8,7 +8,11 @@ seen the work being built. Give it only what is below; never your own opinion of
 1. Screenshots from the fixed camera set (`art/camera-set.md`), downscaled to ~1600 px.
 2. One of:
    - the matching reference images (`art/reference/`), or
-   - the previous version's screenshots of the same cameras (before/after), or
+   - the previous version's screenshots of the same cameras (before/after), captured **in the same editor session**
+     (exposure shifts between sessions: `docs/ue/debugging.md` F). If the "before" is from an older session,
+     recapture it (roll back, capture, restore) or match its exposure on regions that did not change, and say so in
+     the brief. In the rehearsal an unmatched pair made a critic call the same pebbles "dark charcoal" that it called
+     "pale limestone" once matched, or
    - a rubric of 3-5 criteria when there is no image (e.g. "the exit reads from the start", "one clear landmark per
      room", "fight spaces are readable from the gameplay camera", "no flat, evenly lit walls").
 3. Copies with neutral names (`A_1.jpg`, `B_1.jpg`...) and a random A/B order per camera, recorded in your own notes.

@@ -20,6 +20,7 @@ Facts marked "verified" were checked on the target PC (the kit's test project + 
 | Memory climbing / 8 GB VRAM worry | `stat memory`, `stat rhi` | `memreport -full`, diff two reports |
 | Actor not where expected / no hit | `show collision`, `DrawDebug*` at the trace | Visual Logger to scrub frames |
 | AI/pathing wrong | Gameplay Debugger (`'` key), numpad categories | `show navigation` |
+| New Nanite mesh shows blocky cubes or shards in a capture | Capture again a minute later: Nanite streams coarse pages first (looked exactly like a Voxelize fault) | Shards right after a big scripted spawn that survive a recapture: restart the editor before diagnosing the mesh (seen once, cause unproven) |
 | Packaged build worse than PIE | Packaged smoke test (below) + `-trace` | Grey material = missing usage flag (materials.md) |
 
 ## A. Logs
@@ -250,6 +251,12 @@ Select-String $log -Pattern '\[PROOF\]|Log file closed'   # proof lines + clean 
   (`worldbuilding.md` "Judging water in captures").
 - **Viewport captures use whatever camera the viewport has.** When the director is working in the editor, a capture
   can come from their camera: ask for the viewport first, and use fixed cameras for the camera set.
+- **Capture twice after importing or placing Nanite meshes, and keep the second.** A capture a minute after placing
+  big Nanite trees showed them as stacks of 10-25 cm cubes; the same camera a minute later showed full detail (trees
+  further away needed a third capture). A one-shot capture doesn't wait for Nanite streaming.
+- **Exposure differs between editor sessions.** After an editor relaunch the same cameras came back up to +15 luma on
+  sky and bare ground with no setting changed (suspected: the eye-adaptation state). Within one session two captures
+  matched to 1 level. Before/after pairs for a critic come from one session (`prompts/critic.md`).
 - **Particles in editor captures:** the editor world doesn't tick while the editor is unfocused, so placed Niagara
   systems show nothing. Before each capture, on every `NiagaraActor`'s component: `nc.reinitialize_system();
   nc.advance_simulation_by_time(1.0, 1/60)`. Also wait for any edited system to compile (`editor-scripting.md`).

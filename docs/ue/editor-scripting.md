@@ -36,7 +36,14 @@ Python stub or headers before writing an API call from memory.
   settings). Run `git status Config/` after any scripted asset-editor open and revert what you didn't mean to change.
 - **Opening a World Partition level from a script loads none of its streamed actors**, so the level looks empty and
   scripts miss actors. Load them first: `worldbuilding.md` "World Partition from Python".
-- **Not during PIE.** Asset and level tools act differently while Play-In-Editor runs. Stop PIE first.
+- **Not during PIE.** Asset and level tools act differently while Play-In-Editor runs. Asset creation, duplication
+  and saves fail with only `LogUtils: Error: The Editor is currently in a play mode` in the Output Log (a
+  `duplicate_asset` just returned None). `UnrealEditorSubsystem.get_game_world()` is not None while PIE runs, and
+  `py.ts` warns. The director may be playing: wait or ask, never stop their PIE.
+- **A rebuild chain that re-imports assets a level uses runs every offline step first and the editor steps last,
+  back to back** (import, then landscape, then placement). Between a `replace_existing` re-import and the placement
+  step the level is broken: placed actors keep old transforms with new geometry, or point at deleted meshes. Tell the
+  director before the editor steps start.
 - **Python runs only in the editor** (embedded Python 3.11.8). It is not available in PIE, standalone or packaged
   builds, so gameplay code is C++.
 
@@ -266,6 +273,9 @@ session must follow.
   `FRotator(Pitch, Yaw, Roll)`: `Rotator(-10, yaw, 0)` set the pitch to `yaw` and a test's camera turn did nothing.
   Write `unreal.Rotator(pitch=..., yaw=...)`. `unreal.Color(a, b, c, d)` is (b, g, r, a).
 - **Python odds and ends:**
+  - `get_all_level_actors()` doesn't return actors spawned with `spawn_actor_from_object(..., transient=True)`, so a
+    clean-up by label found none and a re-run doubled every test actor. Find them with
+    `GameplayStatics.get_all_actors_of_class(world, cls)`.
   - `EditorActorSubsystem.get_all_level_actors()` doesn't return WorldSettings: use
     `UnrealEditorSubsystem.get_editor_world().get_world_settings()` (e.g. to set the game mode).
   - Actor labels differ from object names (label "DirectionalLight", name `DirectionalLight_0`; label "SM_SkySphere",
@@ -288,6 +298,9 @@ session must follow.
   `ResampleData()` (the blend space editor calls them when it opens); neither is exposed to Python. Fix: a small C++
   editor helper (Modify, ValidateSampleData, ResampleData, MarkPackageDirty) called before saving. Opening the editor
   also works but writes `Config/DefaultEditor.ini` (see Rules).
+  **A sample moved off the axis grid snaps back** while `snap_to_grid` is on for that axis: `ResampleData` calls
+  `ValidateSampleData`, which snaps samples to the closest grid point, and the helper still returns true. Turn it off
+  first: copy the `blend_parameters` element, set `snap_to_grid` False, write the whole list back.
 - **Anim state machines can't be authored with the Python graph tools.** `BlueprintGraphEditor` creates nodes and links
   pins, but can't add states, transitions or transition rules. A prototype used a small project editor module
   (add_state, add_transition with rule bool / blend time / inertialization / priority, expose_pin, link_pins,
