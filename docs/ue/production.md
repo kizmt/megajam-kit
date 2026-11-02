@@ -14,7 +14,8 @@
 - Use the Asset Manager audit tools to see what's taking disk/memory before cutting content.
 - **`package.ps1` clears the archive folder first** (except `Saved\`): BuildCookRun `-archive` never deletes, and a
   rehearsal zip shipped ~15 MB of DLLs from a plugin turned off since an older package. It prints the ten largest
-  zip entries; read them after every package. `-Config Test|Shipping` tries a smaller build (default Development).
+  zip entries; read them after every package. `-Config Shipping` tries a smaller build (default Development; Test
+  needs a source-built engine: `cpp.md` "Build configurations").
 - **Where the size goes:** `UnrealPak.exe <Paks\<Project>.utoc> -List -csv=<out.csv>` (in
   `Engine\Binaries\Win64`) lists every cooked chunk with Offset, Size (uncompressed) and a Compressed flag; the gap to
   the next Offset is the stored size. Group by folder and asset prefix. Measured on the rehearsal (1,118 MB zip):
@@ -62,15 +63,16 @@
 
 ## Build stamp (game side)
 
-`scripts/package.ps1` writes `<Build>\<Project>\BuildStamp.txt` (`<Build>` as in `debugging.md`) (`<short commit>[+dirty] <time>`). In the game,
-read `FPaths::ProjectDir() / "BuildStamp.txt"` once into a static `FString` (fallback `"editor"` when missing, i.e. PIE),
+`scripts/package.ps1` writes `<Build>\<Project>\BuildStamp.txt` (`<Build>` as defined in `debugging.md`), one line:
+`<short commit>[+dirty] <time>`. In the game, read `FPaths::ProjectDir() / "BuildStamp.txt"` once into a static
+`FString` (fallback `"editor"` when missing, i.e. PIE),
 log it from the game mode's `InitGame`, and draw it small in a HUD corner. When someone reports a bug, the stamp says
 which build they played (a stale unzipped copy fooled a prototype test).
 
 ## Known engine warnings (5.8.4)
 
-- `Character.h:798` raises C4996 (`APawn::GetMovementBase` deprecated) in every `ACharacter` subclass. Engine noise;
-  `scripts/build.ps1` already treats it as not ours.
+- `Character.h:798` C4996 in every `ACharacter` subclass, and the "compiler 14.51 is not a preferred version" note:
+  engine noise, listed separately by `scripts/build.ps1` (`cpp.md` "Live Coding vs full rebuild").
 
 ## Unsigned builds and Windows Smart App Control
 
@@ -101,8 +103,8 @@ folder, never on PIE.
 - **Audio:** nothing clips, music and effects balanced, no sound missing on key actions, volume sensible at launch.
 - **Compliance:** credits list every sourced asset (`SOURCED_ASSETS.md`); no trademarks or real brands; content fits a
   Teen rating; all text in English.
-- **Package:** zip named `TeamName_GameName.zip`, under 1,000,000,000 bytes (`scripts/package.ps1` checks), no `Saved/` inside (`scripts/upload.ps1` checks), build
-  stamp matches the final commit with no `+dirty`.
+- **Package:** zip named `TeamName_GameName.zip`, under 1,000,000,000 bytes (`scripts/package.ps1` checks), no
+  `Saved/` inside (`scripts/upload.ps1` checks), build stamp matches the final commit with no `+dirty`.
 - **Submission:** video passes its checklist (`cinematics-video.md`); page, form and devlog per `docs/submission.md`.
 
 ## Sources (5.8)

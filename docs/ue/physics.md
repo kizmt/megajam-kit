@@ -134,7 +134,8 @@ Mesh->OnComponentHit.AddDynamic(this, &AMyProp::OnHit);   // in BeginPlay (not t
 
 ## Destruction (Chaos, Geometry Collections)
 
-- Workflow: Fracture mode (Shift+6) > select static mesh > Generate **New** (makes a Geometry Collection asset, `GC_`) > Uniform Voronoi (min/max sites) > Fracture. Preview with Explode Amount.
+- Workflow: Fracture mode (Shift+6) > select static mesh > Generate **New** (makes a Geometry Collection asset,
+  `GC_`) > Uniform Voronoi (min/max sites) > Fracture. Preview with Explode Amount.
   Breaks on impact or via strain: Physics Field (`FS_MasterField`) or C++ `ApplyExternalStrain`,
   `ApplyBreakingLinearVelocity`, `CrumbleActiveClusters` on `UGeometryCollectionComponent`. Break callback:
   `SetNotifyBreaks(true)` + `OnChaosBreakEvent`.

@@ -88,7 +88,7 @@ protected:
 - Constructor: set defaults and create components only. No `GetWorld()`, no spawning, no gameplay; use `BeginPlay`.
 - **Anything an actor creates in `BeginPlay` (components, timers), it removes in `EndPlay`.** In a World Partition map
   a cell that streams out calls `EndPlay` (`RemovedFromWorld`) without destroying the actor, and `BeginPlay` runs again
-  when it streams back: a herd that added its meshes in `BeginPlay` ended up with two sets, one frozen.
+  when it streams back: an actor that added its meshes in `BeginPlay` ended up with two sets, one frozen.
 - Tick off by default: `PrimaryActorTick.bCanEverTick = false;` in the constructor (`performance.md`).
 
 ## Modules: Build.cs
@@ -127,7 +127,8 @@ protected:
 - **Development** (Editor and Game): what we use everywhere, including the submitted build
   (`scripts/package.ps1` packages Win64 Development). Keeps logs, `stat` commands and console.
 - **DebugGame**: our code unoptimised, engine optimised. Only for stepping through a nasty bug in a debugger.
-- **Shipping**: strips console, stats and profiling; `check()` compiled out. Not used.
+- **Shipping**: strips console, stats and profiling; `check()` compiled out. Not the default; `package.ps1 -Config
+  Shipping` builds one only to compare size.
 - Command-line editor build (editor closed):
   `"<Engine>\Engine\Build\BatchFiles\Build.bat" <Game>Editor Win64 Development -Project="<path>\<Game>.uproject" -WaitMutex`
 

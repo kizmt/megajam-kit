@@ -44,11 +44,12 @@ if (MusicComp) { MusicComp->bIsUISound = false; MusicComp->FadeIn(1.5f, 1.f); }
 - Key fields: `bSpatialize` ("Enable Spatialization"), `SpatializationAlgorithm`, `StereoSpread` ("3D Stereo Spread":
   distance between L/R when a stereo asset is spatialized), `NonSpatializedRadiusStart/End` (blend to non-spatialized
   when the listener is close: good for big sources like waterfalls), `bEnableOcclusion` (costs line traces; leave off).
-- **`gen/audio.ts` outputs stereo by default.** A spatialized stereo sound is placed as two emitters spread `StereoSpread` apart, and Epic
-  applies a 6 dB cut to spatialized stereo ("Normalize 3D Stereo Sounds"). Result: vaguer position and quieter than
-  expected. Rule: **3D one-shots (impacts, footsteps, enemy barks) should be mono** - generate them with
-  `node gen/audio.ts sfx ... --mono` (also halves memory). Keep stereo for music, UI, 2D stingers and wide ambient beds. (Mono-for-3D is our rule;
-  Epic's attenuation page describes the stereo behaviour but makes no recommendation.)
+- **`gen/audio.ts` outputs stereo by default.** A spatialized stereo sound is placed as two emitters spread
+  `StereoSpread` apart, and Epic applies a 6 dB cut to spatialized stereo ("Normalize 3D Stereo Sounds"). Result:
+  vaguer position and quieter than expected. Rule: **3D one-shots (impacts, footsteps, enemy barks) should be mono** -
+  generate them with `node gen/audio.ts sfx ... --mono` (also halves memory). Keep stereo for music, UI, 2D stingers
+  and wide ambient beds. (Mono-for-3D is our rule; Epic's attenuation page describes the stereo behaviour but makes
+  no recommendation.)
 - **Several ambience beds of one loop don't crossfade: they sum in phase.** Beds that all start at BeginPlay stay
   sample-aligned, so where two are at full gain the same loop plays 6 dB louder (seen in the rehearsal with five
   `AmbientSound` beds of 120 m inner radius; `au.DumpActiveSounds` listed both). A winding route also brings beds that

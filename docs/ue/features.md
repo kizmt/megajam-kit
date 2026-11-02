@@ -6,8 +6,9 @@ Epic's definitions (5.8):
   features may be removed.
 
 We already depend on Experimental and Beta features on purpose: **Unreal MCP, the Toolset Registry/toolsets, PCG via
-MCP** (Experimental) and **Python editor scripting** (Beta: `PythonScriptPlugin.uplugin` has `IsBetaVersion` true). Editor-side tooling that doesn't ship in the game is low risk. Runtime features that ship
-inside the game are where the risk is.
+MCP** (Experimental) and **Python editor scripting** (Beta: `PythonScriptPlugin.uplugin` has `IsBetaVersion` true).
+Editor-side tooling that doesn't ship in the game is low risk. Runtime features that ship inside the game are where
+the risk is.
 
 ## Rules
 

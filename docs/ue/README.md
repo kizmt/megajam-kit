@@ -40,7 +40,7 @@ If a note and the engine disagree, the engine wins. In a game session, add an en
 | Scatter content procedurally | [pcg.md](pcg.md) |
 | Write editor Python, MCP toolsets, in-editor skills | [editor-scripting.md](editor-scripting.md) |
 | Track down a bug, crash, hitch; profile; write a test; scripted captures, key-injection tests, rare crashes | [debugging.md](debugging.md) |
-| Record the submission video or a cinematic (trailer recipes: game audio, MRQ gameplay render, beat-cut edit) | [cinematics-video.md](cinematics-video.md) |
+| Record the submission video or a cinematic (trailer recipes: game audio, offline `-game` frame capture (the default once the game has test hooks), MRQ gameplay render, beat-cut edit) | [cinematics-video.md](cinematics-video.md) |
 | Packaging, build stamp, final-pass checklist, code signing / Smart App Control, DDC/Zen, version control | [production.md](production.md) |
 
 ## Official references (5.8; all verified to resolve to 5.8 pages on 2026-10-24)

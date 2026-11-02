@@ -100,8 +100,8 @@ project (no pre-jam gameplay code in the kit).
 - `AMainPlayerController`: `TArray<TObjectPtr<UInputMappingContext>> DefaultMappingContexts`, added in
   `SetupInputComponent` for local players. `AMainGameMode`: sets `PlayerControllerClass` as a fallback.
 - Thin BPs (editor Python, no graph logic): `BP_<Name>` (mesh, ABP class, mesh Z = -capsule half-height,
-  yaw -90 (= 270) for a +Y-facing mesh, input actions, DA), `BP_MainPlayerController` (IMC_Default + IMC_MouseLook), `BP_MainGameMode`
-  (pawn + controller) → World Settings GameMode Override.
+  yaw -90 (= 270) for a +Y-facing mesh, input actions, DA), `BP_MainPlayerController` (IMC_Default +
+  IMC_MouseLook), `BP_MainGameMode` (pawn + controller) → World Settings GameMode Override.
 - Python facts: the 5.8.4 stub has `InputAction_Factory` and `InputMappingContext_Factory`, so input assets can be
   created directly (duplicating an existing bool action, `IA_Jump` → `IA_Walk`, also works: set `value_type` and
   clear `triggers`); `imc.map_key(action, key)` with `key.set_editor_property("key_name", "LeftShift")`. **`map_key`
@@ -300,8 +300,8 @@ public:
 - **Never let a full-body montage play under locomotion.** Lock movement for the montage's full
   `UAnimSequenceBase::GetPlayLength`, or let input stop it with a blend-out (`Montage_Stop(BlendOut, M)`).
 - **`ACharacter::PlayAnimMontage` returns the unscaled length.** It calls `Montage_Play` with the default
-  `EMontagePlayReturnType::MontageLength`, ignoring both the play rate and `RateScale`. Timers derived from it (stagger, lock) desync from a
-  montage with `RateScale` != 1: call `Montage_Play(M, Rate, EMontagePlayReturnType::Duration)`, or divide by the rate.
+  `EMontagePlayReturnType::MontageLength`, ignoring both the play rate and `RateScale`. Timers derived from it
+  (stagger, lock) desync from a montage with `RateScale` != 1: call `Montage_Play(M, Rate, EMontagePlayReturnType::Duration)`, or divide by the rate.
   Simpler still: retime the clip itself and keep `RateScale` at 1.
 - **Attached props on death:** death clips are made for an empty hand, so a held prop drives through the floor.
   Detach it to physics (simple collision, `PhysicsActor` profile, the hand's velocity) when it nears a traced floor.
