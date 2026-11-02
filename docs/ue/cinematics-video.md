@@ -10,6 +10,7 @@ Queue are extras for an intro/ending or one or two hero shots, never the critica
 | # | Route | Use for | Verdict |
 |---|---|---|---|
 | 1 | **Kit capture scripts**: `gen/test/record_window.ps1` (records one game window, e.g. the packaged build you launched, given its PID and window handle) or `gen/test/autoclip.ps1` (launches a map with `-game` in a 1920x1080 window plus the game's autoplay flag and records it through record_window.ps1) | The gameplay footage | Default. Records only while the game is alive, focused and uncovered (`debugging.md` "Recording the screen safely"). The game takes the foreground: tell the director first. 60 fps by default (`-Fps`); clips are video only, so add the D1 audio (or `anullsrc` silence) before recipes that use `[0:a]` |
+| 1b | **Offline frame capture in `-game`** (D3b): the game runs at a fixed 1/60 s step, a script stages each shot through the game's test hooks and saves every frame | The trailer | The rehearsal's accepted trailer (its live-capture cut was rejected). No plugin. Slow (~2 frames/s; ~2 h of runs for 45 s); needs test hooks in the game; no game audio |
 | 2 | Movie Render Queue/Graph from a Level Sequence | Rendered trailer shots, intro/ending | Renders a Sequence; with an autoplay mode the game plays itself inside the render (D3). Offline, slow, plugin off by default |
 | 3 | Take Recorder -> re-render with MRQ | "Gameplay with nicer cameras" | Too fragile for a jam (see B). Skip |
 | - | NVIDIA App (ShadowPlay), OBS, Windows Game Bar, raw ffmpeg `ddagrab` | - | **Not for agent use: records whatever is on screen** (`debugging.md` "Recording the screen safely"). The director may use them by hand |
@@ -47,7 +48,9 @@ $fp = $ff -replace 'ffmpeg.exe','ffprobe.exe'
 ```
 
 1) **Cut a clip** (re-encode = frame accurate; normalises every clip to 1080p60/yuv420p/48 kHz stereo so they
-concatenate cleanly). `-ss` = start, `-t` = length:
+concatenate cleanly). `-ss` = start, `-t` = length. Keep `-ss` **before** `-i` (input seek): after `-i` the filters
+stay on the source's clock, and a fade placed at the clip's own time silences it (`docs/elevenlabs.md` "Checking and
+matching levels" has the audio-only cut):
 
 ```powershell
 & $ff -ss 00:00:12.5 -i take01.mp4 -t 8 -vf "scale=1920:1080:flags=lanczos,fps=60,format=yuv420p" `
@@ -212,6 +215,14 @@ Screen recorders don't reliably hear the game. Record the master submix in the e
   are not for agent use (`debugging.md` "Recording the screen safely"). **At 4K the capture drops frames on an RTX 4060** (~38-56 fps captured
   while the game ran at 110+): gaps padded with duplicates read as stutter. Capture at 1440p or 1080p, and count frames
   and gaps (`ffprobe -count_frames`) before cutting.
+- **Recording a whole play session** (e.g. the director's run, for footage to cut from): call `record_window.ps1` in
+  segments (300 s each in the rehearsal) and keep each segment's `REC` lines. Line clips up with the game's log by
+  `REC first frame`, not `REC start` (ffmpeg's first frame came 0.25-0.35 s after launch). Check the offset once per
+  segment on an event the log times and the frames show (a camera cut). Exit code 2 means the game had already
+  closed: the session ended, nothing failed.
+- **Pick shots from the game's event log, not by watching.** With one log line per notable event (an ability, a
+  perfect dodge, a set-piece cut), each event maps to a segment and a second: the rehearsal picked 11 shots from
+  13.5 minutes of footage that way.
 - Fixed frame rate for captures of a Development build:
   `-ini:Engine:[/Script/Engine.Engine]:bUseFixedFrameRate=True,[/Script/Engine.Engine]:FixedFrameRate=60`
   (works because Development allows ini overrides from the command line; not Shipping).
@@ -243,6 +254,46 @@ to supply the cameras.
   (66 GB): plan the disk. The MRQ render has no game audio (that needs the deterministic audio mixer): add music
   and SFX in the edit, placing hits from the log's event times. MRQ doesn't render the Canvas HUD: draw titles in
   the edit.
+
+### D3b. Offline frame capture in `-game` (no plugin)
+
+Verified in the rehearsal (5.8.4). A 48 s cut of the director's recorded play was rejected as a trailer (desktop
+capture of the gameplay camera, with its hitches, the HUD, and shots picked from whatever happened). Re-shot this way
+it was accepted: 45 s from six capture runs of 8-34 min each (just under 2 h). Recommended for the trailer when the
+game has test hooks that can stage its moments.
+- **Launch:** `UnrealEditor.exe <uproject> <Map> -game -windowed -ResX=2560 -ResY=1440 -UseFixedTimeStep -FPS=60
+  -nosound -ExecCmds="py <script>"`. `-UseFixedTimeStep` makes every frame exactly 1/60 s of game time however long
+  it takes to draw (`UnrealEngine.cpp`), so slow frames don't show.
+- **Save every frame:** each frame the script runs `shot filename=<dir>/f_<frame, 5 digits> -nosuffix`
+  (`GameViewportClient.cpp`: the viewport at its size, no re-render, so TSR keeps its history). Render settings:
+  `scalability 3`, `r.ScreenPercentage 150`, `r.TSR.History.ScreenPercentage 200`, `r.MotionBlurQuality 0`, and
+  `showhud` to hide the HUD.
+- **Cost:** ~1.9 frames/s at 1440p, limited by the PNG writes (~4.6 MB a frame: plan the disk). Frames outside a
+  shot's kept windows still render but skip the write (4.4 frames/s): a 12 s fight with 5 s kept took 2.8 min. Keep
+  only the seconds the edit needs.
+- **Camera:** Python can't spawn actors in `-game`, so borrow a CameraActor placed in the level (`debugging.md` F) and
+  set its pose every frame from a Slate post-tick. A pose set at tick N draws at N+1: lead a moving target by its
+  velocity / 60.
+- **Action:** a JSON shot list (start pose, the game actions on cue, the camera, the windows to keep) drives the pawn
+  through the game's own test hooks (move input, abilities, the set piece). Log the game's events per frame (action,
+  time dilation, enemy states) so the edit can put sound on them.
+- **What cost re-shoots:**
+  - The game keeps running between shots, so one shot's events spill into the next (enemies following, a respawn's
+    teleport and fade). Clear hostile actors near the pawn for shots that aren't fights, end any fall before moving
+    the pawn (`debugging.md` F), and stage on the route the player actually walks.
+  - Check a staging point's ground against its subject's: a trace down from a point offset from a group found the
+    foot of a cliff, 30 m below the group.
+  - A stateful event replays exactly (fixed step, seeded enemies) only from a fresh start: a second take of a fight
+    later in the same run met enemies already roused, and a second take of a breakable found it broken. Take each
+    stateful shot first in its own run, or give the game a reset hook.
+  - Look at each shot's first frames while the batch is still running: the frames land on disk as they go.
+- **Framing:** aim at the hero, not at the action. A follow camera leaning 45% toward an attacker striking from 3-4 m
+  up lost the hero out of the frame; slow height smoothing (0.06 a frame) lost a rider on a slope; a front camera on a
+  downhill road filmed the hillside. Dark enemies read in silhouette against the sky: a level camera at the hero's
+  height, 4.5 m back, read where a camera 2.3 m up behind the hero gave blobs (blind critic readability 2/5). Stage
+  fights at the hero's height.
+- **Can't do:** the game's audio (`-nosound`; build the mix in the edit from the log's event times, D4) or spawning
+  actors from Python. It films the editor build's `-game`, not the packaged build.
 
 ### D4. The edit
 

@@ -62,6 +62,10 @@ appends `devlog/YYYY-MM-DD.md` (CLAUDE.md "Devlog (Glass Box)"). At content lock
   its concept, a playtest finding and its fix (`prompts/playtest.md`), numbers (rounds, assets generated, credits
   spent, bench results).
 - **Honest about AI:** what the agent did, what the director decided, where AI output needed fixing.
+- **Caption from the frames, not the file names.** Before captioning, open every image and a frame sheet of every
+  clip (first, middle, last frame). A caption says what is on screen, stand-ins included ("the grey test model"). In
+  the rehearsal a helper captioned three animation previews on the grey test model as the game, from their names
+  and the round notes; a frame check caught it before the commit.
 - No keys, no local paths, no personal data in screenshots or logs.
 - Publish it where the jam asks (itch devlog post on the game page, unless the jam page says otherwise) and link it
   in the submission, inside the contest period.
