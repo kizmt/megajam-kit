@@ -12,6 +12,21 @@
   the landscape proxies were re-saved (`worldbuilding.md` "Foliage and landscape grass"). Look at each new system
   once in a packaged build.
 - Use the Asset Manager audit tools to see what's taking disk/memory before cutting content.
+- **`package.ps1` clears the archive folder first** (except `Saved\`): BuildCookRun `-archive` never deletes, and a
+  rehearsal zip shipped ~15 MB of DLLs from a plugin turned off since an older package. It prints the ten largest
+  zip entries; read them after every package. `-Config Test|Shipping` tries a smaller build (default Development).
+- **Where the size goes:** `UnrealPak.exe <Paks\<Project>.utoc> -List -csv=<out.csv>` (in
+  `Engine\Binaries\Win64`) lists every cooked chunk with Offset, Size (uncompressed) and a Compressed flag; the gap to
+  the next Offset is the stored size. Group by folder and asset prefix. Measured on the rehearsal (1,118 MB zip):
+  meshes 575 MB, textures 242 MB, shader code 120 MB, and stored ≈ raw.
+- **Pak compression alone doesn't shrink BC textures or Nanite pages.** Oodle Texture RDO is off by default
+  (`bFinalUsesRDO=false` in BaseEngine.ini `[/Script/Engine.TextureEncodingProjectSettings]`). If the zip is near the
+  limit, turn it on in `DefaultEngine.ini` before the first package (the saving was not measured in the rehearsal).
+  The editor and `-game` also encode at Final speed (`EditorUsesSpeed=FinalIfAvailable`), so the first run after the
+  switch re-encodes every texture it loads (162 "Building texture" lines and hitches in one `-game` test): switch it
+  before a batch of tests, not during one, and open the editor once to fill the DDC.
+- **Scripted asset edits can ship nulls:** a delete-and-reimport clears references to the asset, and the next
+  save-all writes them (`editor-scripting.md` E). List the dirty packages before saving ahead of a package.
 
 ## Derived Data Cache / Zen
 
@@ -86,7 +101,7 @@ folder, never on PIE.
 - **Audio:** nothing clips, music and effects balanced, no sound missing on key actions, volume sensible at launch.
 - **Compliance:** credits list every sourced asset (`SOURCED_ASSETS.md`); no trademarks or real brands; content fits a
   Teen rating; all text in English.
-- **Package:** zip named `TeamName_GameName.zip`, under 1 GB (`scripts/package.ps1` checks), no `Saved/` inside (`scripts/upload.ps1` checks), build
+- **Package:** zip named `TeamName_GameName.zip`, under 1,000,000,000 bytes (`scripts/package.ps1` checks), no `Saved/` inside (`scripts/upload.ps1` checks), build
   stamp matches the final commit with no `+dirty`.
 - **Submission:** video passes its checklist (`cinematics-video.md`); page, form and devlog per `docs/submission.md`.
 

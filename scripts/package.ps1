@@ -1,15 +1,22 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Packages the Unreal project in the parent folder for Win64 (Development) and zips it for the jam submission.
+  Packages the Unreal project in the parent folder for Win64 (Development by default) and zips it for the jam submission.
+.DESCRIPTION
+  BuildCookRun -archive copies the staged build over the archive folder and never deletes, so a file from an older
+  package (a DLL of a plugin since turned off) would ship again. The script first deletes every file in the archive
+  folder except those under a Saved\ folder (bench CSVs, logs: they are never zipped anyway). It prints the ten
+  largest zip entries, so a stale or oversized file shows up.
 .EXAMPLE
   .\scripts\package.ps1 -ZipName MyTeam
+  .\scripts\package.ps1 -ZipName MyTeam -Config Shipping     # try a smaller build (no -seconds, no console)
 #>
 [CmdletBinding()]
 param(
     [string]$EngineRoot = 'C:\Program Files\Epic Games\UE_5.8',
     [string]$BuildRoot  = 'C:\dev\Builds',
-    [string]$ZipName    = ''            # the team name: the jam wants <TeamName>_<GameName>.zip
+    [string]$ZipName    = '',           # the team name: the jam wants <TeamName>_<GameName>.zip
+    [ValidateSet('Development', 'Test', 'Shipping')][string]$Config = 'Development'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -35,13 +42,21 @@ $archiveDir = Join-Path $BuildRoot $projectName
 $zipPath    = Join-Path $BuildRoot "${ZipName}_$projectName.zip"
 $logDir     = Join-Path $projectDir 'Saved\Logs'
 New-Item -ItemType Directory -Force -Path $logDir, $archiveDir | Out-Null
+
+# Clear the last build out of the archive folder (BuildCookRun only adds and overwrites). Saved\ stays.
+$stale = @(Get-ChildItem -Path $archiveDir -Recurse -File -ErrorAction SilentlyContinue |
+    Where-Object { ('\' + $_.FullName.Substring($archiveDir.Length).TrimStart('\')) -notmatch '\\Saved\\' })
+if ($stale.Count -gt 0) {
+    $stale | Remove-Item -Force
+    Write-Host "Removed $($stale.Count) file(s) of the previous build from $archiveDir (Saved\ folders kept)"
+}
 $logPath = Join-Path $logDir ("package-{0:yyyyMMdd-HHmmss}.log" -f (Get-Date))
 
 $uatArgs = @(
     'BuildCookRun',
     "-project=`"$($uproject.FullName)`"",
     '-platform=Win64',
-    '-clientconfig=Development',
+    "-clientconfig=$Config",
     '-build', '-cook', '-stage', '-pak', '-archive',
     "-archivedirectory=`"$BuildRoot\$projectName`"",
     '-utf8output',
@@ -50,7 +65,7 @@ $uatArgs = @(
     '-NoCodeSign'
 )
 
-Write-Host "Packaging $projectName -> $archiveDir"
+Write-Host "Packaging $projectName ($Config) -> $archiveDir"
 Write-Host "Log: $logPath"
 
 # Run UAT with all output going to the log file only.
@@ -115,6 +130,14 @@ if ($ok) {
         if ($skipped -gt 0) { Write-Host "Left $skipped .pdb file(s) out of the zip (kept in $archiveDir)" }
         if ($skippedSaved -gt 0) { Write-Host "Left $skippedSaved file(s) from Saved\ folders out of the zip (local test-run output)" }
         $zipSize = (Get-Item $zipPath).Length
+        # The ten largest entries (stored size): a stale DLL or an unexpected big file shows up here.
+        $zr = [System.IO.Compression.ZipFile]::OpenRead($zipPath)
+        try {
+            Write-Host 'Largest zip entries (MB stored / MB raw):'
+            $zr.Entries | Sort-Object CompressedLength -Descending | Select-Object -First 10 | ForEach-Object {
+                Write-Host ("  {0,8:N1} {1,8:N1}  {2}" -f ($_.CompressedLength / 1MB), ($_.Length / 1MB), $_.FullName)
+            }
+        } finally { $zr.Dispose() }
     } catch {
         Write-Host "Zip failed: $_"
         $ok = $false
@@ -130,8 +153,10 @@ if ($ok) {
     Write-Host "PASS  $projectName packaged in $elapsed"
     if ($exePath) { Write-Host "  Exe: $exePath" }
     Write-Host "  Zip: $zipPath ($mb MB)"
-    if ($zipSize -ge 1GB) { Write-Host '  WARNING: zip is 1 GB or larger; the jam requires under 1 GB.' }
-    else { Write-Host '  Under the jam 1 GB limit: OK' }
+    # The jam's "1 GB" is read as 1,000,000,000 bytes (PowerShell's 1GB is 1,073,741,824: a 1,050 MB zip passed that).
+    $limit = 1000000000
+    if ($zipSize -ge $limit) { Write-Host ("  WARNING: zip is {0:N0} bytes; the jam requires under 1 GB (1,000,000,000 bytes)." -f $zipSize) }
+    else { Write-Host ("  Under the jam 1 GB limit (1,000,000,000 bytes): OK, {0:N0} bytes" -f $zipSize) }
 } else {
     Write-Host "FAIL  $projectName (UAT exit code $exit) after $elapsed"
     Write-Host '  Last errors from log:'
