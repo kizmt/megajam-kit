@@ -56,13 +56,14 @@ Python stub or headers before writing an API call from memory.
   back to back** (import, then landscape, then placement). Between a `replace_existing` re-import and the placement
   step the level is broken: placed actors keep old transforms with new geometry, or point at deleted meshes. Tell the
   director before the editor steps start.
-- **Python runs only in the editor** (embedded Python 3.11.8). It is not available in PIE, standalone or packaged
-  builds, so gameplay code is C++.
+- **Python runs only in the editor binary** (embedded Python 3.11.8): the editor (which can reach the PIE world) and
+  `UnrealEditor.exe -game` (the test harness, `debugging.md` F). Packaged builds have none, so gameplay code is C++.
 
 ## A. Python in the editor
 
 Setup: Python Editor Script Plugin (on in our project). Turn on **Editor Preferences > Plugins > Python > Developer
-Mode** (per user; SETUP step 2) and restart; the editor then writes the stub `<Project>/Intermediate/PythonStub/unreal.py` (~34 MB).
+Mode** (per user; SETUP step 2) and restart; the editor then writes the stub
+`<Project>/Intermediate/PythonStub/unreal.py` (~34 MB).
 **Search it, don't read it.** Every Python call below was checked there.
 
 Ways to run Python:
@@ -114,7 +115,8 @@ the real MIs.
 - **Static meshes with `UCX_` hulls: delete the asset, then import fresh** with a plain automated `AssetImportTask`
   (no `FbxImportUI` options). Meshes with 3 UCX hulls each came in with 0 hulls through `FbxImportUI` options, and
   again through a plain task with `replace_existing` over the existing asset; a fresh import after deleting gave 3.
-  Assert `StaticMeshEditorSubsystem.get_convex_collision_count(mesh) > 0` after the import.
+  Assert `StaticMeshEditorSubsystem.get_convex_collision_count(mesh) > 0` after the import. The delete nulls every
+  reference to the mesh: re-link its users before any save (section E, "A forced delete").
 - **Interchange `reimport_asset` returns None, silently, on kit-imported skeletal meshes.** Meshes imported by
   `import_skeletal.py` (`FbxFactory` + `FbxImportUI`) carry legacy `FbxSkeletalMeshImportData`, which Interchange's
   reimport doesn't take. To add bones in place, run `import_skeletal.py` with `--arg in_place=1`: it imports over the
@@ -312,7 +314,7 @@ session must follow.
   - `EditorActorSubsystem.get_all_level_actors()` doesn't return WorldSettings: use
     `UnrealEditorSubsystem.get_editor_world().get_world_settings()` (e.g. to set the game mode).
   - Actor labels differ from object names (label "DirectionalLight", name `DirectionalLight_0`; label "SM_SkySphere",
-    name `StaticMeshActor_0`). Match on `get_name()` when removing template actors.
+    name `StaticMeshActor_0`). Match template actors on `get_name()` when removing them (dict keys: next bullet).
   - **Key dicts of actors by `get_path_name()` (or keep the object), never `get_name()`.** An actor spawned at runtime
     with an `Owner` goes into the owner's level (`LevelActor.cpp`), so under World Partition two cells can each have
     a `Foo_0`. A test keyed by `get_name()` read a waiting group's state for the fighting one; it passed while only one
@@ -335,9 +337,10 @@ session must follow.
   `ResampleData()` (the blend space editor calls them when it opens); neither is exposed to Python. Fix: a small C++
   editor helper (Modify, ValidateSampleData, ResampleData, MarkPackageDirty) called before saving. Opening the editor
   also works but writes `Config/DefaultEditor.ini` (see Rules).
-  **A sample moved off the axis grid snaps back** while `snap_to_grid` is on for that axis: `ResampleData` calls
-  `ValidateSampleData`, which snaps samples to the closest grid point, and the helper still returns true. Turn it off
-  first: copy the `blend_parameters` element, set `snap_to_grid` False, write the whole list back.
+  **A sample moved off the axis grid snaps back** when **either** axis has `snap_to_grid`: `ResampleData` calls
+  `ValidateSampleData`, which snaps samples to the closest grid point (`UBlendSpace::SnapSamplesToClosestGridPoint`),
+  and the helper still returns true. Turn it off on every axis that has it first: copy each `blend_parameters`
+  element, set `snap_to_grid` False, write the whole list back.
 - **Anim state machines can't be authored with the Python graph tools.** `BlueprintGraphEditor` creates nodes and links
   pins, but can't add states, transitions or transition rules. A prototype used a small project editor module
   (add_state, add_transition with rule bool / blend time / inertialization / priority, expose_pin, link_pins,
@@ -373,9 +376,6 @@ session must follow.
   AnimationBlueprintLibrary after ~20 clips in one run. Save the clip (`save_loaded_asset(seq, False)`) before
   evaluating it again, and batch a few clips (one character) per run. Seen on one rig: a rotation spread over
   spine_01..03 moved the pelvis-to-head line only ~63% of the angle, so a measured correction needed a gain of ~1.6.
-- **Blend space grid snapping:** samples snap to the grid when **either** axis has `snap_to_grid`
-  (`UBlendSpace::SnapSamplesToClosestGridPoint`). A sample placed off the grid is snapped back on rebuild unless
-  snapping is off on every axis that has it.
 - **World Partition's runtime grid isn't reachable from Python:** `WorldPartition.get_editor_property("runtime_hash")`
   fails ("Failed to find property"). Read the loading range in World Settings.
 
