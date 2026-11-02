@@ -100,8 +100,10 @@ generated crates and shelves with a baked timber texture (5 meshes + texture set
 - Wall: one box. Doorway: 3 boxes (jambs + lintel). Stairs: one sloped convex ramp (smoother movement than per-step
   boxes). Arch: two boxes plus a few stepped along the curve.
 - Set names explicitly after creation: Blender's `.001` suffixes break the UCX match.
-- Alternative: no UCX; add simple collision after import (below). Prefer simple collision for player movement; with
-  Nanite, complex collision uses the fallback mesh.
+- Alternative: no UCX; add simple collision after import (below). Long or curved pieces without UCX hulls use
+  complex-as-simple instead of one auto hull (`physics.md`); with Nanite, complex collision uses the fallback mesh.
+- UCX hulls survive only a fresh import: a reimport over the asset keeps its old collision (`editor-scripting.md`
+  "Reimports").
 
 ## 6. Export (verified option names and defaults in 5.2.2)
 

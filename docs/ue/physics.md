@@ -23,7 +23,7 @@ in 5.8. Keep physics props few, simple-collided and asleep when idle. Collision 
 - **Simple** = boxes/spheres/capsules/convex hulls (physics + most traces). **Complex** = the triangle mesh
   (complex traces only).
 - Epic 5.8: "if you are using UseComplexAsSimple you cannot simulate the object." **Never** set
-  "Use Complex Collision As Simple" on anything dynamic (static, low-poly shapes that are passed through are the only exception: see below).
+  "Use Complex Collision As Simple" on anything dynamic. Static world architecture is where it belongs (below).
 - One hull around a concave shape (chair, arch, cup, crate with open top) fills the hollow: things rest on air, and
   an arch's opening blocks (a prototype's characters could only pass around its posts). Fix with convex decomposition
   via MCP:
@@ -31,10 +31,20 @@ in 5.8. Keep physics props few, simple-collided and asleep when idle. Collision 
   max_hull_verts=16, hull_precision=100000)` - replaces existing collision. Use 4-8 hulls for props the player
   interacts with; leave background props at 1 hull. More hulls = more cost per contact.
 - `remove_collisions(mesh)` for pure decoration (grass, small clutter): no collision is the cheapest collision.
-- Shapes passed through or under (arches, gates, tunnels, walk-in hollows): hand-placed boxes beat any decomposition;
-  complex-as-simple is acceptable only for a static, low-poly mesh. Check with a line trace through the opening.
-- Nanite and complex collision: complex (per-poly) collision of a Nanite mesh may come from the fallback mesh rather
-  than full detail (unverified for 5.8). Irrelevant if we stick to simple collision.
+- Shapes passed through or under (arches, gates, tunnels, walk-in hollows): hand-placed boxes beat any decomposition.
+  Check with a line trace through the opening.
+- **Static world architecture uses complex-as-simple collision** (walls, terraces, buildings, ground pieces, any long
+  or curved mesh); convex hulls are for compact props. On a prototype, importers kept single FBX/auto hulls on long
+  and curved world meshes: one hull over a curved wall run filled its inside, roofing the road 4-5 m up and walling its
+  sides. A capsule-sweep survey of a 2.8 km route found 836 invisible blocks and 1,757 low ceilings; with
+  complex-as-simple on built architecture (and the blockers below removed) it found 22 and 13, and a run-speed route
+  walker in `-game` finished with 0 falls. Never on anything that simulates (Epic's rule above).
+- **On a Nanite mesh, complex collision comes from the fallback mesh**, so keep its fallback triangle percent high
+  enough to walk on (`procedural-assets.md` says the same for kit pieces).
+- **No invisible blockers on an open route.** Blockers placed "for safety" behind fence runs, gaps included, were the
+  other half of those invisible walls. Limits come from visible things; check with the traversal survey
+  (`debugging.md` F "Traversal checks").
+- Stairs modelled with complex collision need flat-base floor checks on the character: `gameplay.md` (CMC).
 
 ## Physical materials (`PM_`)
 

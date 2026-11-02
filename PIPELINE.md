@@ -259,7 +259,8 @@ Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls nee
 - `asset.ts` reruns used to stack a new actor each time while the old ones pointed at the deleted mesh; it now
   removes same-label actors first. Editor scripts that run user code: catch `SystemExit` too (`run_python` does).
 - **Imported props get one auto convex hull, which fills openings** (arches, gates, tunnels): an arch walled off a
-  finish line. Use complex-as-simple (low-poly only) or authored boxes for anything passed through, and line-trace it.
+  finish line. Use complex-as-simple on static architecture (`docs/ue/physics.md`) or authored boxes for anything passed
+  through, and line-trace it.
 - **Generated textures drift off the palette** given in the prompt (redder, glossier). Fit the MI's Tint/Saturation/
   RoughnessOffset to the palette instead of re-rolling (`docs/ue/materials.md`). No credits.
 - **Tripo's auto-rig on non-human proportions** (short arms, round body) can put the shoulder joint well above the

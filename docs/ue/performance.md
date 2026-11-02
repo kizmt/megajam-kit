@@ -159,7 +159,8 @@ Facts behind the table:
 - Many copies of one prop (rocks, crates, trees): place as **instances** (instanced static mesh / PCG), not hundreds of
   separate actors.
 - Collision: imported props get one auto **convex hull** (cheap). For openings and walk-in shapes use authored
-  boxes or `asset.ts --hulls N`; complex-as-simple only on a static low-poly mesh (`physics.md`).
+  boxes or `asset.ts --hulls N`. Static world architecture (walls, buildings, long or curved meshes) uses
+  complex-as-simple (`physics.md` "Collision for generated meshes").
 
 ## Materials and shaders
 

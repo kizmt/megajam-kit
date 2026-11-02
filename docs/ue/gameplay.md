@@ -36,6 +36,11 @@ Jam rules forbid shipping a lightly modified template, so take the patterns belo
   - `JumpZVelocity` 500, `AirControl` 0.35, `GravityScale`, `BrakingDecelerationFalling` 1500
   - `RotationRate` (0,500,0), `bOrientRotationToMovement`, `bUseControllerDesiredRotation`
   - `MaxStepHeight`, `SetWalkableFloorAngle()`, `bCanWalkOffLedges`, `MinAnalogWalkSpeed` 20
+- **Modelled stairs with complex collision: set `bUseFlatBaseForFloorChecks = true`** in the character's constructor.
+  On a prototype (32 cm treads, 14 cm risers, bevelled nosings; capsule radius 30, step 45, walkable 44.8°) the
+  step-up was rejected on most climbs: the character perched on the nosing and slid along the riser. A 60° walkable
+  override fixed only some; flat-base floor checks climbed all 5 test stairs with 0 falls (measured in `-game`; the
+  stair check is in `debugging.md` F "Traversal checks").
 - **Third-person rotation setup:** set the Character's `bUseControllerRotationYaw/Pitch/Roll = false` and
   `bOrientRotationToMovement = true`, so the body turns toward movement and the camera orbits freely.
   **First-person:** keep `bUseControllerRotationYaw = true` (the APawn default), so the body turns with the mouse.
