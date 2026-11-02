@@ -12,7 +12,8 @@
 // Output: <Project>/Generated/audio/<Kind>_<Name>.mp3 (+ .json sidecar, + 48 kHz WAV via ffmpeg).
 // --n 3 makes variants (_1, _2, _3); a --name ending in _<digits> keeps it (Step_4). WAVs are imported into the open
 // editor (MegajamTools.import_sound). Each take's peak and mean level are printed; a peak under -20 dBFS warns.
-// ElevenLabs keeps no downloadable history of SFX or music: these files are the only copy.
+// ElevenLabs keeps no downloadable history of SFX or music: these files are the only copy (re-runs move them to old/).
+// Exit codes: 0 at least one take saved, 1 all failed, 2 usage, 3 out of credits (batch stopped part-way).
 
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
@@ -63,12 +64,14 @@ const USAGE = `usage: node gen/audio.ts sfx|music|voice "<prompt or line>" [--na
        --seed N: voice, or music with --plan (the API refuses a seed with a music prompt; SFX has no seed)
        --timestamps: voice only, saves per-character timing in the .json sidecar (subtitles)
        --stability 0.45 / --similarity 0.75: voice only, voice_settings (0-1; lower stability is more varied)
+       --model id, --format mp3_44100_128|opus_*|wav_*|pcm_*, --influence 0.4 (sfx), --out dir, --no-unreal
        node gen/audio.ts plan "<music prompt>" [--seconds S] [--name N]   (free; edit the JSON, then: music --plan <file>)
        node gen/audio.ts voices
        node gen/audio.ts design "<voice description>" --name N [--preview "<100-1000 chars in character>"] [--seed N]
-                        [--guidance 5] [--design-model eleven_ttv_v3|eleven_multilingual_ttv_v2] [--loudness 0.5] [--enhance]
+                        [--guidance 5] [--design-model eleven_ttv_v3|eleven_multilingual_ttv_v2] [--loudness 0.5 (negative: --loudness=-0.5)] [--enhance]
                         (3 previews; bills only the preview text's characters)
-       node gen/audio.ts save <generated_voice_id> --name N   (adds the chosen preview to the account; prints its voice id)`;
+       node gen/audio.ts save <generated_voice_id> --name N [--description "<design prompt>"]
+                        (adds the chosen preview to the account; prints its voice id)`;
 const needsText = kindArg !== 'voices' && !(kindArg === 'music' && o.plan);
 const COMMANDS = ['voices', 'plan', 'design', 'save'];
 if (o.help || (!isKind(kindArg) && !COMMANDS.includes(kindArg ?? '')) || (needsText && !text)) {
@@ -79,6 +82,32 @@ if (o.help || (!isKind(kindArg) && !COMMANDS.includes(kindArg ?? '')) || (needsT
 const key = env('ELEVENLABS_API_KEY') ?? fail(`ELEVENLABS_API_KEY is not set (add it to ${join(KIT, '.env')})`);
 const API = 'https://api.elevenlabs.io';
 const H = { 'xi-api-key': key, 'Content-Type': 'application/json' };
+
+/** A numeric option, or undefined when absent. A typo (`--seconds 2s`) fails instead of silently using the default. */
+function num(flag: string, v: string | undefined): number | undefined {
+  if (v === undefined) return undefined;
+  const n = Number(v);
+  if (v.trim() === '' || !Number.isFinite(n)) fail(`--${flag} must be a number (got "${v}")`);
+  return n;
+}
+/** pascal() drops underscores; keep a trailing variant number (`--name Step_4` -> `Step_4`, not `Step4`). */
+function assetName(s: string): string {
+  const m = /^(.*?)_(\d+)$/.exec(s.trim());
+  return m?.[1] ? `${pascal(m[1], 4)}_${m[2]}` : pascal(s, 4);
+}
+/** Move an earlier file (and its .json sidecar and .wav) to <dir>/old/ with a time stamp instead of overwriting it:
+ *  ElevenLabs can't re-download SFX or music, so the local file is the only copy of a paid generation, and a plan
+ *  JSON may hold the director's edits. */
+function keepOld(dir: string, file: string): void {
+  if (!existsSync(file)) return;
+  const old = join(dir, 'old');
+  mkdirSync(old, { recursive: true });
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const stem = file.replace(/\.[a-z0-9]+$/, '');
+  for (const f of new Set([file, `${stem}.json`, `${stem}.wav`])) {
+    if (existsSync(f)) renameSync(f, join(old, basename(f).replace(/(\.[a-z0-9]+)$/, `_${stamp}$1`)));
+  }
+}
 
 /** Remaining credits, printed before a batch. Silent if the key may not read the subscription. */
 async function printCredits(): Promise<void> {
@@ -105,7 +134,13 @@ if (kindArg === 'voices') {
   process.exit(0);
 }
 
-const secs = o.seconds ? Number(o.seconds) : undefined;
+const secs = num('seconds', o.seconds);
+const seed = num('seed', o.seed);
+const influence = num('influence', o.influence);
+const stability = num('stability', o.stability);
+const similarity = num('similarity', o.similarity);
+const guidance = num('guidance', o.guidance);
+const loudness = num('loudness', o.loudness);
 
 if (kindArg === 'plan') {
   // Composition plan from a prompt: costs no credits (rate limited). Edit chunk durations/styles, then compose with --plan.
@@ -115,9 +150,12 @@ if (kindArg === 'plan') {
   if (!r.ok) fail(`ElevenLabs HTTP ${r.status}: ${(await r.text()).slice(0, 500)}`);
   const dir = o.out ?? generatedDir('audio');
   mkdirSync(dir, { recursive: true });
-  const file = join(dir, `MUS_${pascal(o.name ?? text, 4)}.plan.json`);
+  const planStem = o.name ? assetName(o.name) : pascal(text, 4);
+  const file = join(dir, `MUS_${planStem}.plan.json`);
+  // A re-run must not overwrite a plan the director may have edited: the old one moves to old/.
+  keepOld(dir, file);
   writeFileSync(file, JSON.stringify(await r.json(), null, 2));
-  console.log(`Plan written (no credits used): ${file}\nCompose: node gen/audio.ts music --plan "${file}" --seed 1 --name ${pascal(o.name ?? text, 4)}`);
+  console.log(`Plan written (no credits used): ${file}\nCompose: node gen/audio.ts music --plan "${file}" --seed 1 --name ${planStem}`);
   process.exit(0);
 }
 /** A file path that doesn't overwrite an earlier one (adds a time stamp if the name is taken). */
@@ -135,9 +173,9 @@ if (kindArg === 'design') {
   const body: Record<string, unknown> = { voice_description: text };
   if (o.preview) body['text'] = o.preview; else body['auto_generate_text'] = true;
   if (o['design-model']) body['model_id'] = o['design-model'];
-  if (o.seed !== undefined) body['seed'] = Number(o.seed);
-  if (o.guidance !== undefined) body['guidance_scale'] = Number(o.guidance);
-  if (o.loudness !== undefined) body['loudness'] = Number(o.loudness);
+  if (seed !== undefined) body['seed'] = seed;
+  if (guidance !== undefined) body['guidance_scale'] = guidance;
+  if (loudness !== undefined) body['loudness'] = loudness;
   if (o.enhance) body['should_enhance'] = true;
   await printCredits();
   const r = await fetch(`${API}/v1/text-to-voice/design?output_format=mp3_44100_128`, { method: 'POST', headers: H, body: JSON.stringify(body) });
@@ -145,7 +183,7 @@ if (kindArg === 'design') {
   const j = (await r.json()) as { text?: string; previews?: { audio_base_64: string; generated_voice_id: string; duration_secs?: number }[] };
   const dir = o.out ?? generatedDir('audio');
   mkdirSync(dir, { recursive: true });
-  const stem = `VOICE_${pascal(o.name, 4)}`;
+  const stem = `VOICE_${assetName(o.name)}`;
   const previews = (j.previews ?? []).map((p, i) => {
     const file = freshPath(dir, `${stem}_${i + 1}`, 'mp3');
     writeFileSync(file, Buffer.from(p.audio_base_64, 'base64'));
@@ -154,7 +192,7 @@ if (kindArg === 'design') {
   });
   const sidecar = freshPath(dir, stem, 'design.json');
   writeFileSync(sidecar, JSON.stringify({ name: o.name, request: body, preview_text: j.text, previews, created: new Date().toISOString() }, null, 2));
-  console.log(`${previews.length} preview(s); request saved to ${sidecar}\nKeep one: node gen/audio.ts save <generated_voice_id> --name ${pascal(o.name, 4)}`);
+  console.log(`${previews.length} preview(s); request saved to ${sidecar}\nKeep one: node gen/audio.ts save <generated_voice_id> --name ${assetName(o.name)}`);
   process.exit(previews.length > 0 ? 0 : 1);
 }
 
@@ -165,8 +203,9 @@ if (kindArg === 'save') {
   const dir = o.out ?? generatedDir('audio');
   let description = o.description;
   let others: string[] = [];
-  for (const f of readdirSync(dir).filter((n) => n.endsWith('.design.json'))) {
-    const d = JSON.parse(readFileSync(join(dir, f), 'utf8')) as { request?: { voice_description?: string }; previews?: { generated_voice_id: string }[] };
+  for (const f of existsSync(dir) ? readdirSync(dir).filter((n) => n.endsWith('.design.json')) : []) {
+    let d: { request?: { voice_description?: string }; previews?: { generated_voice_id: string }[] };
+    try { d = JSON.parse(readFileSync(join(dir, f), 'utf8')) as typeof d; } catch { continue; } // a hand-broken sidecar
     if (d.previews?.some((p) => p.generated_voice_id === gid)) {
       description ??= d.request?.voice_description;
       others = d.previews.map((p) => p.generated_voice_id).filter((id) => id !== gid);
@@ -187,13 +226,12 @@ if (!isKind(kindArg)) fail(USAGE); // narrowed above; keeps the type checker hon
 const kind: Kind = kindArg;
 
 const planName = o.plan ? basename(o.plan).replace(/^MUS_/, '').replace(/\.plan\.json$|\.json$/, '') : undefined;
-/** pascal() drops underscores; keep a trailing variant number (`--name Step_4` -> `Step_4`, not `Step4`). */
-function assetName(s: string): string {
-  const m = /^(.*?)_(\d+)$/.exec(s.trim());
-  return m?.[1] ? `${pascal(m[1], 4)}_${m[2]}` : pascal(s, 4);
-}
 const name = o.name ? assetName(o.name) : pascal(planName ?? text, 4);
-const seed = o.seed !== undefined ? Number(o.seed) : undefined;
+// Read the plan once, before any credits are spent: a bad path or broken JSON fails here, not once per take.
+let plan: unknown;
+if (kind === 'music' && o.plan) {
+  try { plan = JSON.parse(readFileSync(o.plan, 'utf8')); } catch (e) { fail(`--plan ${o.plan}: ${errorMessage(e)}`); }
+}
 if (seed !== undefined && (kind === 'sfx' || (kind === 'music' && !o.plan))) {
   console.log(`  note: --seed ignored (${kind === 'sfx' ? 'SFX has no seed' : 'music takes a seed only with --plan'})`);
 }
@@ -202,14 +240,14 @@ interface ApiRequest { url: string; body: Record<string, unknown> }
 
 function request(): ApiRequest {
   if (kind === 'sfx') {
-    const body: Record<string, unknown> = { text, loop: o.loop, prompt_influence: Number(o.influence), model_id: o.model ?? 'eleven_text_to_sound_v3' };
+    const body: Record<string, unknown> = { text, loop: o.loop, prompt_influence: influence, model_id: o.model ?? 'eleven_text_to_sound_v3' };
     if (secs) body['duration_seconds'] = Math.min(30, Math.max(0.5, secs));
     return { url: `${API}/v1/sound-generation?output_format=${o.format}`, body };
   }
   if (kind === 'music') {
     if (o.plan) {
       // A plan replaces the prompt; force_instrumental and music_length_ms only work with a prompt (put "vocals" in negative_styles).
-      const body: Record<string, unknown> = { composition_plan: JSON.parse(readFileSync(o.plan, 'utf8')), model_id: o.model ?? 'music_v2_5' };
+      const body: Record<string, unknown> = { composition_plan: plan, model_id: o.model ?? 'music_v2_5' };
       if (seed !== undefined) body['seed'] = seed;
       return { url: `${API}/v1/music?output_format=${o.format}`, body };
     }
@@ -220,8 +258,8 @@ function request(): ApiRequest {
   const body: Record<string, unknown> = { text, model_id: o.model ?? 'eleven_v4' };
   if (seed !== undefined) body['seed'] = seed;
   const settings: Record<string, number> = {};
-  if (o.stability !== undefined) settings['stability'] = Number(o.stability);
-  if (o.similarity !== undefined) settings['similarity_boost'] = Number(o.similarity);
+  if (stability !== undefined) settings['stability'] = stability;
+  if (similarity !== undefined) settings['similarity_boost'] = similarity;
   if (Object.keys(settings).length) body['voice_settings'] = settings;
   const path = o.timestamps ? `${o.voice}/with-timestamps` : o.voice;
   return { url: `${API}/v1/text-to-speech/${path}?output_format=${o.format}`, body };
@@ -281,8 +319,9 @@ async function runPool(count: number, limit: number): Promise<PromiseSettledResu
 /** ffmpeg converts to 48 kHz 16-bit WAV for Unreal. If PATH predates the winget install, look in winget's package dir. */
 function findFfmpeg(): string | null {
   const candidates = ['ffmpeg'];
-  const pkgs = join(env('LOCALAPPDATA') ?? '', 'Microsoft', 'WinGet', 'Packages');
-  try {
+  const local = env('LOCALAPPDATA');
+  const pkgs = local ? join(local, 'Microsoft', 'WinGet', 'Packages') : '';
+  if (pkgs) try {
     for (const p of readdirSync(pkgs).filter((d) => d.startsWith('Gyan.FFmpeg'))) {
       for (const v of readdirSync(join(pkgs, p))) candidates.push(join(pkgs, p, v, 'bin', 'ffmpeg.exe'));
     }
@@ -294,11 +333,15 @@ const FFMPEG = findFfmpeg();
 function toWav(file: string): string | null {
   if (!FFMPEG) return null;
   const wav = file.replace(/\.[a-z0-9]+$/, '.wav');
+  // A wav_* download is converted too (48 kHz, --mono): ffmpeg can't write over its input, so go through a temp file.
+  const target = wav === file ? file.replace(/\.wav$/, '.tmp.wav') : wav;
   // ElevenLabs pcm_<rate> is headerless 16-bit mono: ffmpeg must be told the input format.
   const pcmRate = /^pcm_(\d+)/.exec(o.format)?.[1];
   const inFmt = pcmRate ? ['-f', 's16le', '-ar', pcmRate, '-ac', '1'] : [];
-  const r = spawnSync(FFMPEG, ['-y', '-loglevel', 'error', ...inFmt, '-i', file, '-ar', '48000', '-sample_fmt', 's16', ...(o.mono ? ['-ac', '1'] : []), wav]);
-  return r.status === 0 ? wav : null;
+  const r = spawnSync(FFMPEG, ['-y', '-loglevel', 'error', ...inFmt, '-i', file, '-ar', '48000', '-sample_fmt', 's16', ...(o.mono ? ['-ac', '1'] : []), target]);
+  if (r.status !== 0) return null;
+  if (target !== wav) renameSync(target, wav);
+  return wav;
 }
 
 /** Peak and mean level in dBFS (ffmpeg volumedetect). Some generations come back near-silent and still succeed. */
@@ -316,17 +359,6 @@ const QUIET_PEAK_DB = -20;
 const outDir = o.out ?? generatedDir('audio');
 mkdirSync(outDir, { recursive: true });
 
-/** A re-run with the same name moves the previous take (audio, sidecar, WAV) to old/ instead of overwriting it:
- *  ElevenLabs can't re-download SFX or music, so the local file is the only copy of a paid generation. */
-function keepOld(file: string): void {
-  if (!existsSync(file)) return;
-  const old = join(outDir, 'old');
-  mkdirSync(old, { recursive: true });
-  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-  for (const f of [file, file.replace(/\.[a-z0-9]+$/, '.json'), file.replace(/\.[a-z0-9]+$/, '.wav')]) {
-    if (existsSync(f)) renameSync(f, join(old, basename(f).replace(/(\.[a-z0-9]+)$/, `_${stamp}$1`)));
-  }
-}
 const count = Math.max(1, Math.min(6, parseInt(o.n, 10) || 1));
 const ext = o.format.startsWith('mp3') ? 'mp3' : o.format.startsWith('opus') ? 'opus' : o.format.startsWith('wav') ? 'wav' : 'pcm';
 await printCredits();
@@ -339,11 +371,11 @@ results.forEach((r, i) => {
   if (r.status === 'rejected') { console.error(`  [${i + 1}] FAILED: ${errorMessage(r.reason)}`); return; }
   const asset = `${PREFIX[kind]}_${name}${count > 1 ? `_${i + 1}` : ''}`;
   const file = join(outDir, `${asset}.${ext}`);
-  keepOld(file);
+  keepOld(outDir, file); // a re-run with the same name moves the previous take to old/
   writeFileSync(file, r.value.buf);
   writeFileSync(file.replace(/\.[a-z0-9]+$/, '.json'), JSON.stringify({ kind, text, request: r.value.body, mono: o.mono, created: new Date().toISOString(), ...(r.value.alignment ? { alignment: r.value.alignment } : {}) }, null, 2));
-  const wav = ext === 'wav' ? file : toWav(file);
-  const note = wav && wav !== file ? `\n      ${wav}` : FFMPEG ? '' : '  (no ffmpeg: WAV not made)';
+  const wav = toWav(file) ?? (ext === 'wav' ? file : null);
+  const note = wav && wav !== file ? `\n      ${wav}` : FFMPEG ? (wav ? '' : '  (ffmpeg failed: WAV not made)') : '  (no ffmpeg: WAV not made)';
   console.log(`  [${i + 1}] ${file} (${(r.value.buf.length / 1024).toFixed(0)} KB)${note}`);
   const lv = levels(wav ?? file);
   if (lv) {
@@ -372,4 +404,7 @@ if (!o['no-unreal'] && toImport.length > 0) {
     console.log('  editor not running: WAVs ready, import later');
   }
 }
-process.exit(ok > 0 ? 0 : 1);
+// Out of credits exits 3 even when some takes were saved: the batch is incomplete and the director must know.
+const outOfCredits = results.some((r) => r.status === 'rejected' && r.reason instanceof StopBatch);
+if (outOfCredits) console.error('STOPPED: out of ElevenLabs credits; the batch is incomplete. Tell the director.');
+process.exit(outOfCredits ? 3 : ok > 0 ? 0 : 1);
