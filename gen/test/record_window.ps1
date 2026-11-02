@@ -25,7 +25,9 @@
 param([Parameter(Mandatory)][int]$GamePid, [Parameter(Mandatory)][long]$Hwnd, [Parameter(Mandatory)][string]$Out,
     [int]$Seconds = 20, [ValidateRange(1, 120)][int]$Fps = 60, [switch]$KeepRaw)
 $ErrorActionPreference = 'Stop'
-$win = [IntPtr]::new($Hwnd)  # [long] parameter: powershell -File passes strings, which don't convert to IntPtr
+# Full path: ffmpeg runs in the process's working directory, which is not PowerShell's current location.
+$Out = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Out)
+$win =[IntPtr]::new($Hwnd)  # [long] parameter: powershell -File passes strings, which don't convert to IntPtr
 if (-not ('KitRecWin' -as [type])) {
     Add-Type @"
 using System;
@@ -135,7 +137,7 @@ while (-not $ffp.HasExited) {
     $why = Get-Blocker
     if ($why) {
         $hit = Get-Date
-        $ffp.StandardInput.Write('q'); $ffp.StandardInput.Flush()
+        try { $ffp.StandardInput.Write('q'); $ffp.StandardInput.Flush() } catch { }  # ffmpeg may have just ended
         break
     }
     $good = $encoded

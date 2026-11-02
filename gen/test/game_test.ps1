@@ -13,7 +13,8 @@
   The game window appears while it runs: tell the director first. The -game process keeps the packages it loaded open:
   don't save those assets in the editor until it ends. The log is Saved\Logs\gametest_<Tag>.log (one per tag); the
   script refuses to start while another -game instance of the project runs, and stops a run whose log fills with
-  Python errors (more than -MaxPyErrors lines) instead of letting it run to the timeout.
+  Python errors (more than -MaxPyErrors lines after the test's first log line: startup noise from other plugins
+  doesn't count) or whose script raises before printing a -Tag line, instead of letting it run to the timeout.
 .EXAMPLE
   & C:\dev\megajam-kit\gen\test\game_test.ps1 -Script C:\dev\MyGame\scripts\test_corridor.py -Tag GAMETEST
 #>
@@ -45,6 +46,14 @@ while (-not $p.WaitForExit(5000)) {
         $start = Select-String -Path $log -Pattern "LogPython: .*($([regex]::Escape($py))|$([regex]::Escape($Tag)))" -ErrorAction SilentlyContinue |
             Select-Object -First 1
         $errs = @()
+        if ($start -and $start.Line -match 'LogPython: Error') {
+            # The script's first line is a traceback (it failed while loading, before printing a -Tag line): it never
+            # registered its tick and will never quit, so don't wait for the timeout.
+            Write-Host "FAIL: the test script raised before printing a '$Tag' line ($log):"
+            Select-String -Path $log -Pattern 'LogPython: Error' | Where-Object { $_.LineNumber -ge $start.LineNumber } |
+                Select-Object -First 12 | ForEach-Object { $_.Line }
+            Stop-Process -Id $p.Id -Force; exit 1
+        }
         if ($start) {
             $errs = @(Select-String -Path $log -Pattern 'LogPython: Error' -ErrorAction SilentlyContinue |
                 Where-Object { $_.LineNumber -gt $start.LineNumber })
