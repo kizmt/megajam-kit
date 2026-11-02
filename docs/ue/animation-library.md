@@ -123,7 +123,8 @@ All allow AI use (checked 2026-10-28). Counts are approximate (heuristic classif
   miss fast arcs at low frame rates.
 - **Cancel window:** a notify state that allows the next input to interrupt (`Montage_Play` / `Montage_JumpToSection`)
   for earlier recovery; short blend-outs.
-- **Soft aim:** the Motion Warping plugin (stable in 5.8): `UMotionWarpingComponent` on the character, a Motion Warping
+- **Soft aim:** the Motion Warping plugin (**Beta** in 5.8.4: `MotionWarping.uplugin` has `IsBetaVersion: true`;
+  `features.md` rules apply): `UMotionWarpingComponent` on the character, a Motion Warping
   notify state in the montage, and `AddOrUpdateWarpTargetFromLocation` toward the nearest target in a front cone when
   the attack starts. Needs root-motion animations. Without root motion, rotate toward the target over the wind-up instead.
 - **States:** dodge/roll (with brief invulnerability), block/parry (timed window), hit reaction (interrupts the attack),

@@ -122,8 +122,12 @@ virtual void OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult&
 - **EQS** (AIModule): asset-based queries "best point to stand / cover / flee". Combat template uses it with C++
   contexts (`EnvQueryContext_Player`, `_Danger`) and StateTree's Run Env Query task. Jam: usually overkill - a few
   `GetRandomReachablePointInRadius` calls plus a distance/line-of-sight check in C++ does the same for one enemy type.
-- **Smart Objects** (plugin, off by default): claimable world slots ("sit here", "use terminal") for ambient NPCs. Skip
-  unless the game is about NPC routines.
+- **Smart Objects** (plugin, off by default): claimable world slots ("sit here", "use terminal") for ambient NPCs.
+- **NPC routines (ambient townsfolk, 6-12 NPCs): a plain C++ world subsystem was enough** on the rehearsal: it holds
+  spot claims, fans out world events to the NPCs and pairs NPCs up. No Mass, StateTree or Smart Objects plugin.
+  StateTree + Smart Objects were not tried, so don't make them the default; re-read the `.uplugin` files for their
+  5.8.4 status before choosing (the rehearsal's research, unverified here: StateTree and Smart Objects Production but
+  off by default; Mass, MassCrowd, ZoneGraph and UAF Experimental).
 - **Mass**: ECS crowds/traffic; MassGameplay is Experimental. Skip. For 10-30 moving agents use
   `ADetourCrowdAIController` or CharacterMovement RVO avoidance instead.
 
