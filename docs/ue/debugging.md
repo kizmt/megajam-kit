@@ -16,7 +16,7 @@ Facts marked "verified" were checked on the target PC (the kit's test project + 
 | `Saved/Crashes` folder appeared but nothing crashed | It's an **ensure** (`<CrashType>Ensure</CrashType>`) | Read `EnsureFailed: Error:` line in the log; fix or note it |
 | Game runs slow all the time | `stat unit` | Biggest of Game/Draw/GPU decides: `stat game` / `stat scenerendering` / `stat gpu` |
 | Game hitches (spikes) | `stat unitgraph`, then `stat hitches` | Unreal Insights capture with the `Loading` preset |
-| Textures blurry | `stat streaming` | Over pool = cut texture res (see performance.md) |
+| Textures blurry | `stat streaming` (Over budget?) | Live A/B `r.Streaming.PoolSize 3000`; if that fixes it, set the pool per quality level or cut texture res (`performance.md` "Textures and memory") |
 | Memory climbing / 8 GB VRAM worry | `stat memory`, `stat rhi` | `memreport -full`, diff two reports |
 | Actor not where expected / no hit | `show collision`, `DrawDebug*` at the trace | Visual Logger to scrub frames |
 | AI/pathing wrong | Gameplay Debugger (`'` key), numpad categories | `show navigation` |
@@ -95,6 +95,11 @@ UE_LOG(LogMyGame, Display, TEXT("Door %s opened by %s"), *GetName(), *GetNameSaf
 - **MCP `ECONNREFUSED`:** check `Get-Process UnrealEditor` and the log's last line (`LogExit: Exiting.` = clean exit,
   not a crash) before diagnosing; then ask the director to reopen the editor. (Live Coding then a map load is a known crash:
   `cpp.md`.)
+- **MCP calls time out while the editor shows "Responding":** a modal dialog is blocking the game thread (seen after
+  `reload_packages` on a dirty asset, and "Overwrite Existing Object"). List the editor's top-level windows
+  (`EnumWindows` on its PID): a window titled "Message" is the dialog. `PrintWindow(hwnd, hdc, 2)` captures it even
+  behind other windows (UI Automation saw no Slate controls). Read it before answering; `PostMessage`
+  WM_KEYDOWN/WM_KEYUP VK_RETURN to that hwnd presses its default button.
 - **Packaged Development PDBs (verified):** BuildCookRun stages them by default ("Copying DebugFiles"):
   `<Build>\<Game>\Binaries\Win64\<Game>.pdb` (test project: 370 MB, bigger than the 337 MB exe).
   Rule: **keep the PDB next to the exe it was built with**; a PDB from another build is useless.
@@ -231,7 +236,48 @@ Select-String $log -Pattern '\[PROOF\]|Log file closed'   # proof lines + clean 
     modifiers, slots, root motion): for the real path play montages on the ABP under
     `GameplayStatics.set_global_time_dilation(w, 0.1)` and take a `HighResShot` every 1/20 s of game time.
   - Frame-stepped `HighResShot`s can't capture other windows; screen capture can (below). Use them for comparisons.
+  - **`HighResShot` captures on the next rendered frame.** Keep the view target (and the time dilation) unchanged for
+    at least one more tick after issuing it: a switch back to an overview in the same tick shot the overview.
+    `shot filename=<abs>.png -nosuffix` captures the presented frame at the window size.
+  - **Python sees only BlueprintVisible properties in `-game`.** `PyGenUtil.cpp` exports `CPF_BlueprintVisible`
+    properties, and `CPF_Edit` ones only when `GIsEditor`, which is false in `UnrealEditor.exe -game`. A plain
+    `UPROPERTY(EditAnywhere)` (also `VisibleAnywhere` components, `EditAnywhere` arrays) throws "Failed to find
+    property" there although the editor reads it. Give what a test reads `BlueprintReadOnly` (header change, full
+    build) or a `BlueprintCallable` getter, or hard-code it with a comment. Without a header change:
+    `get_components_by_class` plus the component name, and actor transforms.
+  - **Check the first ticks of a long run for Python exceptions** before leaving it: a 40-minute run threw on every
+    tick and was wasted. `game_test.ps1` stops a run that floods the log with Python errors.
+  - **`slomo` does nothing** sent through `SystemLibrary.execute_console_command`; use
+    `GameplayStatics.set_global_time_dilation(world, x)`. Anything that sets dilation itself (a slow-motion effect)
+    resets it, so check it each tick.
+  - **World Partition streams around the view target, not the pawn.** A pawn parked away from the test's camera fell
+    out of the unstreamed world (and respawned 8 times). Freeze any pawn the test doesn't use:
+    `set_actor_tick_enabled(False)` and its movement component's tick off. To keep an area loaded, put the view
+    target in its middle (or add a `WorldPartitionStreamingSource` component).
+  - **After a teleport, wait for the ground, not a fixed time.** 15 s after a teleport the landscape was loaded but
+    large Nanite meshes (recently re-imported) were not, so the walker ran on the landscape under the street. Wait
+    until a trace at the target hits the expected surface or named mesh. A step that throws must not skip its wait.
+  - **Bones, sockets and shots need the character on screen.** With `OnlyTickPoseWhenRendered` (characters.md) an
+    off-screen character reports its last rendered pose: a socket read with the view on the wrong place measured a
+    standing pose. Set `ALWAYS_TICK_POSE_AND_REFRESH_BONES` for the test, and fail loudly when the test's camera
+    actor is missing instead of carrying on with the player's view. Take the first shot a few seconds after a camera
+    move: at ~1 fps a shot 1 s after the cut showed a character in a pose it had left.
+  - **Slow starts:** after a Niagara or texture change, a `-game` test can take ~3 min to start (shader and DDC
+    work; give it `-TimeoutSec` to spare), and a clock that runs while meshes compile misses its first samples.
+    Warm the DDC with one run first, or start timing when the test registers.
+  - **Resolution and read-only cvars:** `game_test.ps1 -ResX/-ResY` set the window (a second `-ResX` in `-GameArgs`
+    loses: the first match wins). `r.SetRes 3840x2160w` from the script also works. A ReadOnly cvar can be set on the
+    command line: `-ini:Engine:[/Script/Engine.RendererSettings]:r.Nanite.Foliage=0` worked.
+  - **Runtime A/B without a rebuild:** `PrimitiveComponent.set_evaluate_world_position_offset(False)` toggles WPO per
+    component; `unreal.MaterialLibrary.create_dynamic_material_instance(world, mi)` (not `KismetMaterialLibrary`)
+    gives a runtime MID to scale parameters per variant.
+  - **Traversal checks:** for invisible walls, sweep the pawn's capsule along the route and label each blocking hit
+    visible or invisible by the mesh under it; then a route walker at run speed in `-game` counts falls and stalls.
+    For stairs, run the pawn up with `add_movement_input` and log `current_floor` each tick.
+  - Image work outside the editor: the system Python had PIL but not numpy; Blender's Python had numpy but not PIL.
   - Kit harness: `gen/test/game_test.ps1 -Script <test>.py` launches `-game`, runs the test and prints its result lines.
+    Its log is `Saved\Logs\gametest_<Tag>.log`; it refuses to start while another `-game` instance of the project
+    runs. While a test runs, don't save assets it loaded (`editor-scripting.md` "Rules that bite").
 - **AI in PIE stills: `un_possess()`, not `destroy_actor()`.** Destroying an AIController from Python left the AI
   running (it chased and killed the player between shots). `controller.un_possess()` (not `unpossess`) stops it; check
   the pawn location and the combat log before each shot.
@@ -271,7 +317,9 @@ Select-String $log -Pattern '\[PROOF\]|Log file closed'   # proof lines + clean 
   `-DPCVars`, wait for a known log line, call `SetProcessDPIAware()` first (otherwise a 150%-scaled 4K desktop captures
   as 2560x1440), then grab the screen. Before every grab, check the foreground window belongs to the game **by process
   name**: the root `<Game>.exe` is a launcher that starts `<Game>\Binaries\Win64\<Game>.exe`, so the launcher's PID
-  never owns the window. Abort or retry if another window (tray popup, Explorer) is in front.
+  never owns the window. Abort or retry if another window (tray popup, Explorer) is in front. To capture the game
+  window while others are in front: `PrintWindow` with flag 3 (`PW_RENDERFULLCONTENT`) on the game's window handle,
+  after `SetProcessDPIAware()` (`CopyFromScreen` captured the terminal in front instead).
 - **Key-injection tests** (`gen/test/keytest.ps1`): injected keys go to whatever window has focus, and
   `SetForegroundWindow` from a background script silently fails while the user works in another app. One test typed
   into a chat window. The helper finds the game window by process, brings it forward with `AttachThreadInput`, checks
