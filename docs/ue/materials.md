@@ -238,9 +238,11 @@ in a packaged build = default material.
 - Every new Material / static permutation = shader compiles in editor (grey meshes until done) and more PSOs at runtime.
 - **PSO precaching** is on by default in 5.8: if a component's PSOs aren't ready the engine **skips drawing it**
   (pop-in) rather than hitching (`r.PSOPrecache.ProxyCreationStrategy`, default 1 = delay; the older
-  `r.PSOPrecache.ProxyCreationWhenPSOReady` is deprecated in 5.8). Few masters/permutations = fewer PSOs.
-  Test first-run hitches in the packaged build with `-clearPSODriverCache`; `r.PSOPrecache.Validation=1` logs misses.
-  A loading screen can wait on `FShaderPipelineCache::NumPrecompilesRemaining()`.
+  `r.PSOPrecache.ProxyCreationWhenPSOReady` is deprecated in 5.8). Values (`EPSOPrecacheProxyCreationStrategy`,
+  `PSOPrecacheComponent.h`): 0 `AlwaysCreate` (draw now, may hitch), 1 `DelayUntilPSOPrecached` (pop-in), 2
+  `UseFallbackMaterialUntilPSOPrecached` (default grey material). Epic's 5.8 precaching *page* still documents the
+  old cvar pair: trust the API and the console (`r.PSOPrecache.` then Tab). Few masters/permutations = fewer PSOs.
+  First-launch warm-up screen and the cold-cache test: `production.md` "First launch: PSO warm-up".
 
 ## MCP MaterialTools (what the agent can build)
 
@@ -351,5 +353,6 @@ in a packaged build = default material.
 - Forum (community) Toon MI override: https://forums.unrealengine.com/t/ue-5-8-substrate-toon-profile-override-in-material-instance-fails-to-apply-after-restarting-the-editor/2738757
 - Nanite: https://dev.epicgames.com/documentation/en-us/unreal-engine/nanite-virtualized-geometry-in-unreal-engine?application_version=5.8
 - PSO precaching: https://dev.epicgames.com/documentation/en-us/unreal-engine/pso-precaching-for-unreal-engine?application_version=5.8
+- EPSOPrecacheProxyCreationStrategy (5.8 API): https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Runtime/Engine/EPSOPrecacheProxyCreationStrateg-
 - 5.8 release notes (Substrate Toon = Experimental): https://dev.epicgames.com/documentation/unreal-engine/unreal-engine-5-8-release-notes
 - Naming (PPM_): https://dev.epicgames.com/documentation/en-us/unreal-engine/recommended-asset-naming-conventions-in-unreal-engine-projects?application_version=5.8
