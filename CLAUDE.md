@@ -4,8 +4,8 @@ Pipeline and agent setup for a 93-hour solo Unreal Engine 5.8 jam entry (2026 Ep
 The director owns concept, feel, art direction and sign-off. Claude owns implementation, tooling and verification.
 
 Terms: **the director** is the human who owns the vision and steers (every "ask" rule in this file means ask the
-director). **The target PC** is the machine the game is built and measured on (RTX 4060
-8 GB, i5-14500, 32 GB RAM, 4K monitor).
+director). **The target PC** is the machine the game is built and measured on (RTX 4060 8 GB, i5-14500, 32 GB RAM,
+4K monitor).
 
 ## Where things are
 
@@ -13,12 +13,11 @@ director). **The target PC** is the machine the game is built and measured on (R
   **`C:\dev\megajam-kit`** (added as a working directory in `.claude\settings.local.json`, SETUP step 5).
 - Kit paths in this file (`PIPELINE.md`, `SETUP.md`, `docs/design.md`, `docs/submission.md`, `docs/ue/`,
   `agents/`, `gen/`, `prompts/`) are relative to the kit. `docs/design.md` is the game, level and progression design
-  playbook (with playtesting).
-  Run generators from the kit folder in PowerShell (Git Bash rewrites `/Game/...` arguments; `PIPELINE.md`):
-  `cd C:\dev\megajam-kit; node gen\asset.ts ...`. Their output goes to the
-  project (`<Project>\Generated\`) via `MEGAJAM_PROJECT` in the kit's `.env`. Check it names this project first.
-- Project paths (`scripts/`, `PROGRESS.md`, `DECISIONS.md`, `KIT_NOTES.md`, `SOURCED_ASSETS.md`, `design/`, `art/`, `devlog/`,
-  `Generated/`, `Source/`, `Config/`) are relative to the project.
+  playbook (with playtesting). Run generators from the kit folder in PowerShell (Git Bash rewrites `/Game/...`
+  arguments; `PIPELINE.md`): `cd C:\dev\megajam-kit; node gen\asset.ts ...`. Their output goes to the project
+  (`<Project>\Generated\`) via `MEGAJAM_PROJECT` in the kit's `.env`. Check it names this project first.
+- Project paths (`scripts/`, `PROGRESS.md`, `DECISIONS.md`, `KIT_NOTES.md`, `SOURCED_ASSETS.md`, `design/`, `art/`,
+  `devlog/`, `Generated/`, `Source/`, `Config/`) are relative to the project.
 - **Any command that writes a project file uses an absolute path** (`C:\dev\<Project>\...`, `git -C <Project>`),
   even after a `cd`. The session's working directory is often the kit, permission checks resolve relative paths
   against it, and the deny rule then blocks the whole command. Compute values first, then write them (an
@@ -32,16 +31,18 @@ director). **The target PC** is the machine the game is built and measured on (R
     `-Encoding utf8` adds a BOM that breaks Python ("invalid non-printable character U+FEFF"); and in an in-place
     rewrite (`$t | Set-Content $s`) the permission check reads the piped variable as a relative target path and
     blocks it. Read the file, then Write it. In PowerShell, `.Replace('\', '/')` avoids regex escaping.
-  - Permission check "gave no verdict": retry once, then do read-only prep (grep the stub, write the script) and come back.
+  - Permission check "gave no verdict": retry once, then do read-only prep (grep the stub, write the script) and
+    come back.
   - MCP `ECONNREFUSED`: see `docs/ue/debugging.md` before diagnosing.
   - Start the editor in its own short foreground command (`Start-Process UnrealEditor.exe <uproject>`), then poll for
     it in a separate one. Stopping a background task stops its whole process tree, an editor it started included.
-- At the start of a session: read `PROGRESS.md` and `DECISIONS.md` if they exist, then `C:\dev\megajam-kit\docs\ue\README.md`.
-  Compare the project's `CLAUDE.md` with the kit's (`Get-FileHash` or a diff); if the copy is behind, tell the director.
+- At the start of a session: read `PROGRESS.md` and `DECISIONS.md` if they exist, then
+  `C:\dev\megajam-kit\docs\ue\README.md`. Compare the project's `CLAUDE.md` with the kit's (`Get-FileHash` or a
+  diff); if the copy is behind, tell the director.
 - **The kit is read-only for game sessions.** Read it and run its scripts, but never edit, commit or push
   anything in `C:\dev\megajam-kit` (the project's settings deny edits there). Kit suggestions go in the project's
-  **`KIT_NOTES.md`**: one entry per finding (what happened, which kit file, the suggested change). The director reviews
-  them and decides what goes into the kit. If a kit bug blocks the work, write the note and tell the director.
+  **`KIT_NOTES.md`**: one entry per finding (what happened, which kit file, the suggested change). The director
+  reviews them and decides what goes into the kit. If a kit bug blocks the work, write the note and tell the director.
 
 ## The two rules that matter most
 
@@ -52,33 +53,36 @@ director). **The target PC** is the machine the game is built and measured on (R
    budget").
 2. **Pick the game on evidence, then lock the look, then build.** At jam start, `prompts/concept.md` (concepts
    scored against the judging categories, the cut list, the schedule with freeze points), then
-   `prompts/style-lock.md`. No gameplay work starts until `art/style-lock.md`
-   is approved by the director (see `prompts/style-lock.md`). Every visual change is judged by screenshot
-   against `art/reference/`, never by description.
+   `prompts/style-lock.md`. No gameplay work starts until the director approves `art/style-lock.md`. Every visual
+   change is judged by screenshot against `art/reference/`, never by description.
 
 ## Working model
 
-- **One main session.** A single Opus 5.5 session on high effort leads all design, code and editor
-  work. No predefined agent teams; the one role subagent is the blind critic (`agents/critic.md`, copied into the
-  project by SETUP step 5). Claude may spin up a helper agent on its own judgement (research, docs lookups, work
-  outside the editor such as Blender generation, audio and images), but only the main session calls Unreal MCP (tool calls run one at a time on the game thread anyway).
-  Parallel helpers each own their own output files; no two write the same file.
+- **One main session.** A single Opus 5.5 session on high effort leads all design, code and editor work. No
+  predefined agent teams; the one role subagent is the blind critic (`agents/critic.md`, copied into the project by
+  SETUP step 5). Claude may spin up a helper agent on its own judgement (research, docs lookups, work outside the
+  editor such as Blender generation, audio and images), but only the main session calls Unreal MCP (tool calls run
+  one at a time on the game thread anyway). Parallel helpers each own their own output files; no two write the same
+  file.
 - **Blind critic for visual and level work.** The builder doesn't grade its own look. After a visual or level change,
   give the `critic` subagent the screenshots and the references (or the rubric) with labels hidden, briefed per
-  `prompts/critic.md`; its ranked flaws become the next tasks. The director's calls (`DECISIONS.md`) overrule the critic.
-- **`DECISIONS.md` (in the game project) records the director's explicit calls** ("responsiveness beats foot accuracy",
-  "accept this shot"), one line each with the date. Read it at the start of every round. Never silently undo one;
-  to change one, propose it with evidence and ask. It records what the director decided, not what is forbidden: new ideas
-  are welcome. Start it in the theme window with the concept pick (`prompts/concept.md`); append whenever the director makes a call, grouped by area; strike
-  through superseded calls with a pointer; record "your call" decisions too.
+  `prompts/critic.md`; its ranked flaws become the next tasks. The director's calls (`DECISIONS.md`) overrule the
+  critic.
+- **`DECISIONS.md` (in the game project) records the director's explicit calls** ("responsiveness beats foot
+  accuracy", "accept this shot"), one line each with the date. Read it at the start of every round. Never silently
+  undo one; to change one, propose it with evidence and ask. It records what the director decided, not what is
+  forbidden: new ideas are welcome. Start it in the theme window with the concept pick (`prompts/concept.md`); append
+  whenever the director makes a call, grouped by area; strike through superseded calls with a pointer; record "your
+  call" decisions too.
 - **One flagged improvement per round.** Beyond the plan, each round may add one unrequested improvement that makes
   the game better, labelled as such in the report so the director can keep or drop it.
 - **Repeatable pipeline jobs are plain scripts, not agents**: asset generation, import, package,
   zip and upload live in `gen/` and `scripts/` and are run by the session (see `PIPELINE.md`).
   Deterministic and re-runnable. Run one editor-touching script at a time.
 - **Keep context fresh.** `PROGRESS.md` holds state only: a short status, the open problems (rewritten each round,
-  never appended to), the spend and the verb table (Verification). Round results go to the devlog. When the session
-  gets long or slow, start a new one from CLAUDE.md + PROGRESS.md + DECISIONS.md rather than pushing on.
+  never appended to), the schedule (`prompts/concept.md` step 5), the spend and the verb table (Verification). Round
+  results go to the devlog. When the session gets long or slow, start a new one from CLAUDE.md + PROGRESS.md +
+  DECISIONS.md rather than pushing on.
 - **The director and the session are one team.** The director holds the vision and makes the judgement calls:
   whether it is fun, the concept and story, colour and mood, and what lifts it to a quality product. Bring each such
   call with options, evidence (captures, numbers) and a recommendation. The session can also call on the director
@@ -94,8 +98,8 @@ director). **The target PC** is the machine the game is built and measured on (R
   editor running. Queue anything that needs the director for the wake-up message.
 - **The director can step in at any time.** A steer overrides the plan: finish or roll back the current step, record
   the call in `DECISIONS.md`, re-plan.
-- **Rounds with checkpoints.** Each round: plan (≤5 bullets) → build → capture screenshots/video → report, then start
-  the next round. Keep a round to ~2 hours so each report is a useful checkpoint.
+- **Rounds with checkpoints.** Each round: plan (≤5 bullets) → build → capture screenshots/video → report,
+  then start the next round. Keep a round to ~2 hours so each report is a useful checkpoint.
 - **Round close:** refresh PROGRESS (status, open problems), append the devlog and DECISIONS. If the round added
   content or systems, package and bench, or say why not; put the editor close/reopen this needs in the round plan,
   so the director approves it with the plan instead of in a separate round trip.
@@ -113,8 +117,8 @@ director). **The target PC** is the machine the game is built and measured on (R
 
 - **Paid generations cost real money** (Tripo prop ~45 credits, character ~90, re-texture 20; image, Uthana and
   ElevenLabs calls are billed too; see `PIPELINE.md`). Before a batch, say how many generations and roughly
-  what they cost. The director decides on paid experiments. Read the balance when quoting (`tripo balance --json`):
-  generators don't check it and stop half way.
+  what they cost. The director decides on paid experiments. Read the balance when quoting (`tripo balance --json`).
+  `asset.ts` and `character.ts` refuse a run the Tripo balance can't finish; other paid scripts don't check it.
 - **Never re-roll a paid generation to fix a problem you haven't diagnosed.** Find the cause first (inspect
   the files, check `PIPELINE.md` hard-won facts). Rebuild from downloaded files (`--rig/--pbr/--model`, no
   credits) wherever possible. Concept images that the director approved are not the problem by default.
@@ -137,15 +141,16 @@ director). **The target PC** is the machine the game is built and measured on (R
   (`docs/ue/performance.md`). **Smooth first: no hitches, steady pacing, at or above the game's
   target fps (chosen at the style lock, in `DECISIONS.md`), and a settings menu that scales down for weaker PCs**
   (the bar: `docs/ue/performance.md`). Run `gen/perf/bench.ts --target-fps <target>` per milestone.
-- **Choose the render path (full Lumen, Lumen Lite or no Lumen; internal resolution) with the style lock, not mid-game**: SETUP step 7b
-  and `docs/ue/performance.md` "Render paths". Compare candidates on the same frame at true 1:1, including something
-  moving. Never SMAA/FXAA below 100% screen percentage (lower detail, not crisper).
+- **Choose the render path (full Lumen, Lumen Lite or no Lumen; internal resolution) with the style lock, not
+  mid-game**: SETUP step 7b and `docs/ue/performance.md` "Render paths". Compare candidates on the same frame at
+  true 1:1, including something moving. Never SMAA/FXAA below 100% screen percentage (lower detail, not crisper).
 - C++ must compile with **zero UHT warnings** (UHT treats warnings as errors). `.generated.h` is the last
   include; a delegates-only header needs `UDELEGATE`. See `docs/ue/production.md`.
 - **Name assets per `docs/ue/naming.md`** (Epic prefixes + kit extensions) and keep the folder layout there.
-- **All lights Movable, no light baking** (`docs/ue/worldbuilding.md`); Lumen or not per the render path. PCG work follows Epic's
-  agent workflow there (load the PCG skill first, adapt example graphs, plan before executing).
-- **Beta/Experimental features** follow `docs/ue/features.md`: welcome when they earn their place, never first used on jam day.
+- **All lights Movable, no light baking** (`docs/ue/worldbuilding.md`); Lumen or not per the render path. PCG work
+  follows Epic's agent workflow there (load the PCG skill first, adapt example graphs, plan before executing).
+- **Beta/Experimental features** follow `docs/ue/features.md`: welcome when they earn their place, never first used
+  on jam day.
 - **Follow `docs/ue/performance.md`** (budgets, Nanite, one master material, tick off by default, pooling,
   instancing). Read it before adding content or gameplay systems.
 
@@ -164,8 +169,9 @@ Order of authority (highest first):
      `...\Engine\Plugins\**\Source\`. Grep for the class/function before using it.
    - Python API stub: `<Project>\Intermediate\PythonStub\unreal.py` (generated when Editor Preferences >
      Plugins > Python > Developer Mode is on). Grep it before writing any `unreal.*` Python.
-   - Epic C++ templates for working patterns (character, input, camera): `C:\Program Files\Epic Games\UE_5.8\Templates\TP_ThirdPerson`,
-     `TP_FirstPerson`, `TP_TopDown`, `TP_VehicleAdv`. Reference only: the jam forbids lightly modified templates.
+   - Epic C++ templates for working patterns (character, input, camera):
+     `C:\Program Files\Epic Games\UE_5.8\Templates\TP_ThirdPerson`, `TP_FirstPerson`, `TP_TopDown`, `TP_VehicleAdv`.
+     Reference only: the jam forbids lightly modified templates.
 3. **Epic's agent guidance**
    - In-editor Agent Skills via MCP: `ToolsetRegistry.AgentSkillToolset` > `ListSkills`, then `GetSkills`
      for the relevant one **before** working in that area (materials, Blueprints, outdoor lighting,
@@ -193,11 +199,12 @@ add an entry to the project's `KIT_NOTES.md` in the same round.
 - Never claim something works without a capture or a log line proving it.
 - **Scripted asset edits must reach the disk:** save with `only_if_is_dirty=False` and confirm with `git status` that
   the `.uasset` changed. Unsaved in-memory edits pass PIE checks and then vanish (`docs/ue/editor-scripting.md`).
-- **Test the feel, not the binding**: a player action is done when it reads from the gameplay camera, and the director has
-  played it. Test input with real input, not autoplay hooks. **Ask the director before every key-injection run** and use
-  `gen/test/keytest.ps1` (it aborts if the game loses focus). Details: `docs/ue/gameplay.md`, `docs/ue/debugging.md` F.
-  Keep a verb table in PROGRESS (move, attack, hurt, die, restart, win...; columns: built, autoplay clip, played by
-  the director with real input). A verb isn't done until the director has played it; flag unplayed ones in every review.
+- **Test the feel, not the binding**: a player action is done when it reads from the gameplay camera, and the
+  director has played it. Test input with real input, not autoplay hooks. **Ask the director before every
+  key-injection run** and use `gen/test/keytest.ps1` (it aborts if the game loses focus). Details:
+  `docs/ue/gameplay.md`, `docs/ue/debugging.md` F. Keep a verb table in PROGRESS (move, attack, hurt, die, restart,
+  win...; columns: built, autoplay clip, played by the director with real input). A verb isn't done until the
+  director has played it; flag unplayed ones in every review.
 - **Juice pass:** once a verb works, give it feedback on 3+ channels (visual, audio, camera/time) before calling it
   done (`docs/ue/game-feel.md`). Fun is judged, and it breaks ties.
 - **Performance numbers come from `gen/perf/bench.ts` on a packaged build**, not editor `stat` (a background editor
@@ -221,10 +228,11 @@ add an entry to the project's `KIT_NOTES.md` in the same round.
 ## Jam compliance
 
 - Only this kit, plus unmodified downloaded sourced packs (declared in `SOURCED_ASSETS.md`), predates the jam.
-  Rules 7(h) allow preparing "AI tools, agent configurations, MCP settings, prompt libraries, and scripts"; "all other game content, including gameplay, levels, and art assets" is made during the
-  contest. So the kit holds docs, prompts, agent config and scripts, never runtime game code or game assets to ship.
-  Docs may show short snippets of engine calls, not drop-in components. Game repo, assets, levels and gameplay code
-  are created after 2026-11-12 14:00 JST. Epic may ask for the kit or its version history to verify this.
+  Rule 7(h) allows preparing "AI tools, agent configurations, MCP settings, prompt libraries, and scripts"; "all
+  other game content, including gameplay, levels, and art assets" is made during the contest. So the kit holds docs,
+  prompts, agent config and scripts, never runtime game code or game assets to ship. Docs may show short snippets
+  of engine calls, not drop-in components. Game repo, assets, levels and gameplay code are created after
+  2026-11-12 14:00 JST. Epic may ask for the kit or its version history to verify this.
 - **Contest period** (Official Rules 4): 2026-11-12 00:00 ET to 2026-11-15 20:59 ET = **14:00 JST Nov 12 to
   10:59 JST Nov 16** (93 h). The theme is revealed in Epic's livestream about 10 h before the start (04:00 JST
   Nov 12): plan in words then (`prompts/concept.md`), but no game repo, code, levels or images before the start.
@@ -236,8 +244,8 @@ add an entry to the project's `KIT_NOTES.md` in the same round.
   scripts) goes in the project's `Generated\` folder (`MEGAJAM_PROJECT` in the kit's `.env`), never in the kit.
 - Log every sourced (non-generated, non-original) asset in `SOURCED_ASSETS.md` with its licence.
   Official rules 15(c): sourced assets "will not be reviewed or scored"; content generated with AI tools is not a
-  sourced asset. So hero visuals and audio should be generated or made. Animation libraries (`docs/ue/animation-library.md`)
-  are sourced: download before the jam, retarget onto the game's characters during it.
+  sourced asset. So hero visuals and audio should be generated or made. Animation libraries
+  (`docs/ue/animation-library.md`) are sourced: download them before the jam, retarget them during it.
 - **Only use a sourced asset whose licence allows AI use.** On Fab: the listing's "Allows usage with AI" must be Yes
   (Epic content licence section 17 bars NoAI content as input to generative AI, which includes this agent; the same
   flag is `"isAiForbidden"` at `https://www.fab.com/i/listings/<listing id>`). Check before importing any pack. Fab
@@ -247,8 +255,8 @@ add an entry to the project's `KIT_NOTES.md` in the same round.
   by the director): engine source can be read by the agent, and MetaHuman Creator, Animator and Mesh to MetaHuman
   output can be used with AI tools. NoAI rules for Fab and Epic content (section 17 above) are unchanged.
 - Judging (rules 9): Ambition and Innovation, Use of Theme, Fun Factor, Gameplay, Visuals, Level Design and Game
-  Progression, Audio (up to 5 points each; ties re-scored with Fun Factor doubled; the jam page's definitions are in
-  `docs/design.md`). The amount of AI used doesn't change the score.
+  Progression, Audio (up to 5 points each; ties re-scored with Fun Factor doubled; scoring against the jam page's
+  definitions: `docs/design.md` "Mapping to the judging categories"). The amount of AI used doesn't change the score.
 - The Glass Box devlog must be submitted with the game, during the contest.
 - Content must be Teen-appropriate, contain no third-party IP, and show no trademarks except the
   Unreal Engine logo. All in-game text and audio in English.
@@ -257,4 +265,4 @@ add an entry to the project's `KIT_NOTES.md` in the same round.
 
 - At the end of each round, append to `devlog/YYYY-MM-DD.md`: what was asked, what was built,
   what broke, one or two screenshots, and the prompts that mattered. At content lock it becomes the published
-  devlog (`docs/submission.md` "The devlog").
+  devlog (`docs/submission.md` "The devlog (Glass Box modifier prize)").
