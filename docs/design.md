@@ -38,6 +38,9 @@ space) before the next idea. Uninterrupted difficulty reads as a grind; uninterr
   Show the real key or button. No text walls, no pause-to-read tutorials.
 - **Gate by ability:** the first obstacle can only be passed with the verb just taught, so learning is proven.
 - Controls on the pause screen too, for players who skipped a prompt.
+- **Accessibility and gamepad basics read as polish** for about 3 h: full gamepad play including menus, prompts
+  that follow the last device, subtitles on by default, text size, a colour-blind mode, shake and flash scales,
+  hold or toggle. Checklist with the engine calls: `docs/ue/audio-ui.md` "Accessibility and gamepad checklist".
 
 ## Level design craft
 

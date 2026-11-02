@@ -255,7 +255,34 @@ SetInputMode(Mode); SetShowMouseCursor(true); SetPause(true);
 - **`IA_Pause` needs `bTriggerWhenPaused = true`** (InputAction asset) or it can't unpause. Every path that hides a
   menu must restore GameOnly + hide cursor, or the player is stuck (classic jam bug, test it in the packaged build).
 - Main menu: separate `L_MainMenu` map (or a state of `Main`) with `WBP_MainMenu` + UIOnly + cursor; Play =
-  `UGameplayStatics::OpenLevel`. Add Settings (volume sliders above) and Quit (`UKismetSystemLibrary::QuitGame`).
+  `UGameplayStatics::OpenLevel`. Add Settings ("Settings menu" below) and Quit (`UKismetSystemLibrary::QuitGame`).
+- **In UIOnly, Esc and Start never reach `IA_Pause`** (Slate has the keys). Use GameAndUI (as above), or handle
+  `EKeys::Escape`, `EKeys::Gamepad_Special_Right` and `EKeys::Gamepad_FaceButton_Right` (B = back) in the menu
+  widget's `NativeOnKeyDown`. The UIOnly title screen and sub-menus need this for Back.
+
+### Gamepad menus and device prompts
+
+- **Plain UMG works with a gamepad through Slate focus.** The D-pad and left stick move focus between focusable
+  widgets; the bottom face button clicks the focused button. So **every menu focuses its first button when it
+  opens** (`Mode.SetWidgetToFocus(FirstButton->TakeWidget())`, or `UWidgetBlueprintLibrary::SetInputMode_UIOnlyEx(PC,
+  FirstButton, MouseLockMode, bFlushInput)`) and again when the player switches to the pad: a mouse click on empty
+  space drops focus and leaves the pad dead. After closing a menu, `UWidgetBlueprintLibrary::SetFocusToGameViewport()`.
+- **Show which button has focus.** `UButton`'s style has Normal/Hovered/Pressed/Disabled but no Focused state
+  (unverified in 5.8.4). Override `NativeOnAddedToFocusPath` / `NativeOnRemovedFromFocusPath` on the menu-button
+  widget to show the hovered look. Then set Project Settings > User Interface > Render Focus Rule
+  (`UUserInterfaceSettings::RenderFocusRule`) to Never to hide Slate's dashed focus box.
+- **Track the last device used.** Prompts, cursor and focus all follow it. Default: about 40 lines of our own, an
+  `IInputProcessor` registered with `FSlateApplication::Get().RegisterInputPreProcessor` that sets `bUsingGamepad`
+  from `FKey::IsGamepadKey()` on key down or analog input above ~0.3, clears it on mouse move or a keyboard key, and
+  broadcasts only on change. Alternative: enable CommonUI for its `CommonInput` module only and read
+  `UCommonInputSubsystem::Get(LocalPlayer)->GetCurrentInputType()` / `OnInputMethodChangedNative`; whether it works
+  without `CommonGameViewportClient` is unverified, so test it in PIE before relying on it.
+- **Cursor rules (Windows).** Gameplay: GameOnly, cursor hidden. Menus: cursor shown, hidden while the pad is the last
+  device. Project Settings > Input (`UInputSettings`) has `DefaultViewportMouseCaptureMode`,
+  `DefaultViewportMouseLockMode`, `bCaptureMouseOnLaunch`, and `bShouldFlushPressedKeysOnViewportFocusLost` (stops a
+  key held through alt-tab from sticking). Test alt-tab in play and on the pause menu in the packaged build.
+- **Prompts show the real key** from the active mappings (`gameplay.md` "Enhanced Input", `QueryKeysMappedToAction`):
+  key text for keyboard, a small icon map for the pad, rebuilt when the device changes.
 
 ### HUD and interaction prompt
 
@@ -287,11 +314,68 @@ SetInputMode(Mode); SetShowMouseCursor(true); SetPause(true);
 ### CommonUI and Viewmodel: skip for the jam
 
 - CommonUI (plugin, off by default, not beta) brings activatable widget stacks, input routing and gamepad
-  navigation, but requires `CommonGameViewportClient` and its own widget classes; its **Enhanced Input support is
-  Experimental** ("use caution when shipping"). Worth it only for a gamepad-first, many-layer UI. Plain UMG above is enough.
+  navigation, but requires `CommonGameViewportClient` and its own widget classes; for its **Enhanced Input support**
+  Epic's 5.8 page says "We do not recommend attempting to ship titles with this feature at this time", and our input
+  is Enhanced Input only. Setup is also heavy: a `CommonUIInputData` asset (Click/Back), a
+  `CommonInputBaseControllerData` per device for icons (its Gamepad Name must match the Default Gamepad Name exactly
+  or no icons show), an action data table and style assets, because Common widgets lack UMG's inline styles. Allow
+  half a day or more. Plain UMG with Slate focus ("Gamepad menus and device prompts") is enough for a few menus.
 - UMG Viewmodel (ModelViewViewModel plugin, `IsBetaVersion: true`, off by default): `UMVVMViewModelBase` +
   `UE_MVVM_SET_PROPERTY_VALUE` give change-driven bindings. Nice, but setter functions on our C++ widget already avoid
   per-frame bindings with fewer moving parts.
+
+### Settings menu (`UGameUserSettings`)
+
+- **Calls** (`UGameUserSettings::GetGameUserSettings()`): `SetOverallScalabilityLevel(0-4)` (Low..Cinematic);
+  per-group `SetShadowQuality`, `SetGlobalIlluminationQuality`, `SetReflectionQuality`, ... (0-4);
+  `SetResolutionScaleNormalized` / `GetResolutionScaleInformationEx(Normalized, Value, Min, Max)`;
+  `SetFrameRateLimit` (0 = no limit); `SetVSyncEnabled`; `SetFullscreenMode(EWindowMode::...)`;
+  `SetScreenResolution`; `IsDirty()`; `SetToDefaults()`; `ApplySettings(bool bCheckForCommandLineOverrides)`.
+- **`ApplySettings` already saves** (Epic: it "applies all current user settings and saves them to permanent
+  storage"). Call `ApplySettings(false)` from the menu, so the bench's `-ResX`/`-windowed` command-line overrides
+  aren't written into the player's ini.
+- **The shipped mix reads as "Custom".** We ship mixed groups (`performance.md` "The bar"), so
+  `GetOverallScalabilityLevel()` returns -1. The preset list needs a **Recommended** entry that re-applies the
+  shipped per-group values (not `SetOverallScalabilityLevel(3)`), and shows "Custom" once the player changes a
+  group. Never call `RunHardwareBenchmark` / `ApplyHardwareBenchmarkResults`: they overwrite the benched mix.
+- **Resolution scale can undo the bench's internal resolution** (unverified in 5.8.4). SETUP pins it with
+  `r.ScreenPercentage.Default`; the menu's scale writes `r.ScreenPercentage`, which may override it, so a slider saved
+  at 100% could render native 4K (about 4x the benched pixels). After `ApplySettings`, type `r.ScreenPercentage` in
+  the console to see the value and what set it. Start the slider at the shipped percentage, label it in %, cap it
+  near the benched value.
+- **Window mode and resolution need a confirm.** After `SetFullscreenMode` / `SetScreenResolution`, call
+  `ApplyResolutionSettings(false)`, show a 10 s "Keep these settings?" prompt, then `ConfirmVideoMode()` or
+  `RevertVideoMode()`. In WindowedFullscreen (the default) the resolution list does nothing (`performance.md`):
+  grey it out. Leave HDR out of the menu.
+- **One settings object for everything.** Subclass `UGameUserSettings` (`UCLASS(Config=GameUserSettings)`) and add
+  `UPROPERTY(Config)` fields for the volumes, subtitles, text scale, shake/flash scale and hold/toggle; set Project
+  Settings > Engine > General Settings > Game User Settings Class (ini: `[/Script/Engine.Engine]
+  GameUserSettingsClassName`, unverified in 5.8.4). Options then save to `GameUserSettings.ini` with the video
+  settings and need no `USaveGame`; re-apply the audio and accessibility values in the GameInstance's `Init`.
+
+### Accessibility and gamepad checklist
+
+What a jam game should ship (about 3 h total). Put the options on one Accessibility tab, default them sensibly, save
+them ("Settings menu" above) and name them in the submission text.
+- [ ] **Full gamepad play, menus included:** gamepad mappings in `IMC_Default` (`gameplay.md` "Enhanced Input"),
+  first button focused on every menu, visible focus, Start pauses, B backs out ("Gamepad menus and device prompts").
+- [ ] **Prompts follow the last device used**, with the real key or button.
+- [ ] **Subtitles on by default.** Our own UMG widget: the code that plays a VO line also pushes its `FText` to a
+  bottom-centre text block on a 60-75% opaque dark box, hidden after `USoundBase::GetDuration()`. (The engine's
+  legacy `UGameplayStatics::SetSubtitlesEnabled` only affects engine subtitles; the Beta "Subtitles and Closed
+  Captions" plugin, `USubtitleAssetUserData` on a sound, is worth it only if lines must sync in Sequencer.)
+- [ ] **Text size 100 / 125 / 150%:** multiply in the one px-to-pt font helper ("Layout, fonts, DPI") and re-push
+  text on change. Check 150% at 1080p for overflow.
+- [ ] **Colour-blind mode, one call:** `UWidgetBlueprintLibrary::SetColorVisionDeficiencyType(Type, Severity,
+  bCorrectDeficiency, bShowCorrectionWithDeficiency)` applies to the game window. Dropdown Off / Deuteranope /
+  Protanope / Tritanope with Severity 10 and Correct = true (false only simulates, a QA view; Epic staff on the
+  forum). Don't also set the `r.ColorVisionDeficiency*` cvars (they stack). Never carry meaning by colour alone.
+- [ ] **Screen shake scale (0 / 0.5 / 1) and Reduce flashing:** multiply at the source, the trauma-to-shake scale and
+  the flash alpha in the central feedback code (`game-feel.md`); reduce flashing also caps full-screen flashes at
+  ~3 per second. No global shake multiplier was found in the 5.8 docs.
+- [ ] **Hold or toggle for held verbs** (sprint, aim, crouch): there is no toggle trigger. Bind `Started` and
+  `Completed`; toggle mode flips on `Started` and ignores `Completed`.
+- [ ] **Pause works everywhere** and resumes with focus back on the game (`SetFocusToGameViewport()`).
 
 ### UMG MCP toolset (`UMGToolSet`, Experimental) for building WBPs
 
@@ -354,6 +438,9 @@ Functions (C++ names; the MCP may expose them snake_cased):
   `FQuartzQuantizationBoundary`, `FSubmixEffectDynamicsProcessorSettings` fields, MetaSound node names, audio cvars.
 - Not verified: Windows per-platform MaxChannels; the 5.8.4 defaults of `PanningMethod`, `MaxVolumeThreshold` and
   `VolumeAdjuster`; the Quartz delegate parameter lists; the WASAPI fallback ini key.
+- Not checked against headers (from Epic's 5.8 API pages, 2026-11-02): the `UGameUserSettings` calls,
+  `UWidgetBlueprintLibrary::SetInputMode_UIOnlyEx` / `SetFocusToGameViewport` / `SetColorVisionDeficiencyType`,
+  `UUserInterfaceSettings::RenderFocusRule`, the `UInputSettings` mouse fields, `UCommonInputSubsystem`.
 
 ## Sources (5.8)
 
@@ -385,3 +472,13 @@ Functions (C++ names; the MCP may expose them snake_cased):
 - Game mix loudness (IESD, not Epic): https://www.audiogang.org/wp-content/uploads/2015/04/IESD-Mix-Ref-Levels-v03.02.pdf
 - Common UI: https://dev.epicgames.com/documentation/en-us/unreal-engine/common-ui-plugin-for-advanced-user-interfaces-in-unreal-engine?application_version=5.8
 - CommonUI + Enhanced Input (Experimental): https://dev.epicgames.com/documentation/en-us/unreal-engine/using-commonui-with-enhnaced-input-in-unreal-engine?application_version=5.8
+- Common UI quickstart: https://dev.epicgames.com/documentation/en-us/unreal-engine/common-ui-quickstart-guide-for-unreal-engine?application_version=5.8
+- UCommonInputSubsystem: https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Plugins/CommonInput/UCommonInputSubsystem
+- UGameUserSettings: https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Runtime/Engine/UGameUserSettings
+- UWidgetBlueprintLibrary: https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Runtime/UMG/UWidgetBlueprintLibrary
+- UUserInterfaceSettings: https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Runtime/Engine/UUserInterfaceSettings
+- UInputSettings: https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Runtime/Engine/UInputSettings
+- UGameplayStatics: https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Runtime/Engine/UGameplayStatics
+- Subtitles and Closed Captions plugin: https://dev.epicgames.com/documentation/en-us/unreal-engine/subtitles-and-closed-captions-plugin-in-unreal-engine?application_version=5.8
+- Screen percentage with temporal upscale: https://dev.epicgames.com/documentation/en-us/unreal-engine/screen-percentage-with-temporal-upscale-in-unreal-engine?application_version=5.8
+- Colour-blind correction vs simulation (Epic staff, forum, Jul 2026): https://forums.unrealengine.com/t/colorblind-mode-tritanope-shift-colors-to-red-not-green-and-violet/2743118
