@@ -18,7 +18,7 @@ ElevenLabs changes models often: if something here fails, check the linked page 
   the API refuses them (422 `bad_prompt`, sometimes with a suggested rewrite).
 - **Parallel requests:** music 2 at once on Starter, Creator and Pro; speech and SFX 3 (Starter), 5 (Creator), 10 (Pro).
   `audio.ts` runs at most 2 (music) or 3 (others) at once, retries a 429 with back-off, and stops the batch on 402
-  (out of credits): tell the director.
+  (out of credits; prints STOPPED and exits 3): tell the director.
 - **No re-download.** ElevenLabs' history can't return SFX or music, so the local file is the only copy of a paid
   generation. `audio.ts` moves an earlier take with the same name to `old\` instead of overwriting it.
 - **Credits:** `audio.ts` prints the remaining credits and plan before a batch (`/v1/user/subscription`; *tested*
@@ -28,7 +28,7 @@ ElevenLabs changes models often: if something here fails, check the linked page 
   Changer and Voice Isolator 1,000 credits per minute.
 - **Output format:** the default `mp3_44100_128` is converted to 48 kHz WAV by ffmpeg (hiss-heavy beds: 192 kbps,
   "Checking and matching levels"). WAV and PCM at 44.1 kHz need the Pro plan, MP3 192 kbps needs Creator. On Pro,
-  `--format wav_48000` skips the MP3 step (SFX: non-looping only; untested).
+  `--format wav_48000` skips the lossy MP3 step (ffmpeg still applies `--mono`; SFX: non-looping only; untested).
 
 ## Sound effects (SFX v3)
 

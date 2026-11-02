@@ -282,7 +282,7 @@ Select-String $log -Pattern '\[PROOF\]|Log file closed'   # proof lines + clean 
       40 cm on the line and lines offset to each side, the pawn's floor and capsule with the "Pawn" profile; reports
       holes, lids (standing on something invisible), ledges, steep spots and blockers, and whether each blocker's
       collision is drawn there or invisible. Writes `traverse_survey.json`.
-    - `gen\test\game_test.ps1 -Script C:\dev\megajam-kit\gen\test\route_walk.py -Tag ROUTEWALK` (`-game`): the
+    - `gen\test\game_test.ps1 -Script C:\dev\megajam-kit\gen\test\route_walk.py -Tag ROUTEWALK -TimeoutSec 1500` (`-game`): the
       pawn runs each line at run speed and logs stalls, stuck spots, falls and pushes off the line, with what blocks
       ahead. Writes `route_walk.json`.
     Run both after any change to collision, walls, props or terrain along the route, and before a playtest. For

@@ -289,7 +289,7 @@ async function one(): Promise<Clip> {
     if (res.status === 429 && attempt < 4) { await sleep(2000 * 2 ** (attempt - 1)); continue; }
     // SFX v3 and Eleven v4 are in limited access in some regions: an account without them gets "Unknown model".
     const hint = /unknown model/i.test(detail)
-      ? ' (model not available to this account: retry with --model eleven_text_to_sound_v2 for sfx or --model eleven_multilingual_v2 for voice)'
+      ? ' (model not available to this account: retry with --model eleven_text_to_sound_v2 for sfx (retired 2027-02-01) or --model eleven_multilingual_v2 for voice)'
       : /bad_prompt|bad_composition_plan/i.test(detail)
         ? ' (refused prompt: no artist, song or label names; the response may include a suggested rewrite)'
         : '';

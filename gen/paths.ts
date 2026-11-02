@@ -3,7 +3,7 @@
 // Set MEGAJAM_PROJECT=C:\dev\<ProjectName> in the kit's .env (or the environment, which wins: loadEnvFile
 // doesn't override a variable that is already set). Scripts refuse to run
 // without it rather than writing into the kit. --out on any script still overrides.
-import { existsSync, readdirSync, realpathSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -26,6 +26,21 @@ export function pascal(s: string, maxWords = Infinity): string {
 /** Message of anything thrown (catch variables are `unknown`). */
 export function errorMessage(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
+}
+
+/**
+ * A JSON command-line argument, or `@file.json` to read it from a file. Windows PowerShell 5.1 strips the double
+ * quotes from arguments it passes to node ('{"a":1}' arrives as {a:1}), so prefer a file there.
+ */
+export function jsonArg<T>(arg: string): T {
+  const text = arg.startsWith('@') ? readFileSync(arg.slice(1), 'utf8') : arg;
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    fail(arg.startsWith('@') ? `${arg.slice(1)} is not valid JSON`
+      : `not valid JSON: ${arg.slice(0, 80)} (Windows PowerShell 5.1 strips the quotes from JSON arguments: ` +
+        'write the JSON to a file and pass @<file>)');
+  }
 }
 
 export function env(name: string): string | undefined {

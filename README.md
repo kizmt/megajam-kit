@@ -29,7 +29,7 @@ gameplay code, levels or game assets.
 | Sound effects, music, voice | ElevenLabs (`eleven_text_to_sound_v3`, `music_v2_5`, `eleven_v4`) | `gen/audio.ts` |
 | Text-to-motion animation | Uthana (`text-to-motion-3.0`) | manual for now (see `PIPELINE.md`) |
 
-Non-AI tools: Blender (headless, for model clean-up and texture packing), ffmpeg (audio conversion), Node 24
+Non-AI tools: Blender (headless, for model clean-up and texture packing), ffmpeg (audio conversion, capture and video editing), Node 24
 (the kit's TypeScript runs directly), Git + Git LFS.
 
 ## What's in the kit

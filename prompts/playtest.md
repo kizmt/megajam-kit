@@ -7,8 +7,8 @@ history. Its findings become tuning and layout tasks; the director's calls (`DEC
 ## What the main session prepares
 
 - **Contact sheets** of the run's clip: 1 frame every 5 s with the time printed on each frame, 6x5 tiles per sheet
-  (a 10-minute run = 4 sheets). Recipes: `docs/ue/cinematics-video.md` "ffmpeg recipes" and `docs/ue/debugging.md`
-  "F. Capture and test patterns" (the contact sheets bullet).
+  (a 10-minute run = 4 sheets): `fps=1/5,scale=400:-2,drawtext=fontfile=<ttf>:text='%{pts\:hms}':...,tile=6x5`
+  (`docs/ue/debugging.md` F, the contact sheets bullet; `drawtext` needs `fontfile=`).
 - **Event log** lines from the run (`docs/design.md` "Instrument the game"), each with its time since the run
   started, plus the **offset** between the log's run start and the clip's first frame (from the run-start line
   logged when recording began), so frame times and log times line up.

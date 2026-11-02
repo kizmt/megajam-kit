@@ -41,7 +41,7 @@ in 5.8. Keep physics props few, simple-collided and asleep when idle. Collision 
   complex-as-simple on built architecture (and the blockers below removed) it found 22 and 13, and a run-speed route
   walker in `-game` finished with 0 falls. Never on anything that simulates (Epic's rule above).
 - **On a Nanite mesh, complex collision comes from the fallback mesh**, so keep its fallback triangle percent high
-  enough to walk on (`procedural-assets.md` says the same for kit pieces).
+  enough to walk on.
 - **No invisible blockers on an open route.** Blockers placed "for safety" behind fence runs, gaps included, were the
   other half of those invisible walls. Limits come from visible things; check with the traversal survey
   (`debugging.md` F "Traversal checks").

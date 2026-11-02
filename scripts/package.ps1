@@ -18,7 +18,7 @@ param(
     [string]$EngineRoot = 'C:\Program Files\Epic Games\UE_5.8',
     [string]$BuildRoot  = 'C:\dev\Builds',
     [string]$ZipName    = '',           # the team name: the jam wants <TeamName>_<GameName>.zip
-    [ValidateSet('Development', 'Test', 'Shipping')][string]$Config = 'Development'
+    [ValidateSet('Development', 'Shipping')][string]$Config = 'Development'
 )
 
 $ErrorActionPreference = 'Stop'

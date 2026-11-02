@@ -194,8 +194,9 @@ add an entry to the project's `KIT_NOTES.md` in the same round.
 
 - After any visual or level change: capture screenshots from the fixed camera set in
   `art/camera-set.md` and compare against `art/reference/`. Report differences honestly.
-- After gameplay changes: run PIE, capture a short clip or screenshot sequence, check the Output
-  Log for errors and warnings.
+- After gameplay changes: run it (PIE for a look; `-game` via `gen/test/game_test.ps1` for any motion or timing
+  number, since PIE in a background editor runs at 3-8 fps), capture a clip with the kit scripts, and check the
+  Output Log for errors and warnings.
 - Never claim something works without a capture or a log line proving it.
 - **Scripted asset edits must reach the disk:** save with `only_if_is_dirty=False` and confirm with `git status` that
   the `.uasset` changed. Unsaved in-memory edits pass PIE checks and then vanish (`docs/ue/editor-scripting.md`).

@@ -232,7 +232,7 @@ needs dynamic bounce light but full Lumen doesn't fit the target fps (softer GI,
 
 **Full Lumen path (looks that need bounce light)**
 - Keep the template's Lumen GI and reflections. `Config/DefaultGameUserSettings.ini`: `[ScalabilityGroups]` with
-  `sg.GlobalIlluminationQuality=2`, `sg.ReflectionQuality=2`, `sg.ShadowQuality=2` (High: ~+20 fps vs Epic).
+  `sg.GlobalIlluminationQuality=2`, `sg.ReflectionQuality=2`, `sg.ShadowQuality=2` (High: ~+22 fps vs Epic).
 - With a physically bright sun (~100,000 lux) add `r.EyeAdaptation.CachedLightingPreExposure=8` under
   `[/Script/Engine.RendererSettings]`, or Lumen's cached lighting clips (black shadows, on-screen "clipped" warning).
 - Cap traced reflections in the post-process volume (`LumenMaxRoughnessToTraceReflections` 0.25): ~1 ms saved on

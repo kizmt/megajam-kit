@@ -14,7 +14,7 @@
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { env, errorMessage, isMain } from '../paths.ts';
+import { env, errorMessage, isMain, jsonArg } from '../paths.ts';
 
 // ---------- verified Unreal value shapes ----------
 
@@ -167,10 +167,10 @@ if (isMain(import.meta.url)) {
     if (cmd === 'toolsets') console.log(await listToolsets());
     else if (cmd === 'describe' && a) console.log(await describeToolset(a));
     else if (cmd === 'call' && a && b) {
-      const out = await mcpCall(a, b, c ? (JSON.parse(c) as ToolArgs) : {});
+      const out = await mcpCall(a, b, c ? jsonArg<ToolArgs>(c) : {});
       console.log(typeof out === 'string' ? out : JSON.stringify(out, null, 2));
     } else {
-      console.log('usage: mcp.ts toolsets | describe <toolset> | call <toolset> <tool> [jsonArgs]');
+      console.log('usage: mcp.ts toolsets | describe <toolset> | call <toolset> <tool> [jsonArgs | @args.json]');
       process.exit(2);
     }
   } catch (e) {

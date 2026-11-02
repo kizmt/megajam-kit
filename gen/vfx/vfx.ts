@@ -16,7 +16,7 @@
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { KIT, errorMessage, fail, generatedDir, isMain } from '../paths.ts';
+import { KIT, errorMessage, fail, generatedDir, isMain, jsonArg } from '../paths.ts';
 import { parseMarkedJson, run } from '../proc.ts';
 import { McpUnreachableError, callTool, mcpCall, type ObjectRef } from '../unreal/mcp.ts';
 import { runPythonFileOrThrow } from '../unreal/python.ts';
@@ -155,7 +155,7 @@ if (isMain(import.meta.url)) {
   try {
     if (cmd === 'textures') await makeTextures({ size: parseInt(o.size, 10) || 512, unreal, ...out, ...(o.only ? { only: o.only.split(',') } : {}) });
     else if (cmd === 'master') console.log(JSON.stringify(await ensureVfxMaster({ force: o.force })));
-    else if (cmd === 'instance' && a) console.log(JSON.stringify(await makeInstance(a, b ? (JSON.parse(b) as Record<string, unknown>) : {})));
+    else if (cmd === 'instance' && a) console.log(JSON.stringify(await makeInstance(a, b ? jsonArg<Record<string, unknown>>(b) : {})));
     else if (cmd === 'meshes') await makeMeshes({ unreal, ...out });
     else if (cmd === 'flipbook' && a) console.log(`prepared ${await prepareFlipbook(a)}`);
     else if (cmd === 'all') {
