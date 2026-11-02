@@ -26,9 +26,9 @@ ElevenLabs changes models often: if something here fails, check the linked page 
 - **Prices to quote** (check the pricing page before a batch): SFX with a set length 40 credits per second; music about
   $0.15 per minute; a composition plan is free; Voice Design charges only the preview text's characters; Voice
   Changer and Voice Isolator 1,000 credits per minute.
-- **Output format:** the default `mp3_44100_128` is converted to 48 kHz WAV by ffmpeg. WAV and PCM at 44.1 kHz need the
-  Pro plan, MP3 192 kbps needs Creator. On Pro, `--format wav_48000` skips the MP3 step (SFX: non-looping only;
-  untested).
+- **Output format:** the default `mp3_44100_128` is converted to 48 kHz WAV by ffmpeg (hiss-heavy beds: 192 kbps,
+  "Checking and matching levels"). WAV and PCM at 44.1 kHz need the Pro plan, MP3 192 kbps needs Creator. On Pro,
+  `--format wav_48000` skips the MP3 step (SFX: non-looping only; untested).
 
 ## Sound effects (SFX v3)
 
@@ -160,6 +160,29 @@ settings in `DECISIONS.md`. The site's Voice Design page works too; `voices` the
   short description; off by default, since our descriptions are already detailed). The API's reference-audio input
   (`eleven_ttv_v3` only) isn't scripted. `design` *tested* 2026-11-01 (3 previews of 23-26 s from a 330-character
   preview text); `save` untested.
+
+## Checking and matching levels
+
+From the rehearsal (2026-11-01). A take can come back broken and still count as a success: listen, and measure.
+- **Near-silent takes:** 3 of 53 SFX generations peaked at -24 to -42 dB (an ambience, a footstep, a sting).
+  `audio.ts` prints each take's peak and mean and warns under -20 dBFS. Re-prompt rather than re-roll: the ambience
+  came back usable with its sound sources named and "no speech".
+- **Match a batch before import:** measure every file (`ffmpeg -i x.wav -af volumedetect -f null -`, or `ebur128`
+  for LUFS), then gain-match one-shots by peak and loops by mean. Unmatched, a batch plays at wildly different
+  loudness.
+- **Beds of hiss or insects:** a cicada bed at the default `mp3_44100_128` (SFX v2) sounded "broken": 99.8% of its
+  energy was above 4 kHz and the spectrogram had blocky holes at about 5.5 and 12.5 kHz. Re-made with SFX v3 at
+  `--format mp3_44100_192` (Creator plan and up) it was clean; the model and the bitrate changed together, so which
+  one fixed it is not known. For such beds pass `--format mp3_44100_192` and look at a spectrogram before import
+  (`ffmpeg -i bed.wav -lavfi showspectrumpic=s=1024x512 bed.png`).
+- **Mix beds well under the music:** about -30 LUFS against music at -21. At 2 LU apart the bed read as a fault, not
+  as atmosphere. Beds of one loop that overlap in the level: `docs/ue/audio-ui.md` "Attenuation".
+- **Cutting a take into lines (or any cut with fades):** seek on the input side (`-ss` before `-i`) or trim in the
+  filter chain and restart its clock before the fades:
+  `-af "atrim=start=<a>:end=<b>,asetpts=PTS-STARTPTS,afade=t=in:d=0.03,afade=t=out:st=<len-0.12>:d=0.12"`.
+  With `-ss` after `-i` the filters stay on the source's clock and `afade` silences the cut: in the rehearsal three of
+  four cut lines were all zeros. Check every cut's peak before import (stop under about 0.05, i.e. -26 dBFS). Unreal
+  imports a silent WAV without a warning; the asset's size gives it away (a few KB).
 
 ## Sources (read 2026-11-01)
 

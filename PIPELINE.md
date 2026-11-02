@@ -129,6 +129,10 @@ when the editor is open; music and `--loop` sounds are set to loop. Needs the Me
 Add `--mono` for any sound played at a location in the world (footsteps, chest, pickups); keep
 stereo for music, UI and 2D ambience.
 Measured: SFX ~2 s end to end, 30 s music track ~6 s.
+Each take prints its peak and mean level (ffmpeg `volumedetect`) and warns on a peak under -20 dBFS: 3 of 53
+generations in the rehearsal came back near-silent (peaks -24 to -42 dB) and still counted as successes. Listen to
+any flagged take before importing it; level-matching a batch: `docs/elevenlabs.md` "Checking and matching levels".
+`--name Step_4` keeps its `_4`; other punctuation is dropped (`--name "Wood door"` gives `WoodDoor`).
 
 | Option | Use |
 |---|---|

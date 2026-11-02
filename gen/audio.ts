@@ -10,7 +10,8 @@
 //   node gen/audio.ts music --plan <plan.json> --seed 7 --name Explore                       (compose from an edited plan)
 //
 // Output: <Project>/Generated/audio/<Kind>_<Name>.mp3 (+ .json sidecar, + 48 kHz WAV via ffmpeg).
-// --n 3 makes variants (_1, _2, _3). WAVs are imported into the open editor (MegajamTools.import_sound).
+// --n 3 makes variants (_1, _2, _3); a --name ending in _<digits> keeps it (Step_4). WAVs are imported into the open
+// editor (MegajamTools.import_sound). Each take's peak and mean level are printed; a peak under -20 dBFS warns.
 // ElevenLabs keeps no downloadable history of SFX or music: these files are the only copy.
 
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from 'node:fs';
@@ -186,7 +187,12 @@ if (!isKind(kindArg)) fail(USAGE); // narrowed above; keeps the type checker hon
 const kind: Kind = kindArg;
 
 const planName = o.plan ? basename(o.plan).replace(/^MUS_/, '').replace(/\.plan\.json$|\.json$/, '') : undefined;
-const name = pascal(o.name ?? planName ?? text, 4);
+/** pascal() drops underscores; keep a trailing variant number (`--name Step_4` -> `Step_4`, not `Step4`). */
+function assetName(s: string): string {
+  const m = /^(.*?)_(\d+)$/.exec(s.trim());
+  return m?.[1] ? `${pascal(m[1], 4)}_${m[2]}` : pascal(s, 4);
+}
+const name = o.name ? assetName(o.name) : pascal(planName ?? text, 4);
 const seed = o.seed !== undefined ? Number(o.seed) : undefined;
 if (seed !== undefined && (kind === 'sfx' || (kind === 'music' && !o.plan))) {
   console.log(`  note: --seed ignored (${kind === 'sfx' ? 'SFX has no seed' : 'music takes a seed only with --plan'})`);
@@ -295,6 +301,18 @@ function toWav(file: string): string | null {
   return r.status === 0 ? wav : null;
 }
 
+/** Peak and mean level in dBFS (ffmpeg volumedetect). Some generations come back near-silent and still succeed. */
+function levels(file: string): { peak: number; mean: number } | null {
+  if (!FFMPEG) return null;
+  const r = spawnSync(FFMPEG, ['-hide_banner', '-nostats', '-i', file, '-af', 'volumedetect', '-f', 'null', '-'], { encoding: 'utf8' });
+  const peak = /max_volume:\s*(-?[\d.]+|-inf) dB/.exec(r.stderr ?? '')?.[1];
+  const mean = /mean_volume:\s*(-?[\d.]+|-inf) dB/.exec(r.stderr ?? '')?.[1];
+  if (peak === undefined || mean === undefined) return null;
+  const db = (v: string): number => (v === '-inf' ? -Infinity : Number(v));
+  return { peak: db(peak), mean: db(mean) };
+}
+const QUIET_PEAK_DB = -20;
+
 const outDir = o.out ?? generatedDir('audio');
 mkdirSync(outDir, { recursive: true });
 
@@ -327,6 +345,11 @@ results.forEach((r, i) => {
   const wav = ext === 'wav' ? file : toWav(file);
   const note = wav && wav !== file ? `\n      ${wav}` : FFMPEG ? '' : '  (no ffmpeg: WAV not made)';
   console.log(`  [${i + 1}] ${file} (${(r.value.buf.length / 1024).toFixed(0)} KB)${note}`);
+  const lv = levels(wav ?? file);
+  if (lv) {
+    const quiet = lv.peak < QUIET_PEAK_DB;
+    console.log(`      peak ${lv.peak.toFixed(1)} dBFS, mean ${lv.mean.toFixed(1)} dBFS${quiet ? `  WARNING: peak under ${QUIET_PEAK_DB} dBFS, likely a near-silent take: listen before using it` : ''}`);
+  }
   ok++;
   if (wav) toImport.push({ wav, asset });
 });

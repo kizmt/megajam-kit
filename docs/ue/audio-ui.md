@@ -49,6 +49,12 @@ if (MusicComp) { MusicComp->bIsUISound = false; MusicComp->FadeIn(1.5f, 1.f); }
   expected. Rule: **3D one-shots (impacts, footsteps, enemy barks) should be mono** - generate them with
   `node gen/audio.ts sfx ... --mono` (also halves memory). Keep stereo for music, UI, 2D stingers and wide ambient beds. (Mono-for-3D is our rule;
   Epic's attenuation page describes the stereo behaviour but makes no recommendation.)
+- **Several ambience beds of one loop don't crossfade: they sum in phase.** Beds that all start at BeginPlay stay
+  sample-aligned, so where two are at full gain the same loop plays 6 dB louder (seen in the rehearsal with five
+  `AmbientSound` beds of 120 m inner radius; `au.DumpActiveSounds` listed both). A winding route also brings beds that
+  aren't neighbours into range. Lay the beds along the route and choose each one's inner radius and falloff so the
+  summed linear gain stays about 1 along the walk; fit it numerically on the route's polyline (a short script does it
+  in seconds), then check with `au.DumpActiveSounds` at the overlaps.
 
 ### Concurrency (stop spam) (`USoundConcurrency`, `SCON_`)
 
