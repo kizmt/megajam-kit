@@ -18,6 +18,12 @@ Python stub or headers before writing an API call from memory.
 - **Read results.** Many tools report failure in the payload, not as an MCP error. `mcp.ts` throws on `isError`;
   for anything else, read back (`get_editor_property`, a find/list tool, `captureViewport()`).
 - **Save points.** Tool edits are not always undoable (imports never are). Save before and after bulk changes.
+  Since 5.8.1 Epic's MCP disables transactions during tool script execution (`execute_tool_script` and the AI
+  Assistant), so Ctrl+Z can't revert such a batch as one step, and Recovery Hub, which replays transactions, likely
+  doesn't record it (inference). `features.md` "Recovery Hub" is not a substitute for saving.
+- **Confirm the editor says 5.8.4.** The 5.8.1-5.8.4 hotfixes fixed crashes our scripts can hit: adding a component to
+  a Blueprint with no SimpleConstructionScript, MCP tools/call response framing, renaming widgets in a WBP with a null
+  parent class, a Python crash at editor shutdown, and adding a function call node via an editor script.
 - **A scripted edit is not saved until the file on disk changed.** Many Python edits don't mark the asset dirty, so a
   normal save (`only_if_is_dirty=True`, `save_directory`, Save All) silently skips it and the edit lives only in the
   editor's memory: it works in PIE, then vanishes from the build and the next session. Seen with input mapping keys,
@@ -146,6 +152,10 @@ The server lists 3 meta-tools (`list_toolsets`, `describe_toolset`, `call_tool`)
 module path + class (`megajam_tools.toolsets.MegajamTools`); C++ ones are `Plugin.Class`
 (`EditorToolset.EditorAppToolset`).
 
+**Keep "Enable Tool Search" on** (Editor Preferences > General > Model Context Protocol; default on). With it off,
+`tools/list` returns every tool schema instead of the 3 meta-tools `mcp.ts` expects. The server speaks HTTP/SSE only
+(no stdio) on `http://127.0.0.1:8000/mcp` and has "no authentication layer": keep it on localhost.
+
 **Python** (our path, in `unreal/Plugins/MegajamTools/Content/Python/megajam_tools/toolsets.py`):
 
 - `@unreal.uclass()` class that inherits `unreal.ToolsetDefinition`. The class docstring (1-3 sentences on the
@@ -196,7 +206,7 @@ prototype's MCP build: use the console command `LiveCoding.Compile` and wait for
 |---|---|---|---|
 | **Modeling Mode** (Shift+5; plugin on) | Beta | Manual level blockout: boxes, ramps, stairs, Extrude Polygon/Path, PolyEdit push/pull, booleans. Output is a Static Mesh in the folder set in Quick Settings | The agent is driving: it's a mouse-driven UI with no tools for it |
 | **Geometry Scripting** (Python/BP) | Beta (per docs) | Generated simple geometry the agent can script: walls, floors, arches, pipes, blockout kits, boolean cutouts, collision. Output is a real StaticMesh asset, so it works with Nanite | Organic or detailed props: use `gen/asset.ts` |
-| **Editor Utility Widgets** | Production | A button panel for a person (e.g. "rebuild level") | Agent-only work: a toolset tool is faster and testable |
+| **Editor Utility Widgets** | Beta (5.8 Beta hub) | A button panel for a person (e.g. "rebuild level") | Agent-only work: a toolset tool is faster and testable |
 | **Scriptable Tools** (needs Scriptable Tools Editor Mode plugin, off) | Beta (`features.md`) | Custom click-in-viewport tools for a person | Almost always in a 93 h jam |
 
 Geometry Script from Python (all verified in the stub):
@@ -448,3 +458,7 @@ generated level mesh"), and give decoration `NoCollision`.
 - Modeling Mode: https://dev.epicgames.com/documentation/en-us/unreal-engine/modeling-mode-in-unreal-engine?application_version=5.8
 - Scriptable Tools: https://dev.epicgames.com/documentation/en-us/unreal-engine/scriptable-tools-system-in-unreal-engine?application_version=5.8
 - Python API: https://dev.epicgames.com/documentation/en-us/unreal-engine/python-api/?application_version=5.8
+- Beta hub (Editor Utility Widgets): https://dev.epicgames.com/documentation/en-us/unreal-engine/beta-features?application_version=5.8
+- Hotfixes: 5.8.1 https://forums.unrealengine.com/t/5-8-1-hotfix-released/2738864 , 5.8.2
+  https://forums.unrealengine.com/t/5-8-2-hotfix-released/2746335 , 5.8.4
+  https://forums.unrealengine.com/t/5-8-4-hotfix-released/2842775

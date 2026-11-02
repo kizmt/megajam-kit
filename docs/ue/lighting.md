@@ -158,15 +158,27 @@ Groups: `sg.ResolutionQuality` (= screen percentage), `sg.ViewDistanceQuality`, 
   surface under it. Use a non-physical point light: `set_use_inverse_squared_falloff(False)`,
   `set_light_falloff_exponent(1.0)`, shadows and GI off, intensity far below the key lights.
 
-## MegaLights (5.8: Experimental) - don't use by default
+## MegaLights (5.8: status disputed, see first bullet) - don't use by default
 
-- Cvar help text in 5.8 source (`MegaLights.cpp`): "requires Hardware Ray Tracing, and does not support Directional
-  Lights. Experimental feature."; default `r.MegaLights.EnableForProject=0`. (Off-by-default escape hatches exist:
-  `r.MegaLights.SoftwareRayTracing.Allow`, `r.MegaLights.DirectionalLights`; don't rely on them.)
-- Stochastic many-light shadowing with near-constant cost, for local lights only (the sun stays a normal VSM light);
-  not for water/clouds/heterogeneous volumes; Forward renderer incompatible.
-- Only consider it if a scene genuinely needs dozens of shadowed local lights (night town, neon). Measure first;
-  per-light `Allow MegaLights`, `MegaLights Shadow Method` (Ray Tracing preferred). Kill switch `r.MegaLights.Allowed 0`.
+- **Status conflict.** The 5.8 release notes and launch post call MegaLights Production Ready. The 5.8 doc page is
+  still tagged experimental, and the cvar help text in 5.8 source (`MegaLights.cpp`) still reads "requires Hardware
+  Ray Tracing, and does not support Directional Lights. Experimental feature."; default
+  `r.MegaLights.EnableForProject=0`. Treat it as a runtime feature to prove in a practice run (`features.md` rule 2).
+- **Local lights only for us.** Directional lights are supported but off by default (`r.MegaLights.DirectionalLights 1`,
+  present in 5.8.4 source). Epic still advises a normal VSM light for a strong sun and MegaLights only for dim
+  directional light such as moonlight. `r.MegaLights.SoftwareRayTracing.Allow` exists too; Hardware RT is
+  recommended. Don't rely on either.
+- **Where it fits.** Stochastic many-light shadowing with near-constant cost: only for a night or interior scene that
+  genuinely needs dozens of shadowed local lights (night town, neon). Forward renderer incompatible. Water, clouds,
+  heterogeneous volumes and local volumetrics are unsupported; alpha-masked surfaces are traced in screen space only.
+  5.8 adds lit translucency, volumetric fog and lighting channels.
+- **Turning it on and off.** Project Settings > Rendering > Direct Lighting > MegaLights (also per Post Process Volume);
+  per light `Allow MegaLights` and `MegaLights Shadow Method` (keep Ray Tracing: VSM has a "significant additional
+  per light cost"). Kill switch `r.MegaLights.Allowed 0` (checked in 5.8.4 source; the 5.8 doc page's
+  `r.MegaLights.Allow` is wrong).
+- **Cost knobs and measuring.** Cost follows internal resolution, `r.MegaLights.DownsampleMode` and
+  `r.MegaLights.NumSamplesPerPixel`; `r.MegaLights.LightAttenuationFalloff` trims light range. Debug view
+  `r.MegaLights.Visualize 1` (unverified in 5.8.4). Measure GPU time with `r.RDG.AsyncCompute 0`.
 
 ## Environment (outdoor stack, all in the Basic level; no VolumetricCloud by default)
 
@@ -300,6 +312,7 @@ floor); the problems are general, the numbers are that game's. What went wrong w
 - Lumen performance guide: https://dev.epicgames.com/documentation/en-us/unreal-engine/lumen-performance-guide-for-unreal-engine?application_version=5.8
 - Virtual Shadow Maps: https://dev.epicgames.com/documentation/en-us/unreal-engine/virtual-shadow-maps-in-unreal-engine?application_version=5.8
 - MegaLights: https://dev.epicgames.com/documentation/en-us/unreal-engine/megalights-in-unreal-engine?application_version=5.8
+- 5.8 release notes (MegaLights status): https://dev.epicgames.com/documentation/en-us/unreal-engine/unreal-engine-5-8-release-notes
 - Exponential Height Fog: https://dev.epicgames.com/documentation/en-us/unreal-engine/exponential-height-fog-in-unreal-engine?application_version=5.8
 - Post process effects: https://dev.epicgames.com/documentation/en-us/unreal-engine/post-process-effects-in-unreal-engine?application_version=5.8
 - Auto exposure: https://dev.epicgames.com/documentation/en-us/unreal-engine/auto-exposure-in-unreal-engine?application_version=5.8
