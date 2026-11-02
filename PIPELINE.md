@@ -4,6 +4,9 @@ Run from `C:\dev\megajam-kit` with the Unreal editor open (MCP server on). Keys 
 Run generators from **PowerShell**. Git Bash (Claude Code's Bash tool) rewrites any argument starting with `/`:
 `--dest /Game/Props` reached Node as `C:/Program Files/Git/Game/Props`, and the import failed with a misleading
 "produced no assets ... file format may not be supported". From Bash, set `MSYS_NO_PATHCONV=1` first.
+**PowerShell array parameters:** call a runner in-process (`& .\run.ps1 -Only A,B`), not `powershell -File run.ps1
+-Only A,B`: under `-File` the list binds as one string `"A,B"`, so a `[string[]]` filter matched no job and the script
+exited 0 having done nothing. A runner with a filter must `throw` when the filter matches no job.
 
 All generators write to `<Project>/Generated/` where `<Project>` is `MEGAJAM_PROJECT` in the kit's `.env`.
 Nothing generated is ever written into the kit.
@@ -46,6 +49,12 @@ The per-image cost depends on size and quality: estimate it with the calculator 
 
 Known limits: master material is opaque (glass renders dark).
 
+**Style references for a set of subjects (a cast, a bestiary):** a painted key-art scene is a weak `--ref` for an
+isolated subject. In the rehearsal it leaked haze and scenery into 3 of 9 creature concepts and 7 of 24 character
+concepts (even with a "style only, no fog or scenery" prefix), and half of the clean ones came out in a flatter
+cartoon style. Generate one subject with the key art, get it approved, then send that concept as the first `--ref`
+(a subject on plain grey: the style anchor) and at most one key-art frame after it, for palette only.
+
 ## Characters: concept to playable (tested 2026-10-24: Explorer, Mechanic in a test project)
 
 ```powershell
@@ -67,13 +76,14 @@ credits on the model and then failed the re-texture on "Insufficient credits"; t
 `--task <id>`). Tripo exit 6 (timed out) or 7 (network) can still bill: resume with `tripo task watch <id> --download`
 (id from `tripo history --limit 3`), never re-run. `run()` prints these hints.
 
-**A-pose concepts? T-pose pass (5 credits, manual for now).** Concepts can come out A-pose despite the T-pose
-wording: 6/6 for a long outfit description (hood, shoulder cape, long coat); a plainer outfit the same day gave 2/3
-T-pose. Fix the picked concept before image-to-model:
-`tripo generate image-to-image <concept> --model seedream_v5 -p template=t_pose` gave a clean T-pose with outfit,
-colours and silhouette kept, for 5 credits (as of 2026-10; check before quoting). Output was 1024×1024 PNG, not the
-documented 2048. `generate` has no `--dry-run`; the price is on Tripo's developer pricing page, not in `tripo docs`.
-Show the director the result next to the original. (`character.ts --tpose` is planned.)
+**A-pose concepts?** Concepts can come out A-pose despite the T-pose wording: 6/6 for a long outfit description
+(hood, shoulder cape, long coat); a plainer outfit the same day gave 2/3 T-pose. Tripo's rig takes an A-pose concept,
+so building from it is a valid choice. The Tripo T-pose pass
+`tripo generate image-to-image <concept> --model seedream_v5 -p template=t_pose` (5 credits per image, as of 2026-10;
+check before quoting) is **unreliable**: once it gave a clean T-pose with outfit, colours and silhouette kept; on a
+later batch of A-pose concepts it returned the arms still ~40 degrees down (15 credits for no change). Try one concept
+and check it before a batch. Output was 1024×1024 PNG, not the documented 2048. `generate` has no `--dry-run`; the
+price is on Tripo's developer pricing page, not in `tripo docs`. Show the director the result next to the original.
 
 | Option | Use |
 |---|---|
@@ -229,7 +239,11 @@ Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls nee
   `--dry-run` exists on `make` only. `--for game-pc` and `--for anim` send the same generation settings.
 - T-pose concepts: say the arm angle ("exactly 90 degrees, NOT an A-pose") and camera alignment ("facing the
   viewer squarely, zero rotation, symmetrical"): 3/3 clean vs 1/2 without (one A-pose, one turned body) for a short
-  prompt. It doesn't hold for long outfit descriptions (0/6 later); use the Tripo T-pose pass (Characters).
+  prompt. It doesn't hold for long outfit descriptions (0/6 later): build from the A-pose concept, or try the
+  Tripo T-pose pass on one image first (Characters).
+- **Tripo runs at most 3 tasks at once per account** (image, model, texture and rig tasks seem to share the pool).
+  Six image-to-image calls started together: three returned, three failed on the limit with no output and no clear
+  error, and a retry of those also returned nothing. Batch in threes, or start the next task when one finishes.
 - Editor Python must never delete an asset something else references: `delete_asset` force-deletes, but the
   object lives on in memory, and creating one with the same name then opens a modal **"Overwrite Existing
   Object"** dialog that blocks the game thread (and every MCP call) until someone clicks. Reuse shared assets
@@ -268,4 +282,11 @@ Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls nee
   editor's Python nor (on the target PC) the system Python, which has PIL. Generate numeric fields (heightmaps, layer
   weights, carve masks) there, write raw files, and read them in the editor with `array` (`docs/ue/worldbuilding.md`
   "Landscape from Python").
+- **Blender-made texture sets** (bakes, rocks, kit pieces): normal maps are OpenGL (Y+), so import them with
+  `materials.ts apply ... --opengl-normals` (FlipGreenChannel), or the bumps light inside out. A lone `_roughness`
+  map needs `pack_orm.py` first (it fills AO 1 and metallic 0); `applyPbr` warns if it finds one unpacked.
+- **Blender's FBX import resets the scene frame rate** to the file's. A script that sets `scene.render.fps = 30` and
+  then imports an FBX (e.g. to rebuild a skeleton) exported every clip at 24 fps, and UE played a 1.0 s flap in 1.25 s.
+  Set `scene.render.fps` (and `fps_base = 1`) right before each animation export, and check the imported
+  AnimSequence's length.
 - **Uploads:** `SETUP.md` section 9.

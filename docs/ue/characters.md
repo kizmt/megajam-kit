@@ -236,8 +236,8 @@ not the rig (the rig FBX wires its colour image as the normal map). The steps st
 `[S]` = scriptable (MCP/Python/CLI), `[UI]` = editor UI needed, `[V]` = verify with screenshot/PIE.
 
 1. `[S]` Concept image in **T-pose**, front view (`character.ts --concepts N` prompts for it through `gen/image.ts`).
-   If the picked concept is A-pose, fix it with Tripo's `-p template=t_pose` image-to-image pass (manual: `PIPELINE.md`
-   "Characters"). Generate the model with a face cap (`--faces`).
+   An A-pose concept also rigs; Tripo's `-p template=t_pose` image-to-image pass is unreliable (`PIPELINE.md`
+   "Characters"): try it on one image before a batch. Generate the model with a face cap (`--faces`).
 2. `[S]` `tripo anim check` (free) > `tripo anim rig --spec unreal --out-format fbx` (fallback `--spec mixamo`).
    Default rig model is v3.0 (best for humanoids). Non-humanoid: rig type from the check, and Manny retargeting is
    out. Use Tripo presets only.
