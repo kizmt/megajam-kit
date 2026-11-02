@@ -198,6 +198,12 @@ needs dynamic bounce light but full Lumen doesn't fit the target fps (softer GI,
   - `[SystemSettings]`: `r.Tonemapper.Sharpen=0` (sharpening an upscaled image adds halos, not detail)
 - `Config/DefaultScalability.ini`: `[AntiAliasingQuality@3]` and `[AntiAliasingQuality@Cine]` each `r.TSR.History.ScreenPercentage=100`
   (200% costs ~3 ms at 4K and is only marginally cleaner)
+- `Config/DefaultScalability.ini`: texture pool per quality level (the engine's 800 MB at High blurs a dense 4K scene;
+  `docs/ue/performance.md` "Textures and memory"). A prototype's working values: `[TextureQuality@1]`
+  `r.Streaming.PoolSize=1000`, `@2` 1800, `@3` 2500, `@Cine` 3000, with `r.Streaming.LimitPoolSizeToVRAM=1` under
+  `@3` and `@Cine`.
+- Internal resolution: every path names it. Unset, a 4K display renders 1080 lines (50%). The no-Lumen path sets it
+  below; on the Lumen paths add the same two `r.ScreenPercentage.Default*` lines with the value the bench chose.
 - `Config/DefaultInput.ini`: add `+ConsoleKeys=F10` after `+ConsoleKeys=Tilde` (backtick is a dead key on some layouts)
 - Level: delete the template's **VolumetricCloud** actor (~2.5 ms at 4K). Keep SkyAtmosphere's aerial perspective view
   distance scale at 1-2 (higher washes out the far end).

@@ -74,9 +74,21 @@ the player *sees and does*, not from how many square metres exist. Cheapest firs
   (rules 7(a) allow it) can score as Innovation with no extra world at all.
 - **Only if the game truly needs an open space:** World Partition (streaming grid, One File Per Actor), HLODs for
   distant cells and Level Instances. Know they exist; budget at least a day of the jam if you use them, and test the
-  packaged build early. Most jam games should not. Scripting traps: "World Partition from Python" below.
+  packaged build early. Most jam games should not. Scripting traps: "World Partition from Python" below; test
+  traps (unsaved scripted moves, streaming round the view target, the runtime grid not in Python): `editor-scripting.md`
+  and `debugging.md` F.
 
 Judge it in the 60-second video: if the extra scale doesn't show there, cut it.
+
+## Foliage
+
+- **Changing a foliage type's collision doesn't reach placed foliage.** Setting BlockAll on
+  `FoliageType_InstancedStaticMesh.body_instance` left existing instances without collision:
+  `FFoliageInfo::UpdateComponentSettings` (InstancedFoliage.cpp) only copies body-instance properties, creates no
+  physics bodies for components that were NoCollision, and doesn't dirty the foliage actors. Fix:
+  `InstancedFoliageActor.remove_all_instances` + `add_instances` for that type, then save the level.
+- **Wind on fine foliage blurs at 4K under TSR**: fade it out near the camera in the material and decide at the style
+  lock which plants move (`performance.md` "Render paths").
 
 ## Splines
 
@@ -253,6 +265,19 @@ meshes (harmless). **Shallows tint:** the water material's `Absorption` vector i
 - **Straight after a water rebuild, a capture can show the underwater post process** (seen with the camera 3.5 m above
   a river; cause suspected: collision or water info not settled). Wait a few seconds or capture twice before judging;
   `r.Water.EnableUnderwaterPostProcess 0` confirms it.
+
+### Querying water in gameplay code
+
+- **"Is this point in the water?" needs your own containment test** (read on disk, 5.8.4).
+  `UWaterBodyComponent::TryQueryWaterInfoClosestToWorldLocation` (`WaterBodyComponent.cpp`) gives the surface z at the
+  closest spline key (or the component's z for a flat body), i.e. depth, but never checks the river's width or the
+  lake's shore. A river's half width is `RiverWidth.Eval(key) / 2`: `RiverWidth` is the **full** width, despite the
+  header's "from center in each direction" (`WaterBodyRiverComponent.cpp` halves it). For a lake, test the closed
+  spline as a polygon.
+- Iterate bodies with `FWaterBodyManager::ForEachWaterBodyComponent(World, ...)` (`WaterBodyManager.h`). C++ use
+  needs `"Water"` in the Build.cs and the Water plugin listed in the `.uproject` (it may only be mounted as another
+  plugin's dependency). Water bodies stream with World Partition like any actor: re-collect them, don't cache them
+  once at BeginPlay. In Python, `get_water_body_type()` is on the `WaterBody` actor, not its component.
 
 ## Sources (5.8)
 

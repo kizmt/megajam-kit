@@ -3,7 +3,7 @@
 // applies the variant's cvars with -DPCVars (device-profile priority, so it beats ini + scalability), captures
 // a CSV profile, kills the game, and prints a comparison table.
 //   node gen/perf/bench.ts                                  # built-in render-path comparison
-//   node gen/perf/bench.ts --variant "check:"               # the build as it ships
+//   node gen/perf/bench.ts --variant "check:"               # the build as it ships (or --only current)
 //   node gen/perf/bench.ts --variant "a:" --variant "b:r.AllowOcclusionQueries=0"
 //   options: --exe <path> (default C:\dev\Builds\<Project>\Windows\<Project>.exe)  --res 3840x2160 | native
 //            --frames 1200  --skip 200  --only name1,name2  --no-warmup  --force (run even if the GPU is busy)
@@ -178,8 +178,10 @@ if (!o['no-warmup']) {
 }
 
 const results: { name: string; s: CsvSummary }[] = [];
-for (const [name, cvars] of variants) {
-  process.stdout.write(`running ${name.padEnd(16)} ${cvars || '(no overrides)'}\n`);
+// Say which runs are the shipped game: a director watching a comparison path otherwise judges its artifacts as the game's.
+for (const [i, [name, cvars]] of variants.entries()) {
+  const kind = cvars ? 'a comparison render path, not what ships' : 'the game as it ships';
+  process.stdout.write(`run ${i + 1} of ${variants.length}: ${name.padEnd(16)} ${cvars || '(no overrides)'}  [${kind}]\n`);
   results.push({ name, s: await runVariant(name, cvars) });
 }
 

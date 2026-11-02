@@ -51,7 +51,10 @@ Facts:
 - The game is GPU-bound (game thread ~2 ms). The biggest costs were **TSR at Epic (200% history, ~3 ms)** and the
   template level's **VolumetricCloud (~2.5 ms)**. Our models/materials cost under 1 ms.
 - Internal resolution is the expensive crispness lever: 1080p -> 1440p internal costs ~4 ms at 4K output.
-- Desktop screen percentage defaults to "based on display resolution": 4K display -> 1080p internal (50%), 1440p -> ~900p.
+- Desktop screen percentage defaults to "based on display resolution": 4K display -> 1080p internal (50%), 1440p -> ~900p
+  (`r.ScreenPercentage` 0 = `r.ScreenPercentage.Default.Desktop.Mode`, mapped in `BaseEngine.ini`
+  `[Rendering.AutoScreenPercentage]`). **The render-path pick names the internal resolution at 4K**; left unset it is
+  50%, which thin foliage shows as grain under TSR. Compare candidates on foliage in motion, not on a still frame.
 - High-DPI: without `bAllowHighDPIInGameMode=True` a 150%-scaled 4K monitor gives the game 2560x1440 and Windows
   stretches it (soft). With it the window is true 3840x2160 (verified with `-ExecCmds="HighResShot 1"` -> 3840x2160 PNG).
   The CSV/log `systemresolution` metadata still says 2560x1440: it is recorded before DPI awareness is set. Ignore it.
@@ -102,6 +105,17 @@ Facts behind the table:
   `bench.ts` variants with `-DPCVars` compare paths without repackaging.
 - A canvas HUD with outlined text cost ~0.5 ms at 4K. Measure the HUD on its own when it lands.
 - Bloom off and lower VSM resolution changed p95 by 0-4 fps (noise) on this content.
+- **WPO wind on fine foliage blurs under TSR** (proven on a prototype, 4K output, 1080 internal lines). Leaves or
+  florets under about one internal pixel lose detail as soon as they move, even slowly and with correct motion
+  vectors: TSR clamps the history on moving pixels (`show VisualizeTSR` + `r.TSR.Visualize 3` lights every moving
+  bush, nothing when calm), so moving foliage shows the raw internal resolution. Detail score (mean |Laplacian|):
+  wind as shipped 16.8, WPO off 29.7. No TSR cvar helped (history 200%, thin-geometry relaxation, velocity weight
+  clamping: 16-17.6); `r.Nanite.Foliage=0` 18.6; only more input pixels moved it (66.7% 18.9). What worked: **fade
+  fine-foliage wind out near the camera in the material** (per instance: `ObjectPositionWS` to `CameraPositionWS`,
+  `Distance`, `saturate((End - d) / (End - Start))` times the WPO), 3 -> 6 m: 45.7 vs 50 with no wind, no pop. The
+  per-component WPO disable distance alone popped; set it just past the fade's end. The bend causes it, not the
+  flutter. While the camera moves, every variant scores about the same (the camera's motion sets the floor). Decide
+  at the style lock which plants move and out to what distance, and judge it on the 4K output.
 - **Many animated characters:** enable the Animation Budget Allocator plugin (stable, ships with 5.8, off by
   default; `a.Budget.Enabled=1`, `a.Budget.BudgetMs`) and use its budgeted skeletal mesh component for non-player
   characters. 12 characters needed ~0.6 ms of animation, under a 1 ms budget, so it only matters at larger counts.
@@ -111,6 +125,10 @@ Facts behind the table:
 - **On the 4060 at 4K output, a near-empty Lumen HWRT room already costs most of a high-fps budget** (measured: p95
   108-110 on the empty test level above, less in a real room): budget from the bench, not the template level. Over
   ~5% background GPU load (`nvidia-smi` before and after) is a dirty result.
+- **When the director watches a bench, only `current` is the game as it ships**; the other built-in runs are
+  comparison render paths with their own artifacts (an SSR variant showed a reflection the shipped Lumen config had
+  fixed, and was taken for the fix failing). `bench.ts` says which kind each run is; `--only current` runs the
+  shipped config alone.
 - **TSR at 4K output costs ~2.3 ms whatever the internal resolution.** GPU frame budget for everything else ≈
   1000 / target fps − ~2.3 ms TSR − ~1 ms margin: 60 fps ≈ 13 ms, 90 fps ≈ 8 ms, 120 fps ≈ 5 ms.
 - **"Lumen ms" undercounts with async compute.** With `r.Lumen.AsyncCompute 1` the CSV showed only ~0.45 ms of Lumen
@@ -174,6 +192,12 @@ Facts behind the table:
 
 - Streaming pool is shared by all textures; over budget = blurry textures (engine drops top mips). Watch for
   blurriness after adding many props; `--tex 1024` for anything small or far.
+- **The engine's pool is only 800 MB at High** (`BaseScalability.ini`: `r.Streaming.PoolSize` 400 / 600 / 800 / 1000 /
+  3000 for TextureQuality 0 / 1 / 2 / 3 / Cine). A dense 4K scene with 2K textures blurred at 5 m (low mips), and a
+  restart didn't help; a live `r.Streaming.PoolSize 3000` A/B made the same camera sharp (proven). Set the pool per
+  quality level in `Config/DefaultScalability.ini` (SETUP step 7b). On Windows `PoolSizeVRAMPercentage=70` and
+  `r.Streaming.LimitPoolSizeToVRAM=1` cap a large pool to the card's free VRAM, so a big Epic/Cine pool is safe on
+  weaker cards. Check with `stat streaming` (Over budget) or the live A/B.
 - Normal maps: `TC_Normalmap`, sRGB off. AO/roughness/metallic are packed into one ORM texture (`TC_Masks`, sRGB off;
   `gen/blender/pack_orm.py`), so each prop has 3 textures. (`materials.ts` handles the settings.)
 
