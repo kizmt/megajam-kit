@@ -7,8 +7,13 @@
 // UseEmissiveTexture (static switch); FlashAmount (Custom Primitive Data 0), FlashColor, FlashStrength.
 // ORM comes from gen/blender/pack_orm.py (packs T_<Name>_roughness/metallic/ao).
 //
+// Normal maps are read as DirectX (Y-) like Unreal's. Blender-made maps are OpenGL (Y+): pass openGlNormals
+// (CLI --opengl-normals) to set the texture's FlipGreenChannel, or the bumps light inside out.
+// A texture set with separate _roughness/_metallic/_ao maps needs pack_orm.py first (a lone roughness map is fine:
+// it fills AO 1 and metallic 0); applyPbr warns when it finds those maps but no _orm.
+//
 // CLI: node gen/unreal/materials.ts master [--force]
-//      node gen/unreal/materials.ts apply <Name> <textureDir> [/Game/Props]
+//      node gen/unreal/materials.ts apply <Name> <textureDir> [/Game/Props] [--opengl-normals]
 
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -37,6 +42,8 @@ interface TextureProps {
   SRGB: boolean;
   CompressionSettings: 'TC_Default' | 'TC_Normalmap' | 'TC_Masks';
   MaxTextureSize?: number;
+  /** UTexture::bFlipGreenChannel: true for OpenGL (Y+) normal maps such as Blender's. */
+  bFlipGreenChannel?: boolean;
 }
 interface MapSpec { param: string; props: TextureProps; fill: Rgb; defaultName: string }
 
@@ -121,12 +128,19 @@ export interface ApplyPbrOptions {
    * hero asset can be raised later with one setting, no regeneration. 0 = no cap. Default 2048 (8 GB VRAM budget).
    */
   maxTextureSize?: number;
+  /** The normal map is OpenGL (Y+), as Blender bakes and exports it: flip its green channel on import. */
+  openGlNormals?: boolean;
 }
 export interface ApplyPbrResult { instance: string; textures: MapKey[]; slots: string[] }
 
 /** texDir contains T_<Name>_basecolor.png, _normal.png, _orm.png (pack_orm.py), optional _emissive.png. */
-export async function applyPbr({ name, texDir, dest = '/Game/Props', mesh, kind = 'static', maxTextureSize = 2048 }: ApplyPbrOptions): Promise<ApplyPbrResult> {
+export async function applyPbr({ name, texDir, dest = '/Game/Props', mesh, kind = 'static', maxTextureSize = 2048, openGlNormals = false }: ApplyPbrOptions): Promise<ApplyPbrResult> {
   const meshTools = kind === 'skeletal' ? SK : SM;
+  const loose = ['roughness', 'metallic', 'ao'].filter((k) => existsSync(join(texDir, `T_${name}_${k}.png`)));
+  if (loose.length && !existsSync(join(texDir, `T_${name}_orm.png`))) {
+    console.warn(`WARN: ${texDir} has T_${name}_${loose.join('/')} but no T_${name}_orm.png: the master's default ORM ` +
+      `(roughness 0.6) is used. Pack them first: blender -b --factory-startup --python gen/blender/pack_orm.py -- <texDir> ${name}`);
+  }
   await ensureMaster();
   const folder = `${dest}/${name}`;
   const instPath = `${folder}/MI_${name}`;
@@ -144,7 +158,9 @@ export async function applyPbr({ name, texDir, dest = '/Game/Props', mesh, kind 
     // texture, and the old texture is unreferenced when importTexture replaces it.
     if (reuse) await mcpCall(MI, 'set_texture_parameter', { instance: inst, name: m.param, value: ref(`${KIT_TEX}/${m.defaultName}`) });
     if (!existsSync(file)) continue;
-    const tex = await importTexture(folder, `T_${name}_${key}`, file, { ...m.props, MaxTextureSize: maxTextureSize });
+    const props: TextureProps = { ...m.props, MaxTextureSize: maxTextureSize };
+    if (key === 'normal' && openGlNormals) props.bFlipGreenChannel = true;
+    const tex = await importTexture(folder, `T_${name}_${key}`, file, props);
     await mcpCall(MI, 'set_texture_parameter', { instance: inst, name: m.param, value: tex });
     applied.push(key);
     touched.push(`${folder}/T_${name}_${key}`);
@@ -161,10 +177,12 @@ export async function applyPbr({ name, texDir, dest = '/Game/Props', mesh, kind 
 }
 
 if (isMain(import.meta.url)) {
-  const [cmd, a, b, c] = process.argv.slice(2);
+  const argv = process.argv.slice(2);
+  const openGlNormals = argv.includes('--opengl-normals');
+  const [cmd, a, b, c] = argv.filter((x) => x !== '--opengl-normals');
   try {
     if (cmd === 'master') console.log(JSON.stringify(await ensureMaster({ force: a === '--force' })));
-    else if (cmd === 'apply' && a && b) console.log(JSON.stringify(await applyPbr({ name: a, texDir: resolve(b), dest: c ?? '/Game/Props' })));
-    else { console.log('usage: materials.ts master [--force] | apply <Name> <textureDir> [/Game/Props]'); process.exit(2); }
+    else if (cmd === 'apply' && a && b) console.log(JSON.stringify(await applyPbr({ name: a, texDir: resolve(b), dest: c ?? '/Game/Props', openGlNormals })));
+    else { console.log('usage: materials.ts master [--force] | apply <Name> <textureDir> [/Game/Props] [--opengl-normals]'); process.exit(2); }
   } catch (e) { console.error(`FAIL: ${errorMessage(e)}`); process.exit(1); }
 }
