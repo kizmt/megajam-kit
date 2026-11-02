@@ -9,14 +9,15 @@ gameplay code, levels or game assets.
 
 - **One director, one agent session, one team.** The director owns the vision (concept, story, look, whether it
   is fun) and steers at any time; the session works long stretches on its own once it has what it needs, and asks
-  the director for the steps only a human can do. A single Claude Code session (Claude Opus 5.5) writes the code, drives the Unreal editor and runs the
-  asset pipeline. `CLAUDE.md` holds the standing rules the session follows.
-- **Unreal Engine 5.8.4**, C++ gameplay classes with thin Blueprint subclasses, dynamic lighting (full Lumen, Lumen Lite
-  or a no-Lumen stylized path, chosen at the style lock), Nanite meshes.
+  the director for the steps only a human can do. A single Claude Code session (Claude Opus 5.5) writes the code,
+  drives the Unreal editor and runs the asset pipeline. `CLAUDE.md` holds the standing rules the session follows.
+- **Unreal Engine 5.8.4**, C++ gameplay classes with thin Blueprint subclasses, dynamic lighting (full Lumen, Lumen
+  Lite or a no-Lumen stylized path, chosen at the style lock), Nanite meshes.
 - The session works in the editor through Epic's **Unreal MCP** plugin plus a small kit plugin (`MegajamTools`)
   that adds a few editor tools: running editor Python, importing sounds and files, and console commands.
 - **Short rounds with a report after each.** Claude plans, builds, captures screenshots and reports, then carries
-  on; it stops only for the director's calls. The look is locked from approved key art before any gameplay is built (`prompts/style-lock.md`).
+  on; it stops only for the director's calls. The look is locked from approved key art before any gameplay is built
+  (`prompts/style-lock.md`).
 
 ## AI services used
 
@@ -25,7 +26,7 @@ gameplay code, levels or game assets.
 | Code, editor work, orchestration | Claude Code (Claude Opus 5.5) | – |
 | Concept art and key frames | Google Gemini `gemini-3-pro-image` (OpenAI `gpt-image-2` as fallback) | `gen/image.ts` |
 | Image to 3D model, re-texturing, auto-rigging | Tripo (API + CLI; texture model v3.5) | `gen/asset.ts`, `gen/character.ts` |
-| Sound effects, music, voice | ElevenLabs (`eleven_text_to_sound_v2`, music, `eleven_multilingual_v2`) | `gen/audio.ts` |
+| Sound effects, music, voice | ElevenLabs (`eleven_text_to_sound_v3`, `music_v2_5`, `eleven_v4`) | `gen/audio.ts` |
 | Text-to-motion animation | Uthana (`text-to-motion-3.0`) | manual for now (see `PIPELINE.md`) |
 
 Non-AI tools: Blender (headless, for model clean-up and texture packing), ffmpeg (audio conversion), Node 24
