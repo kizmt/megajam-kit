@@ -28,6 +28,33 @@ their own sections below.
   workflow, skills, tools and recipes are in `pcg.md`.
 - Pairs with our pipeline: generate 4-6 props, then let PCG dress the level with instanced copies (cheap, see `performance.md`).
 
+## Foliage and landscape grass (5.8.4, from the rehearsal)
+
+Nanite settings for plants (Voxelize vs Preserve Area, wind): `performance.md` "Geometry".
+
+- **`GrassDensity` is instances per 100 m² (10 m × 10 m), not per 10 m²** as the `FGrassVariety` header comment says:
+  the engine divides the component area in cm² by 1000 × 1000 (`LandscapeGrass.cpp`). A field set for 3 patches per m²
+  at 18 / 12 / 0.8 came out 10× too sparse; 180 / 120 / 8 gave the carpet. Check the result with `grass.PrintStats` or
+  a capture, not the number.
+- **A texture that feeds `LandscapeGrassOutput` must be `never_stream`** (or small enough to stay resident). The grass
+  map build streams in only the heightmap and weightmaps (`LandscapeGrassMapsBuilder.cpp`), so it read a low, blurred
+  mip of a 4096² density map: grass grew across a clearing that the ground colour (same sample) showed bare.
+  Regenerate with `grass.FlushCache` after the change.
+- **Landscape grass can draw in PIE and be missing from every packaged build.** A cooked build takes each landscape
+  component's grass types from the saved package; the editor refreshes them in memory every tick without dirtying
+  the package, and PIE copies the in-memory world, so it hides the fault. Proven in the rehearsal: the World
+  Partition proxies were saved before the landscape material got its `LandscapeGrassOutput`, and 0/90 proxy packages
+  referenced the grass type. After adding or changing a `LandscapeGrassOutput` or the grass types: load every
+  landscape proxy, `Modify()` and save it (or Build > Build Grass Maps, then save), and check one packaged build for
+  grass. The editor also saves grass-map data into the proxies (+0.8 MB each); the cook strips it under runtime
+  generation, and the zip size didn't change.
+- **Reading placed foliage from Python doesn't work in a World Partition level:**
+  `InstancedFoliageActor.get_instance_transforms(ft)` returned 0 transforms while the components held hundreds.
+  Reading each `FoliageInstancedStaticMeshComponent` works (`c.get_instance_transform(i, True)`), but components don't
+  name their foliage type, and types that share a mesh can't be told apart. So to move foliage, re-run the script that
+  placed it (`remove_all_instances` + `add_instances` from its own data); give each placement script its own foliage
+  types so a re-run never touches another script's instances.
+
 ## Ambition on a budget: making a small game feel big
 
 Ambition and Innovation is judged, but the jam is four days and rule 1 (small scope) stands. Ambition reads from what

@@ -148,6 +148,14 @@ Facts behind the table:
   simplifies thin triangles away). `MeshNaniteSettings.shape_preservation` takes `NaniteShapePreservation.PRESERVE_AREA`
   (no setup; did not fix the bare look on its own) or `VOXELIZE` (Nanite Foliage, Experimental: `features.md`). Leaf
   size and cluster density in the source mesh matter more; check foliage from its farthest gameplay view.
+- **Nanite on plants: pick the shape preservation per size** (Static Mesh > Nanite Settings, rehearsal on 5.8.4).
+  Voxelize suits trees and big shrubs (5-7 m trees looked right). On small, thin plants (grass clumps 0.4-1.1 m)
+  it turned every clump into a speckled leafy blob 3-8 m from the gameplay camera; Preserve Area (or Nanite off) gave
+  real blades, proven by toggling the one setting. Check each plant on the gameplay camera after import, before
+  placing it in bulk.
+- **Voxelize foliage can carry WPO wind** (crowns moved in a two-frame capture; `NaniteVertexFactory.ush` evaluates
+  WPO for voxel clusters). Give every material slot of a plant the same WPO or leaves detach from stems, and set a
+  WPO disable distance on the foliage types and components. Untested: whether far voxel bricks keep the offset.
 - Many copies of one prop (rocks, crates, trees): place as **instances** (instanced static mesh / PCG), not hundreds of
   separate actors.
 - Collision: imported props get one auto **convex hull** (cheap). For openings and walk-in shapes use authored

@@ -8,6 +8,9 @@
   and consider **Only Cook Production Assets** (DevelopmentCook assets then error the cook instead of shipping).
 - We ship a **Development** build (`scripts/package.ps1`; the reasons are in `cpp.md` "Build configurations"). Close the
   editor first.
+- **PIE can hide cook-only faults.** Seen: landscape grass drawn in PIE and missing from every packaged build until
+  the landscape proxies were re-saved (`worldbuilding.md` "Foliage and landscape grass"). Look at each new system
+  once in a packaged build.
 - Use the Asset Manager audit tools to see what's taking disk/memory before cutting content.
 
 ## Derived Data Cache / Zen
