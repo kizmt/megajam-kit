@@ -124,8 +124,17 @@ project (no pre-jam gameplay code in the kit).
     Input Axis Values` (YXZ), S = Swizzle + `Negate`, D = no modifier, A = Negate. A missing Swizzle makes W/S move
     sideways (a classic bug).
   - Common modifiers: `Negate`, `SwizzleAxis`, `DeadZone` (gamepad sticks), `Scalar` (sensitivity).
-  - Common triggers: none (= Down, fires every frame while held), `Pressed` (once), `Released`, `Hold`, `Tap`, `Pulse`.
-    Put "press E once" behaviour in a `Pressed` trigger on the IA, or bind `ETriggerEvent::Started`.
+  - Common triggers: none (= Down, fires every frame while held), `Pressed` (once), `Released`, `Hold`,
+    `HoldAndRelease`, `Tap`, `RepeatedTap`, `Pulse`. Put "press E once" behaviour in a `Pressed` trigger on the IA,
+    or bind `ETriggerEvent::Started`. `Hold` defaults to `HoldTimeThreshold` 1.0 s and `bIsOneShot` false (fires every
+    frame after the threshold): for "hold to interact" set 0.3-0.5 s and one-shot.
+  - **There is no toggle trigger.** For a hold/toggle option (sprint, aim, crouch), bind `Started` and `Completed`:
+    hold mode sets on `Started` and clears on `Completed`; toggle mode flips on `Started` and ignores `Completed`.
+- **Gamepad mappings in the same `IMC_Default`** (judges may play on a pad): `Gamepad_Left2D` to `IA_Move` with
+  `DeadZone` (Radial); `Gamepad_Right2D` to `IA_Look` with `DeadZone`, `Scalar` and **`ScaleByDeltaTime`** (mouse
+  delta is a distance per frame, a stick is a rate, so without it look speed changes with fps);
+  `Gamepad_FaceButton_Bottom` to jump, `Gamepad_FaceButton_Left` to interact, `Gamepad_Special_Right` (Start) to
+  `IA_Pause`. `ResponseCurveExponential` gives finer aim near the centre. Menus: `audio-ui.md` "Gamepad menus".
 - **Add the mapping context in the PlayerController**, local players only. This is the template pattern:
 
 ```cpp
@@ -162,6 +171,22 @@ if (auto* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent))
   When several contexts map the same key, the higher priority wins.
 - Menus: in the PlayerController call `SetInputMode(FInputModeUIOnly / GameAndUI / GameOnly)` and set
   `bShowMouseCursor`.
+- **Prompts show the real key:** `Subsys->QueryKeysMappedToAction(IA_Interact)` returns the `TArray<FKey>` mapped
+  in the active contexts. Pick the first whose `IsGamepadKey()` matches the last device used, then
+  `Key.GetDisplayName()` for keyboard text or a small `TMap<FKey, UTexture2D*>` for pad icons.
+- **Test input without a pad:** `showdebug enhancedinput` lists the active contexts and mappings; the console
+  commands `Input.+key Gamepad_Left2D X=0.7 Y=0.5` / `Input.-key <Key>` inject input, and the subsystem's
+  `InjectInputForAction` does it from code.
+- **Key remapping (Enhanced Input User Settings) is Experimental** (Epic's 5.8 Parrot sample: "use caution when
+  trying to ship"); optional for a jam. If built: Project Settings > Enhanced Input `bEnableUserSettings`; a unique
+  Player Mappable Key Settings > Name on each remappable IA; add contexts with an `FModifyContextOptions` whose
+  `bNotifyUserSettings = true`; remap with `GetUserSettings()->MapPlayerKey(FMapPlayerKeyArgs{MappingName, Slot =
+  EPlayerMappableKeySlot::First, NewKey}, FailureReason)`, then `ApplySettings()` and `SaveSettings()`
+  (`ResetKeyProfileToDefault` for Reset; `ProfileIdString`, as `ProfileId` is deprecated). It saves to
+  `Saved/SaveGames/EnhancedInputUserSettings.sav`: delete it when testing defaults.
+- **A held action that sticks after alt-tab:** `UEnhancedInputDeveloperSettings::bSendTriggeredEventsWhenInputIsFlushed`
+  controls whether in-progress actions get their end events when the viewport loses focus; leave the default, but
+  check it first.
 - `UInputTriggerCombo` is **deprecated in 5.8**. Don't use it.
 
 ## Cameras
@@ -357,3 +382,9 @@ public:
 - Gameplay timers: https://dev.epicgames.com/documentation/en-us/unreal-engine/gameplay-timers-in-unreal-engine?application_version=5.8
 - Saving and loading: https://dev.epicgames.com/documentation/en-us/unreal-engine/saving-and-loading-your-game-in-unreal-engine?application_version=5.8
 - Root motion: https://dev.epicgames.com/documentation/en-us/unreal-engine/root-motion-in-unreal-engine?application_version=5.8
+- EnhancedInput API index (trigger and modifier classes): https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Plugins/EnhancedInput
+- IEnhancedInputSubsystemInterface (QueryKeysMappedToAction): https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Plugins/EnhancedInput/IEnhancedInputSubsystemInterface
+- UEnhancedInputUserSettings: https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Plugins/EnhancedInput/UEnhancedInputUserSettings
+- FMapPlayerKeyArgs: https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Plugins/EnhancedInput/FMapPlayerKeyArgs
+- UEnhancedInputDeveloperSettings: https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Plugins/EnhancedInput/UEnhancedInputDeveloperSettings
+- Enhanced Input in Parrot (remapping sample): https://dev.epicgames.com/documentation/unreal-engine/enhanced-input-in-parrot-for-unreal-engine

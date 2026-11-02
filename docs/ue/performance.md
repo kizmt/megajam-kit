@@ -17,10 +17,13 @@ play. The right frame rate depends on the game, so the bar has a fixed part and 
 - **At or above the target:** the slowest 5% of frames (p95) at or above the game's target fps.
 - **A settings menu that scales:** quality preset, resolution scale, frame cap and vsync, applied and saved through
   `UGameUserSettings` (`SetOverallScalabilityLevel`, `SetResolutionScaleNormalized`, `SetFrameRateLimit`,
-  `SetVSyncEnabled`, then `ApplySettings` and `SaveSettings`). This is what lets a weaker PC play. Applying a preset
+  `SetVSyncEnabled`, then `ApplySettings(false)`, which also saves; `false` keeps the bench's command-line overrides
+  out of the saved ini). This is what lets a weaker PC play. Applying a preset
   overwrites the shipped mix (full Lumen: High GI/reflections/shadows; Lumen Lite: Medium GI/reflections, High
   shadows; Epic elsewhere) and `GameUserSettings.ini`
-  keeps it, so the menu's default/"recommended" preset must reproduce the shipped mix (or ship High overall).
+  keeps it, so the menu's default/"recommended" preset must reproduce the shipped mix (or ship High overall); the
+  mix reads as -1 ("Custom") from `GetOverallScalabilityLevel()`, and the menu never auto-benchmarks
+  (`audio-ui.md` "Settings menu").
   On a Lumen game the presets scale the lighting too: **Medium is Lumen Lite** (weaker PCs keep dynamic bounce
   light), **Low turns Lumen off** (unshadowed sky light). Check that the Medium and Low looks still read.
 
@@ -236,6 +239,7 @@ Facts behind the table:
 - Nanite: https://dev.epicgames.com/documentation/en-us/unreal-engine/nanite-virtualized-geometry-in-unreal-engine?application_version=5.8
 - Common memory and CPU performance considerations: https://dev.epicgames.com/documentation/en-us/unreal-engine/common-memory-and-cpu-performance-considerations-in-unreal-engine?application_version=5.8
 - Profiling intro: https://dev.epicgames.com/documentation/en-us/unreal-engine/introduction-to-performance-profiling-and-configuration-in-unreal-engine?application_version=5.8
+- UGameUserSettings (ApplySettings saves): https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Runtime/Engine/UGameUserSettings
 - Texture streaming configuration: https://dev.epicgames.com/documentation/en-us/unreal-engine/texture-streaming-configuration-in-unreal-engine?application_version=5.8
 - BlendableLocation enum (PP material resolution): https://dev.epicgames.com/documentation/en-us/unreal-engine/python-api/class/BlendableLocation?application_version=5.8
 - Measured on the target PC 2026-10-24: generated props import with 1 LOD, Nanite off, one convex hull; enabling Nanite
