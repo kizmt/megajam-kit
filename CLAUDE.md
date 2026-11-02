@@ -229,7 +229,9 @@ add an entry to the project's `KIT_NOTES.md` in the same round.
   are sourced: download before the jam, retarget onto the game's characters during it.
 - **Only use a sourced asset whose licence allows AI use.** On Fab: the listing's "Allows usage with AI" must be Yes
   (Epic content licence section 17 bars NoAI content as input to generative AI, which includes this agent; the same
-  flag is `"isAiForbidden"` at `https://www.fab.com/i/listings/<listing id>`). Check before importing any pack.
+  flag is `"isAiForbidden"` at `https://www.fab.com/i/listings/<listing id>`). Check before importing any pack. Fab
+  refuses scripted requests (Cloudflare challenge / HTTP 403), so ask the director to read the flag in a browser (or
+  paste the listing JSON), and record it in `SOURCED_ASSETS.md` with the listing URL and the date checked.
 - **The Unreal Engine EULA no longer limits AI use of the engine or MetaHuman** (Epic's 2026-10-29 update, accepted
   by the director): engine source can be read by the agent, and MetaHuman Creator, Animator and Mesh to MetaHuman
   output can be used with AI tools. NoAI rules for Fab and Epic content (section 17 above) are unchanged.
