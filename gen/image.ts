@@ -3,7 +3,9 @@
 //
 //   node gen/image.ts "a wooden treasure chest" --asset --n 3
 //   node gen/image.ts "misty forest clearing at dawn" --aspect 16:9 --provider openai
-//   node gen/image.ts "a lantern" --asset --style art/style-prefix.txt --ref art/reference/key.png
+//   node gen/image.ts "a lantern" --asset --style C:/dev/<Project>/art/style-prefix.txt `
+//        --ref C:/dev/<Project>/art/reference/key.png
+// (--style/--ref are project files: give absolute paths, since the scripts run from the kit folder.)
 //
 // Output: <Project>/Generated/images/<slug>-<timestamp>-<i>.<ext> (or --out) plus a .json sidecar with the
 // full prompt and settings. --asset wraps the prompt for image-to-3D: one object, centred, plain background.
@@ -51,7 +53,8 @@ if (opt.help || positionals.length === 0) {
   console.log(`Usage: node gen/image.ts "<prompt>" [--asset] [--n 3] [--provider gemini|openai] [--model id]
        [--aspect 1:1|16:9|9:16|4:3|3:4] [--size 1K|2K|4K] [--style prefix.txt] [--ref img.png ...]
        [--out dir] [--name slug]
-Defaults: provider gemini (${DEFAULT_MODELS.gemini}), openai model ${DEFAULT_MODELS.openai}.`);
+Defaults: provider gemini (${DEFAULT_MODELS.gemini}), openai model ${DEFAULT_MODELS.openai}.
+--size is Gemini only; OpenAI picks its size from --aspect (1024x1024, 1536x1024 or 1024x1536).`);
   process.exit(opt.help ? 0 : 2);
 }
 

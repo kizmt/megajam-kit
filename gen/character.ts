@@ -58,12 +58,13 @@ const usage = `usage: node gen/character.ts "<description>" --name Name [--conce
        node gen/character.ts --image <concept> --name Name
        node gen/character.ts --task <tripo task id> [--pbr <textured model.glb|fbx>] --name Name
        node gen/character.ts --rig <tripo rig.fbx> --pbr <textured model.glb|fbx> --name Name
-  options: [--no-retexture] [--height 1.8] [--rot -90] [--faces 30000] [--max-tex 2048] [--tex 0] [--spec unreal|mixamo]
+  options: [--no-retexture] [--height 1.8] [--rot=-90] [--faces 30000] [--max-tex 2048] [--tex 0] [--spec unreal|mixamo]
            [--provider gemini|openai] [--style file] [--ref img] [--parent /Script/<Module>.<Class>] [--no-unreal]
   --name is required (asset names: SK_<Name>, MI_<Name>, ABP_Unarmed_<Name>, BP_<Name>).
   --task: with --pbr, rigs that task as is; without, re-textures it first (unless --no-retexture).
   --max-tex: in-game texture cap (cooked size); the full-res source is kept. --tex N downsizes the source too.
-  --parent makes BP_<Name>: a thin subclass of that C++ Character with mesh, anim class and offset set.`;
+  --parent makes BP_<Name>: a thin subclass of that C++ Character with mesh, anim class and offset set.
+  A negative value needs '=' (--rot=-90): Node's parser rejects '--rot -90' as ambiguous.`;
 if (o.help || !o.name || (!prompt && !o.image && !o.task && !o.rig)) {
   console.log(usage);
   process.exit(o.help ? 0 : 2);
@@ -184,7 +185,7 @@ try {
     const t = Date.now();
     const tj = parseTripo(await run('tripo', ['make', image, '--for', 'game-pc', '-p', `face_limit=${o.faces}`, '-o', tripoOut('model'), '--name', `${name.toLowerCase()}-model`, '--json', '--yes', '--no-open'], 'tripo make'));
     task = tj.type === 'image_to_model' ? tj.task_id : readTripoTask(tj.output_dir).input?.original_model_id ?? null;
-    if (!task) throw new Error(`could not find the original model task id in ${tj.output_dir}\\task.json`);
+    if (!task) throw new Error(`could not find the original model task id in ${join(tj.output_dir, 'task.json')}`);
     pbrSource = tj.model_file; // full PBR maps (4 images); replaced by the re-texture below
     manifest.steps.model = { task, file: tj.model_file, credits: tj.credits_consumed, time: secs(t) };
     console.log(`    model task ${task} (${tj.credits_consumed} credits, ${secs(t)})`);

@@ -3,14 +3,14 @@
 //
 //   node gen/asset.ts "a brass lantern" --name Lantern --max 0.4
 //   node gen/asset.ts "a brass lantern" --name Lantern --concepts 4      (stop after 4 concept images)
-//   node gen/asset.ts --image C:/dev/<Project>/Generated/assets/lantern/concept-2.jpg --name Lantern --max 0.4
+//   node gen/asset.ts --image C:/dev/<Project>/Generated/assets/lantern/concept-<stamp>-2.jpg --name Lantern --max 0.4
 //
 // Steps: concept image -> Tripo image-to-3D (FBX) -> Blender prep (size, pivot, textures) ->
 //        Blender preview -> Unreal import + place + screenshot (if the editor is open).
 // Everything for one asset lands in <Project>/Generated/assets/<name>/ with a manifest.json (see gen/paths.ts).
 
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { basename, join, resolve } from 'node:path';
+import { basename, extname, join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { KIT, errorMessage, generatedDir, pascal } from './paths.ts';
 import { packOrm, parseMarkedJson, parseTripo, requireTripoCredits, run, secs, type OrmResult } from './proc.ts';
@@ -50,7 +50,8 @@ if (o.help || (!prompt && !o.image && !o.model)) {
        [--concepts N] [--image file] [--model file] [--provider gemini|openai] [--style file] [--ref img]
        [--tex 2048] [--faces 30000] [--tris N] [--dest /Game/Props] [--place x,y,z] [--yaw deg] [--hulls 4-8] [--no-unreal]
   --hulls N  replace the default collision with N convex hulls (props the player pushes, picks up or
-             walks around closely; leave off for background props)`);
+             walks around closely; leave off for background props)
+  A value starting with '-' needs '=': --place=-300,0,0  --yaw=-90 (Node's parser rejects '--yaw -90').`);
   process.exit(o.help ? 0 : 2);
 }
 
@@ -86,7 +87,9 @@ function parsePrep(out: string): PrepResult {
 
 // ---------- helpers ----------
 
-const name = pascal(o.name ?? (prompt || basename(o.image ?? o.model ?? 'Asset')).split(' ').slice(-2).join(' '));
+// --name is used as given; a prompt or file name gives its last two words (a file's extension dropped).
+const fromFile = (f: string): string => basename(f, extname(f));
+const name = pascal(o.name ?? (prompt || fromFile(o.image ?? o.model ?? 'Asset')).split(' ').slice(-2).join(' '));
 const dir = join(generatedDir('assets'), name.toLowerCase());
 mkdirSync(dir, { recursive: true });
 const manifest: Manifest = { name, prompt, created: new Date().toISOString(), steps: {} };

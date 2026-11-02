@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Retarget a whole animation library folder onto a character built by gen/character.ts (editor open, MCP).
 //   node gen/unreal/anim_inventory.ts --project <library project> --folder <Pack>   # find the --source-mesh first
-//   node gen/unreal/retarget_library.ts --name Hero --folder /Game/<Pack>/Animations \
-//        --source-mesh /Game/<Pack>/Mannequins/Meshes/SKM_Manny_Simple --category Interact \
+//   node gen/unreal/retarget_library.ts --name Hero --folder /Game/<Pack>/Animations `
+//        --source-mesh /Game/<Pack>/Mannequins/Meshes/SKM_Manny_Simple --category Interact `
 //        --filter Door --limit 5                                # test run: filter to the clips you will check
 //   options: --mesh <target SK>  --source-rig <IK rig>  --category <subfolder>  --filter attack,dodge  --limit 5
 // --filter is a substring match (it also catches neighbours such as *_Lean); --names a,b,c takes exact asset names.
