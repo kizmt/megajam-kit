@@ -3,7 +3,7 @@
 // Set MEGAJAM_PROJECT=C:\dev\<ProjectName> in the kit's .env (or the environment, which wins: loadEnvFile
 // doesn't override a variable that is already set). Scripts refuse to run
 // without it rather than writing into the kit. --out on any script still overrides.
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, realpathSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -47,8 +47,16 @@ export function generatedDir(kind: GeneratedKind): string {
   return join(projectDir(), 'Generated', kind);
 }
 
-/** True when this module is the script Node was started with (CLI entry point). */
+/** True when this module is the script Node was started with (CLI entry point). Compares real paths, and
+ *  case-insensitively on Windows: the module URL is the resolved real path, argv[1] is the path as typed
+ *  (`c:\dev\...`, a junction), and a mismatch would make the CLI silently do nothing. */
 export function isMain(importMetaUrl: string): boolean {
   const entry = process.argv[1];
-  return entry !== undefined && fileURLToPath(importMetaUrl) === resolve(entry);
+  if (entry === undefined) return false;
+  const norm = (p: string): string => {
+    let r = resolve(p);
+    try { r = realpathSync.native(r); } catch { /* keep the resolved path */ }
+    return process.platform === 'win32' ? r.toLowerCase() : r;
+  };
+  return norm(fileURLToPath(importMetaUrl)) === norm(entry);
 }

@@ -60,7 +60,8 @@ export async function makeTextures(o: { size?: number; only?: string[]; unreal?:
     console.log(`  ${t.name}  ${t.tiles ? 'tiles' : 'clamped'}  ${t.what}`);
     done.push(`${TEX}/${t.name}`);
   }
-  if (o.unreal !== false) {
+  // Never save an empty list: save_assets([]) saves every dirty package, the user's level included.
+  if (o.unreal !== false && done.length) {
     if (!(await callTool<boolean>(AS, 'save_assets', { asset_paths: done }))) throw new Error('saving the textures failed');
   }
   return done;
@@ -132,7 +133,8 @@ export async function makeMeshes(o: { unreal?: boolean; out?: string } = {}): Pr
     await mcpCall(SM, 'set_nanite_enabled', { mesh, enabled: false });
     paths.push(`${folder}/${m.name}`);
   }
-  if (!(await callTool<boolean>(AS, 'save_assets', { asset_paths: paths }))) throw new Error('saving the meshes failed');
+  // Every mesh kept (all referenced): nothing to save, and save_assets([]) would save every dirty package.
+  if (paths.length && !(await callTool<boolean>(AS, 'save_assets', { asset_paths: paths }))) throw new Error('saving the meshes failed');
   return r;
 }
 
