@@ -214,6 +214,9 @@ Epic: use PP materials sparingly, prefer built-in volume settings (color grading
   type must match compression (Normal/`TC_Normalmap`, Masks/`TC_Masks`, LinearGrayscale/`TC_Grayscale`) or compile fails.
   For `TC_Grayscale` it also follows sRGB: sRGB off takes `SAMPLERTYPE_LINEAR_GRAYSCALE`, sRGB on
   `SAMPLERTYPE_GRAYSCALE` ("Sampler type is Grayscale, should be Linear Grayscale" fails the whole material).
+  On an MI the failed permutation is quiet: the master's `EmissiveTexture` is a Color sampler, so a `TC_Grayscale`
+  (or `TC_Masks`) mask there drew no glow at all. Import emissive masks sRGB with `TC_Default` (write the PNG
+  sRGB-encoded); proven on a prototype.
   `create_material` itself warns: prefer an MI.
 - Setting `material_function` on a FunctionCall through generic `set_properties` may not refresh its pins; check with
   `get_expression_input_names` and recompile (unverified).

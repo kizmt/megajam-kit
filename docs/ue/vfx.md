@@ -201,7 +201,16 @@ Parameter x (erosion) and y (emissive) confirmed, and a baked colour flipbook pl
   vertically, head at the top (`T_VFX_Spark` is).
 - **`/Niagara/DefaultAssets/DefaultSystem` is not empty:** it contains a `Fountain` emitter. Remove it
   (`RemoveEmitter`) after `AddEmitter`, or it renders default sprites alongside yours.
-- When nothing renders, swap the renderer to `/Niagara/DefaultAssets/DefaultSpriteMaterial` first: particles
+- **When nothing renders, check in this order** (proven on a prototype where glows, wisps and puffs drew nothing in
+  daylight): 1) `fx.Niagara.DumpComponents`: are there live particles? 2) `fx.DumpParticleData 1` for one frame: is
+  the colour right? 3) switch the instance to translucent for a capture: **black sprites mean the emissive is too low
+  for the exposure**, and a near-black additive sprite adds nothing. With
+  `r.DefaultFeature.AutoExposure.ExtendDefaultLuminanceRange=True` and a sunlit scene, EmissiveStrength 8-200 read as
+  near black; 1200-3000 read (match a known unlit glow in the level: there, a lamp flame needed 3000). An additive
+  marker in daylight needed hundreds (faint at 150 from 30 m, clear at 300-600): sweep it in a `-game` shot at the
+  play distance before choosing. The master's default (5) and the `vfx.ts` examples suit night or indoor scenes.
+  Translucent keeps a coloured glow's hue over a bright sky; additive washes it toward white.
+- Then swap the renderer to `/Niagara/DefaultAssets/DefaultSpriteMaterial`: particles
   showing = a material/size problem, not the simulation or the capture. Set Sub Image Size back to 1x1 for that
   check: with 8x8 the default material shows only its empty top-left 1/64 and proves nothing.
 - **`SingleLoopingParticle` has no sprite size set:** its particle is zero-sized until you set Initialize

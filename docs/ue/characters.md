@@ -193,6 +193,11 @@ protected:
   its slot** (`DefaultSlot`). This is the #1 "montage does nothing" cause. Attack hit detection: a C++ notify state that sweeps
   every tick of the active window, not a single-frame `UAnimNotify` trace (`animation-library.md` "Combat animation
   pattern"). Native notifies avoid BP VM calls.
+- **Swapping the AnimBP mid-action** (`SetAnimInstanceClass`, e.g. a body part that changes the gait): the new
+  instance has no pose to blend from, so a default blend-in starts from the reference pose. Swap on a held frame
+  (a paused montage) and start the next montage from that same frame with **blend in 0**: the swap doesn't show.
+  Layering a montage over locomotion (cached pose, a second Slot, Layered Blend per Bone) can be built by script:
+  `editor-scripting.md` E.
 - **Root motion vs in place:** locomotion **in place** (Manny's are; for Tripo use `--animate-in-place`). Root motion only
   for a dodge/lunge montage, with the ABP set to "Root Motion from Montages Only" (the default). Details are in
   `gameplay.md`.
@@ -223,6 +228,8 @@ protected:
   Editor (UI) or cap faces at generation.
 - NPCs: set `bEnableUpdateRateOptimizations = true` (URO) and
   `VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered` on the mesh component.
+  An off-screen NPC then keeps its last rendered pose: tests that read its bones need it on screen
+  (`debugging.md` F).
   Keep the player on the default. Epic recommends the **Animation Budget Allocator** plugin over URO for many characters.
 - Keep AnimGraph inputs as member variables (fast path); compute in C++ `NativeUpdateAnimation` or
   `NativeThreadSafeUpdateAnimation`.
