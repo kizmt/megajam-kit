@@ -5,7 +5,9 @@ seen the work being built. Give it only what is below; never your own opinion of
 
 ## What the main session prepares
 
-1. Screenshots from the fixed camera set (`art/camera-set.md`), downscaled to ~1600 px.
+1. Screenshots from the fixed camera set (`art/camera-set.md`), downscaled to ~1600 px. For an A/B of one change in
+   the editor, take both in one session with landscape grass off and diff the pair first: run-to-run noise can be
+   bigger than the change (`docs/ue/debugging.md` F, "Editor A/B captures").
 2. One of:
    - the matching reference images (`art/reference/`), or
    - the previous version's screenshots of the same cameras (before/after), captured **in the same editor session**

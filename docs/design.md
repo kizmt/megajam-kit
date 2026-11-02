@@ -58,6 +58,11 @@ space) before the next idea. Uninterrupted difficulty reads as a grind; uninterr
   and build every gap, ledge and corridor from those numbers.
 - **Boundaries are proven, not assumed.** Every edge the player must not cross gets a pawn-sized walk test
   (`docs/ue/gameplay.md` "Verification lessons"); a gentle steady slope leaks as surely as a cliff edge.
+- **Check where the route meets water or a drop.** When a script lays the route and the water (or cliffs)
+  separately, nothing checks where they meet: in the rehearsal the director found the route crossing two streams
+  with no way over. After laying a route, list every point where it crosses water or a drop deeper than a step
+  (the route's line against the water outlines, then a trace down at each crossing for what carries the player), and
+  give each one a crossing (bridge, stepping stones, ford) before playtesting.
 
 ## Difficulty and fairness
 

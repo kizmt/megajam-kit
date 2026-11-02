@@ -89,6 +89,27 @@ Judge it in the 60-second video: if the extra scale doesn't show there, cut it.
   `InstancedFoliageActor.remove_all_instances` + `add_instances` for that type, then save the level.
 - **Wind on fine foliage blurs at 4K under TSR**: fade it out near the camera in the material and decide at the style
   lock which plants move (`performance.md` "Render paths").
+## World Partition, foliage and grass (from the rehearsal, 5.8.4)
+
+- **Probe foliage collision in a later call than the one that loads the actors.** A probe right after
+  `WorldPartitionBlueprintLibrary.load_actors` found instance bodies on 0 of 18 tree meshes; the same probe a minute
+  later found 17 of 18 (the 18th used a separate collision actor by design). Likely cause (suspected): physics state
+  is created after loading finishes. Changing a live foliage component's collision profile didn't rebuild its bodies
+  in one session either; a fresh load did. `get_instance_transforms` on the InstancedFoliageActor returned 0 under
+  World Partition: work on its instanced static mesh components directly.
+- **Judge landscape grass from `-game` shots.** Non-Nanite grass keeps no CPU instances (`get_instance_count()` reads
+  0; Nanite grass meshes did report counts), and a background editor viewport (~3 fps) may not rebuild it at all:
+  both looked like "the grass is gone" while a `-game` run showed it. Grass also regrows at its own pace around a
+  moved editor camera, which spoils A/B captures (`debugging.md` F "Editor A/B captures").
+- **A placed actor that points at another placed actor needs the same spatial loading.** If a spatially loaded actor
+  holds a hard reference (`TObjectPtr<AActor>` UPROPERTY) to an always-loaded one (the sun, a hero prop), streaming
+  generation (`WorldPartitionStreamingGeneration.cpp`) makes **both** always-loaded and only logs, at Log level:
+  "Spatially loaded actor ... references Non-spatially loaded actor ...". Read from the source, not measured; nothing
+  broke in the rehearsal, but a heavy actor can stop streaming this way unnoticed. Make a level director actor
+  always-loaded on purpose; for a streamed actor use `TSoftObjectPtr` or find the target at BeginPlay. Grep the cook
+  log for "references Non-spatially loaded" once per milestone.
+- Runtime components and spawned actors on streamed cells: unique component names (`performance.md` "CPU / gameplay
+  code"); owned spawns live in the owner's cell (`editor-scripting.md` E, `get_path_name()`).
 
 ## Splines
 

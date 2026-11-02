@@ -70,6 +70,10 @@ headers; the patterns are unbuilt in a prototype.
   false; in `Landed()` (override, call Super), `Jump()` if the press is within the window, then clear it so one
   press gives one jump. The same idea queues the next attack during recovery or hit-stop and fires it at the combo
   window (`animation-library.md` "Hit window").
+- **Fall damage: reset the fall's top on a teleport too, not only on landing.** A rehearsal game measured
+  `FallTopZ - Z` on landing, with `FallTopZ` set when a fall starts. A test script teleported the pawn out of a glide
+  ending high in the air, the fall never ended, and the landing far below counted a 90 m drop. Reset it in the
+  game's teleport/respawn path (test scripts: `debugging.md` F).
 - **Acceleration and stopping.** Time to top speed 0.1-0.2 s for snappy, 0.3 s+ for heavy: `MaxAcceleration` ≈
   `MaxWalkSpeed / seconds` (the template's 1500 at 500 is ~0.33 s). Stop in ~0.1-0.2 s: `BrakingDecelerationWalking`
   ≈ speed / seconds. `GroundFriction` sets how fast direction changes (higher is snappier turns). Less control in the

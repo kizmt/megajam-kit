@@ -93,6 +93,7 @@ Paths / `UE_PYTHONPATH`. The interpreter is isolated by default.
 | Undo grouping | `with unreal.ScopedEditorTransaction("Place props"):` | - |
 | Progress bar | `with unreal.ScopedSlowTask(n, "Working") as t: t.make_dialog(True); t.enter_progress_frame(1)`; check `t.should_cancel()` | - |
 | Logging | `unreal.log`, `log_warning`, `log_error` | `print` (works, but not tagged) |
+| Line traces | `SystemLibrary.line_trace_single(...)` and the like with `unreal.TraceTypeQuery.ECC_VISIBILITY` (or `ECC_CAMERA`) | `TRACE_TYPE_QUERY1/2`: same values, but warn on every call in 5.8 |
 
 Every `EditorLevelLibrary` function except the spawns, `replace_selected_actors`, `get_pie_worlds` and
 `editor_end_play` carries "The Editor Scripting Utilities Plugin is deprecated - use ...Subsystem". Use the
@@ -291,6 +292,13 @@ session must follow.
   references until `AssetRegistry.scan_files_synchronous([...], force_rescan=True)`. For "is this dependency really
   gone", grepping the saved `.uasset` is the reliable check.
 - `EditorAssetLibrary.delete_asset` can return True while the file stays on disk until the editor closes.
+- **A forced delete silently nulls every reference to the asset in loaded packages, and the next save-all writes the
+  nulls.** A rehearsal import script deleted a mesh before re-importing it (the only way its `UCX_` hulls came in);
+  run for one mesh, it skipped its re-link step, a DataAsset lost the mesh in memory, the quit script's
+  `save_dirty_packages` saved that, and the next package shipped without the mesh (a `-game` test caught it). After
+  any delete-and-reimport, re-link; before a save-all, list `EditorLoadingAndSavingUtils.get_dirty_content_packages()`
+  so a surprise referencer shows up before it reaches the cook. In a Git LFS repo, `git show <rev>:<file>` returns
+  the ~130-byte pointer: grep the working file or the LFS object, not `git show`.
 - **Nanite triangle counts:** `StaticMesh.get_num_triangles(0)` returns the fallback mesh, not the source. Copy to a
   DynamicMesh with `copy_mesh_from_static_mesh` (read LOD `MAX_AVAILABLE`) and use `get_triangle_count()`.
 - **Positional order traps: always pass keywords.** `unreal.Rotator(a, b, c)` is **(roll, pitch, yaw)**, unlike C++
@@ -305,6 +313,10 @@ session must follow.
     `UnrealEditorSubsystem.get_editor_world().get_world_settings()` (e.g. to set the game mode).
   - Actor labels differ from object names (label "DirectionalLight", name `DirectionalLight_0`; label "SM_SkySphere",
     name `StaticMeshActor_0`). Match on `get_name()` when removing template actors.
+  - **Key dicts of actors by `get_path_name()` (or keep the object), never `get_name()`.** An actor spawned at runtime
+    with an `Owner` goes into the owner's level (`LevelActor.cpp`), so under World Partition two cells can each have
+    a `Foo_0`. A test keyed by `get_name()` read a waiting group's state for the fighting one; it passed while only one
+    group was loaded.
   - `AddComponentByClass` is not exported to Python. Add components with MCP `ActorTools.add_component(owner,
     {refPath: "/Script/Engine.RotatingMovementComponent"}, name)` and set them with `ObjectTools.set_properties`
     (camelCase names, e.g. `rotationRate`, `pivotTranslation`).

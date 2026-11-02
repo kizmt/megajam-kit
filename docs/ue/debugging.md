@@ -275,6 +275,18 @@ Select-String $log -Pattern '\[PROOF\]|Log file closed'   # proof lines + clean 
     visible or invisible by the mesh under it; then a route walker at run speed in `-game` counts falls and stalls.
     For stairs, run the pawn up with `add_movement_input` and log `current_floor` each tick.
   - Image work outside the editor: the system Python had PIL but not numpy; Blender's Python had numpy but not PIL.
+  - Editor-only properties don't exist: `static_mesh.get_editor_property("body_setup")` raises "Failed to find
+    property". Have an editor probe write what the test needs (collision shapes, bounds) to JSON and read that.
+  - Landscape grass is render-side: its components report `get_instance_count() == 0` while the grass renders. Test
+    grass with shots (`worldbuilding.md` "World Partition, foliage and grass").
+  - **Moving the pawn between steps:** end any fall or glide first
+    (`set_movement_mode(MOVE_WALKING)` on the movement component; check the stub's enum name), or the game's fall
+    damage counts from where the fall started: a teleport out of a glide landed as a 90 m fall and a respawn. After a
+    teleport into a streaming cell, hold the pawn in place until the ground under it has collision (it fell through
+    unloaded ground otherwise), and don't trust the timing of the step's first tick (it came ~1 s late).
+  - **Framed shots of a third-person pawn:** set the spring arm's `use_pawn_control_rotation` False and
+    `set_world_rotation` on the arm. Setting the controller's rotation was overwritten by the game's camera code.
+  - Key dicts of actors by `get_path_name()`, never `get_name()` (`editor-scripting.md` E, "Python odds and ends").
   - Kit harness: `gen/test/game_test.ps1 -Script <test>.py` launches `-game`, runs the test and prints its result lines.
     Its log is `Saved\Logs\gametest_<Tag>.log`; it refuses to start while another `-game` instance of the project
     runs. While a test runs, don't save assets it loaded (`editor-scripting.md` "Rules that bite").
@@ -305,6 +317,12 @@ Select-String $log -Pattern '\[PROOF\]|Log file closed'   # proof lines + clean 
 - **Exposure differs between editor sessions.** After an editor relaunch the same cameras came back up to +15 luma on
   sky and bare ground with no setting changed (suspected: the eye-adaptation state). Within one session two captures
   matched to 1 level. Before/after pairs for a critic come from one session (`prompts/critic.md`).
+- **Editor A/B captures of one asset change:** with nothing changed, three captures of one camera a few minutes apart
+  differed by a mean of 17-42 (8-bit): landscape grass regrew around the moved viewport camera at its own pace (tall
+  grass hid a wall in one shot only), and the first shot after loading the level had trees still streaming in. With
+  `grass.Enable 0` (sent with `SystemLibrary.execute_console_command`) and a 45 s wait the same A/B differed by 3-6,
+  all wind. So: grass off, one throwaway capture after loading, toggle only the asset under test in the same session,
+  and diff the pair numerically before giving it to the critic. Judge the grass itself from `-game` shots.
 - **Particles in editor captures:** the editor world doesn't tick while the editor is unfocused, so placed Niagara
   systems show nothing. Before each capture, on every `NiagaraActor`'s component: `nc.reinitialize_system();
   nc.advance_simulation_by_time(1.0, 1/60)`. Also wait for any edited system to compile (`editor-scripting.md`).
