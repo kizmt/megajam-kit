@@ -1,6 +1,7 @@
 // Where generated files go. The kit holds tools only; every generated file belongs to the active project:
 //   <MEGAJAM_PROJECT>\Generated\<images|assets|audio|characters|shots|vfx>\
-// Set MEGAJAM_PROJECT=C:\dev\<ProjectName> in the kit's .env (or the environment). Scripts refuse to run
+// Set MEGAJAM_PROJECT=C:\dev\<ProjectName> in the kit's .env (or the environment, which wins: loadEnvFile
+// doesn't override a variable that is already set). Scripts refuse to run
 // without it rather than writing into the kit. --out on any script still overrides.
 import { existsSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';

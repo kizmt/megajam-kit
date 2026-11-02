@@ -57,6 +57,7 @@ Build/*/**
 Generated/
 
 # --- Machine-local ---
+__pycache__/
 .claude/settings.local.json
 *.log
 Thumbs.db

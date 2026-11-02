@@ -19,10 +19,23 @@ Target: ~10 minutes on jam day. Do the steps in order.
 - ffmpeg on PATH (`ffmpeg -version`; audio conversion and video recipes)
 - Tripo CLI (`tripo --version`; install per Tripo's docs)
 
+**Pasting commands and values:** copy them from their own code block, never from the end of a sentence. Trailing
+punctuation copied with them has broken setup before (`GenerateClientConfig ClaudeCode.` logs
+`Unknown client "ClaudeCode."`; an Asset Manager directory was saved as `/Game/Unused.`).
+
+## 0. Planning folder for the theme window (the night before, 2 min)
+
+The theme window runs before the project exists (`prompts/concept.md`). Check it with the rest of setup:
+1. Create `C:\dev\_plan\` with an empty `design\` folder.
+2. Copy the kit's `CLAUDE.md` into it (robocopy, see step 5.3).
+3. `C:\dev\_plan\.claude\settings.local.json`: step 5's `attribution` and `permissions` (`additionalDirectories`,
+   `deny`) lines only; no MCP lines yet.
+
 ## 1. Create the project (2 min)
 
 1. Unreal Project Browser → Games → **Blank**, **C++**.
-2. Location `C:\dev`, name `<ProjectName>` (short path; Unreal creates the project folder itself).
+2. Location `C:\dev`, name `<ProjectName>` (short path; Unreal creates the project folder itself). Ask the director
+   for the **team name** too (it names the zip, step 7): solo entrants use their itch.io username or their name.
 3. Wait for the C++ build; the editor should open with no "rebuild modules" prompt.
 
 ## 2. Plugins (2 min)
@@ -33,7 +46,12 @@ Target: ~10 minutes on jam day. Do the steps in order.
    Project Settings → Game → Asset Manager → Primary Asset Types to Scan → **+**
    - Primary Asset Type: `GameFeatureData`
    - Asset Base Class: `GameFeatureData`
-   - Directories: `/Game/Unused`
+   - Directories:
+
+     ```
+     /Game/Unused
+     ```
+
    A one-off "Ensure condition failed: HasValidRuntimeData()" while filling this in is expected and harmless.
 4. Edit → **Editor Preferences** → Plugins → Python → tick **Developer Mode** (per-user; prefer this over the
    Project Settings copy, as Epic's own comment says). On the next restart the editor writes the Python API stub
@@ -51,9 +69,20 @@ Target: ~10 minutes on jam day. Do the steps in order.
 ## 3. MCP server (1 min)
 
 1. Edit → Editor Preferences → General → Model Context Protocol → tick **Auto Start Server** (port 8000, path `/mcp`). Do not use "Set as Default".
-2. Console: Window → Output Log → the **Cmd** box at the bottom (backtick is a dead key on some layouts): `ModelContextProtocol.StartServer`
-3. Console: `ModelContextProtocol.GenerateClientConfig ClaudeCode` → writes `.mcp.json` to the project root.
-4. Output Log should show `Created new HttpListener on 127.0.0.1:8000` and ~52 "Registering Toolset" lines.
+2. Console: Window → Output Log → the **Cmd** box at the bottom (backtick is a dead key on some layouts). Run:
+
+   ```
+   ModelContextProtocol.StartServer
+   ```
+
+3. Then this, which writes `.mcp.json` to the project root:
+
+   ```
+   ModelContextProtocol.GenerateClientConfig ClaudeCode
+   ```
+
+4. Check: the Output Log shows `Created new HttpListener on 127.0.0.1:8000` and ~52 "Registering Toolset" lines, and
+   `.mcp.json` exists in the project root.
 
 ## 4. Starting level (2 min)
 
@@ -94,6 +123,13 @@ The Blank template opens a temporary Open World level (Landscape, World Partitio
 2. Set effort to **high** (`/effort high`, or have Claude set it as the project default).
 3. Copy the kit's `CLAUDE.md` into the project root. Re-copy it whenever the kit's copy changes (sessions compare the two
    at start and say when the copy is behind; a stale copy silently misses newer rules).
+   **Copy out of the kit with robocopy.** The `deny` rule makes the session's permission check treat a `Copy-Item`
+   *source* in the kit as a write target and refuse it (the error misleadingly lists the kit as allowed).
+   robocopy works (exit code 1 means "files copied", not an error):
+
+   ```
+   robocopy C:\dev\megajam-kit C:\dev\<ProjectName> CLAUDE.md
+   ```
 4. With the editor already open: `cd C:\dev\<ProjectName>` → `claude` → approve `unreal-mcp`.
 5. `/mcp` should list only `unreal-mcp` (3 tools: tool search mode).
 6. Test: "What actors are in the current level?" — should list the Basic level's actors.
@@ -102,7 +138,14 @@ The Blank template opens a temporary Open World level (Landscape, World Partitio
 
 1. Copy the kit's `scripts\` folder (`build.ps1`, `package.ps1`, `init-repo.ps1`, `upload.ps1`) into the project root (`C:\dev\<ProjectName>\scripts\`).
    The scripts find the project from their own location, so they must live inside the project.
-   Copy `unreal\Plugins\MegajamTools` into `C:\dev\<ProjectName>\Plugins\` and restart the editor.
+   Copy `unreal\Plugins\MegajamTools` into `C:\dev\<ProjectName>\Plugins\` and restart the editor. Use robocopy
+   (step 5.3):
+
+   ```
+   robocopy C:\dev\megajam-kit\scripts C:\dev\<ProjectName>\scripts /E
+   robocopy C:\dev\megajam-kit\unreal\Plugins\MegajamTools C:\dev\<ProjectName>\Plugins\MegajamTools /E
+   ```
+
    Check: Output Log shows `Registering Toolset megajam_tools.toolsets.MegajamTools`.
    (Adds `import_sound`, `import_any`, `run_console_command`, `run_python` and `get_sound_info` to MCP. Enabled by
    default; no prompt.)
@@ -110,9 +153,13 @@ The Blank template opens a temporary Open World level (Landscape, World Partitio
    makes the first commit. Binaries/Intermediate/Saved/DerivedDataCache are ignored; `.uasset`/`.umap`,
    images, models and audio go through LFS.
 3. Commit at the end of every round. On jam day the first commit must be after 2026-11-12 14:00 JST.
-4. In the **kit's** `.env`, set `MEGAJAM_PROJECT=C:\dev\<ProjectName>`. All generators (images, props,
-   characters, audio, screenshots) write to `<Project>\Generated\`, which `init-repo.ps1` gitignores.
-   Never leave it pointing at a practice project on jam day.
+4. **The director** sets `MEGAJAM_PROJECT=C:\dev\<ProjectName>` in the **kit's** `.env` (the session may not edit
+   the kit, and `.env` holds the keys it must never read). All generators (images, props, characters, audio,
+   screenshots) write to `<Project>\Generated\`, which `init-repo.ps1` gitignores. Never leave it pointing at a
+   practice project on jam day; `gen/paths.ts` refuses a folder with no `.uproject`.
+   Until it is set, the session can point one command at the project: a variable already in the environment wins
+   over `.env` (`process.loadEnvFile` doesn't override it; checked on Node 22). Each shell call is fresh, so set it
+   in the same command: `$env:MEGAJAM_PROJECT='C:\dev\<ProjectName>'; node gen\audio.ts ...`
 
 Verified 2026-10-24 on a test project: 17 files tracked (0.07 MB), `Main.umap` via LFS, clean status.
 
