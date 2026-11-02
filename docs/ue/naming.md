@@ -39,6 +39,7 @@ Source: https://dev.epicgames.com/documentation/en-us/unreal-engine/recommended-
 | Geometry Collection (destruction) | `GC_` | |
 | Niagara Effect Type | `FXT_` | systems stay `FXS_` (Epic's quick start uses `FX_`; we don't) |
 | Material Parameter Collection | `MPC_` | |
+| Font Face / Font | `FF_` / `Font_` | import: `audio-ui.md` "Layout, fonts, DPI" |
 | Other master materials | `M_Glass`, `M_Decal` | allowed exceptions to the single master; still used via `MI_` |
 
 Texture descriptors: `T_<Name>_BaseColor`, `_Normal`, `_Roughness`, `_Metallic`, `_ORM` (packed).

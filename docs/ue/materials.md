@@ -153,6 +153,10 @@ in a packaged build = default material.
   `UMaterialInstanceDynamic* Mid = Mesh->CreateDynamicMaterialInstance(0);` (or
   `UMaterialInstanceDynamic::Create(Parent, Outer)`), then `SetScalarParameterValue`, `SetVectorParameterValue`,
   `SetTextureParameterValue`. Create once (BeginPlay), cache the pointer, update on events, not every tick.
+- **A MID's parent must be a Material or a Material Instance Constant, never another MID.** `SetParentInternal`
+  (`MaterialInstance.cpp`) refuses a MID, logs one `LogMaterial: Warning ... is not a valid parent` and leaves the
+  parent unset, so the mesh draws the default material (seen in a rehearsal: additive rays drew as dark, lit cones).
+  To share one look: take `GetMaterial(i)` before `CreateDynamicMaterialInstance(i)` and build every MID from that.
 - Avoid `SetScalarParameterValueOnMaterials` in hot paths: it creates MIDs on every slot (unverified).
 - Static switches can't be changed at runtime (compile-time only).
 

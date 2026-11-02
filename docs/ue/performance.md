@@ -213,6 +213,11 @@ Facts behind the table:
 - Heavy work in one Blueprint event runs in one frame and hitches. Keep logic in C++ (our convention anyway).
 - UI runs on the game thread: avoid per-frame bindings in widgets; update on change.
 - Load big assets asynchronously; avoid giant hard-reference chains (one asset dragging in half the game).
+- **Runtime components on streamed actors get a unique name.** A World Partition actor that made a component in
+  BeginPlay with `NewObject<UStaticMeshComponent>(this, TEXT("Glow"))` hitched ~20 ms whenever its cell streamed out
+  and back before GC: the same actor returned, NewObject replaced the live component of that name, and the game
+  thread waited for its render resources ("Gamethread hitch waiting for resource cleanup ... overwrite took
+  20.47ms"). `MakeUniqueObjectName(this, Class, TEXT("Glow"))` removed it.
 
 ## Measuring (do this, don't guess)
 

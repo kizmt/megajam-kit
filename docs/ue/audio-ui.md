@@ -183,6 +183,17 @@ SetInputMode(Mode); SetShowMouseCursor(true); SetPause(true);
 - Design at 1920x1080; anchor HUD elements to corners/edges, menus centred. Default DPI scale rule is
   `ShortestSide` (BaseEngine.ini) so the UI scales with resolution; check 1440p and 4K in PIE ("Screen Size" preview).
 - Import one TTF/OTF as a Font asset and use it everywhere; size 18+ for body text, outline/shadow for text over 3D.
+  No dialog from Python: `FontFileImportFactory` with `batch_create_font_asset = unreal.BatchCreateFontAsset.NO`
+  imports a TTF as a font face (`FF_`, `naming.md`).
+- **Slate font sizes are points at 96 DPI, mockup sizes are pixels: pt = px x 0.75** (`FontConstants::RenderDPI` in
+  `SlateFontInfo.h`). The rehearsal put PIL mockup pixel sizes straight into `FSlateFontInfo`: every text came out 1.33x
+  (a title 882 px wide against 660), panels grew to fit, and the blind critic scored the game well under the mockup.
+  Keep the data in mockup pixels, convert in one font helper, and compare one measured text width between the mockup
+  and the first capture.
+- **UI textures drawn at more than one size need mips.** `TEXTUREGROUP_UI` defaults to no mipmaps, so a key-cap icon
+  drawn at a third of its size aliased. Import UI textures with `compression_settings = TC_EDITOR_ICON` (the Python
+  name of UserInterface2D), `lod_group = TEXTUREGROUP_UI`, `mip_gen_settings = TMGS_SIMPLE_AVERAGE`,
+  `never_stream = True`, sRGB on, clamp addressing.
 
 ### CommonUI and Viewmodel: skip for the jam
 
@@ -217,6 +228,13 @@ Functions (C++ names; the MCP may expose them snake_cased):
   readable cartoon prompt, draw the text on a ring of offsets in the outline colour (16 offsets for a thick ring),
   then the fill. Keep the font size fixed while a prompt shows and animate `Item.Scale`, so glyphs aren't re-cached
   every frame. Remove all `AddOnScreenDebugMessage` text before shipping.
+- **Canvas text needs a `UFont` behind the font info**, or it draws nothing and logs nothing. `FCanvasTextItem`'s
+  Slate-font constructor sets `Font = Cast<const UFont>(InFontInfo.FontObject)` and `HasValidText()` is
+  `Font != nullptr` (5.8 `CanvasItem.h`), so an `FSlateFontInfo` built from a composite font alone is skipped. With
+  imported `UFontFace` assets, wrap each in a runtime font: `NewObject<UFont>`, `FontCacheType =
+  EFontCacheType::Runtime`, one `FTypefaceEntry` with `FFontData(Face)` in
+  `GetMutableInternalCompositeFont().DefaultTypeface` (the public `CompositeFont` member is deprecated), then
+  `FSlateFontInfo(Font, Size)`. Keep the fonts in a `UPROPERTY` so GC leaves them.
 - Game audio for the trailer: record the engine's own mix (`cinematics-video.md` D1).
 
 ## Verified against
