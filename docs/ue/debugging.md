@@ -3,7 +3,8 @@
 The goal: the agent proves every fix with a log line or a screenshot ("done means seen") and finds the
 cause of a problem from evidence, not guesses. Budgets live in `performance.md`; this note is the *how*.
 Facts marked "verified" were checked on the target PC (the kit's test project + its packaged build) on 2026-10-24.
-`<Build>` = the packaged build folder, `C:\dev\Builds\<Project>\Windows` (`scripts\package.ps1`); the kit's docs use it in this sense.
+`<Build>` = the packaged build folder, `C:\dev\Builds\<Project>\Windows` (`scripts\package.ps1`); the kit's docs use
+it in this sense.
 
 ## Triage: when X happens, do Y
 
@@ -143,7 +144,8 @@ UE_LOG(LogMyGame, Display, TEXT("Door %s opened by %s"), *GetName(), *GetNameSaf
 
 ## D. Profiling
 
-Read `performance.md` for budgets and "The bar" (the pass/fail target). Workflow: **measure in packaged Development, at the real resolution.**
+Read `performance.md` for budgets and "The bar" (the pass/fail target). Workflow: **measure in packaged Development,
+at the real resolution.**
 
 - `stat fps`, `stat unit` (Frame/Game/Draw/GPU/RHIT/DynRes ms), `stat unitgraph` (spikes over time).
 - `stat game` (tick costs), `stat gpu` (per-pass GPU ms), `stat scenerendering` (draw calls, mesh passes),
@@ -255,8 +257,10 @@ Select-String $log -Pattern '\[PROOF\]|Log file closed'   # proof lines + clean 
     `set_actor_tick_enabled(False)` and its movement component's tick off. To keep an area loaded, put the view
     target in its middle (or add a `WorldPartitionStreamingSource` component).
   - **After a teleport, wait for the ground, not a fixed time.** 15 s after a teleport the landscape was loaded but
-    large Nanite meshes (recently re-imported) were not, so the walker ran on the landscape under the street. Wait
-    until a trace at the target hits the expected surface or named mesh. A step that throws must not skip its wait.
+    large Nanite meshes (recently re-imported) were not, so the walker ran on the landscape under the street. Hold the
+    pawn in place (it fell through unloaded ground otherwise) until a trace at the target hits the expected surface or
+    named mesh. A step that throws must not skip its wait. Don't trust the timing of the step's first tick (it came
+    ~1 s late).
   - **Bones, sockets and shots need the character on screen.** With `OnlyTickPoseWhenRendered` (characters.md) an
     off-screen character reports its last rendered pose: a socket read with the view on the wrong place measured a
     standing pose. Set `ALWAYS_TICK_POSE_AND_REFRESH_BONES` for the test, and fail loudly when the test's camera
@@ -286,17 +290,15 @@ Select-String $log -Pattern '\[PROOF\]|Log file closed'   # proof lines + clean 
     rehearsal's level: the survey took ~2 s for 25,000 samples on 3.2 km of lines; the walk ran them in ~10 min at
     time dilation 3. A "floor never streamed in" note means the walk ran on what had loaded (landscape under a
     missing structure): check those spots in the editor before trusting a stall there.
-    For stairs, run the pawn up with `add_movement_input` and log `current_floor` each tick.
   - Image work outside the editor: the system Python had PIL but not numpy; Blender's Python had numpy but not PIL.
   - Editor-only properties don't exist: `static_mesh.get_editor_property("body_setup")` raises "Failed to find
     property". Have an editor probe write what the test needs (collision shapes, bounds) to JSON and read that.
-  - Landscape grass is render-side: its components report `get_instance_count() == 0` while the grass renders. Test
-    grass with shots (`worldbuilding.md` "Foliage and landscape grass").
+  - Non-Nanite landscape grass is render-side: its components report `get_instance_count() == 0` while the grass
+    renders. Test grass with shots (`worldbuilding.md` "Foliage and landscape grass").
   - **Moving the pawn between steps:** end any fall or glide first
     (`set_movement_mode(MOVE_WALKING)` on the movement component; check the stub's enum name), or the game's fall
-    damage counts from where the fall started: a teleport out of a glide landed as a 90 m fall and a respawn. After a
-    teleport into a streaming cell, hold the pawn in place until the ground under it has collision (it fell through
-    unloaded ground otherwise), and don't trust the timing of the step's first tick (it came ~1 s late).
+    damage counts from where the fall started: a teleport out of a glide landed as a 90 m fall and a respawn. Then
+    wait for the ground (above).
   - **Framed shots of a third-person pawn:** set the spring arm's `use_pawn_control_rotation` False and
     `set_world_rotation` on the arm. Setting the controller's rotation was overwritten by the game's camera code.
   - Key dicts of actors by `get_path_name()`, never `get_name()` (`editor-scripting.md` E, "Python odds and ends").
