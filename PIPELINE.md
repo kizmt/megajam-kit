@@ -261,4 +261,11 @@ Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls nee
   relaunches once if the game doesn't start.
 - **ElevenLabs pricing** differs by product (per generation vs per second for SFX; music per minute). Check the
   current price on the account page before a batch and quote it; one prototype batch (1 music track, 4 SFX) was ~$0.70.
+- **A launcher update of the Fab plugin can break every C++ build and `package.ps1`** with `RulesError` naming
+  `FabToolset` (the editor still runs). Fix: disable Fab in the `.uproject` (`SETUP.md` step 2); `package.ps1`
+  prints the hint. Packaged in 4 min afterwards on the rehearsal.
+- **numpy exists only in Blender's bundled Python** (`<Blender>\<version>\python\bin\python.exe`), not in the
+  editor's Python nor (on the target PC) the system Python, which has PIL. Generate numeric fields (heightmaps, layer
+  weights, carve masks) there, write raw files, and read them in the editor with `array` (`docs/ue/worldbuilding.md`
+  "Landscape from Python").
 - **Uploads:** `SETUP.md` section 9.

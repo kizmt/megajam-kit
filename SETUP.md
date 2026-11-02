@@ -42,6 +42,10 @@ The theme window runs before the project exists (`prompts/concept.md`). Check it
 
 1. Edit → Plugins → enable **Unreal MCP** and **All Toolsets**. (Python Editor Script Plugin is already on by default.)
 2. Restart Now.
+   **Launcher plugin updates can arrive mid-jam.** If a build or `package.ps1` fails with `RulesError` naming
+   `FabToolset` (a Fab plugin update added a module the installed engine's precompiled rules don't know), set
+   `{"Name": "Fab", "Enabled": false}` in the `.uproject` plugins list. Re-enable Fab only to import a sourced pack.
+   A `"TargetAllowList": ["Editor"]` entry does not fix it (the editor target fails the same way).
 3. Fix the Asset Manager entry the plugins need (otherwise a "GameFeatureData" prompt appears every launch):
    Project Settings → Game → Asset Manager → Primary Asset Types to Scan → **+**
    - Primary Asset Type: `GameFeatureData`

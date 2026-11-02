@@ -137,6 +137,15 @@ if ($ok) {
     Write-Host '  Last errors from log:'
     Select-String -Path $logPath -Pattern 'error' -SimpleMatch -ErrorAction SilentlyContinue |
         Select-Object -Last 10 | ForEach-Object { Write-Host "    $($_.Line.Trim())" }
+    $rules = Select-String -Path $logPath -Pattern 'RulesError|module rules named' -ErrorAction SilentlyContinue |
+        Select-Object -First 1
+    if ($rules) {
+        Write-Host "  RulesError: $($rules.Line.Trim())"
+        if ($rules.Line -match 'FabToolset') {
+            Write-Host '  Likely a launcher update of the Fab plugin. Set {"Name": "Fab", "Enabled": false} in the'
+            Write-Host '  .uproject plugins list and package again (SETUP.md step 2).'
+        }
+    }
 }
 Write-Host "  Log: $logPath"
 

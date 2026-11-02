@@ -24,6 +24,8 @@ director). **The target PC** is the machine the game is built and measured on (R
   against it, and the deny rule then blocks the whole command. Compute values first, then write them (an
   expression inside a write command can be read as a relative target path). This includes scratch files: the
   primary working directory also changes on its own between calls, so a relative path drifts even without a `cd`.
+  Commands that hide a relative target: `sed -i <file>`, `git add <file>`, PowerShell `Out-File $var`. **After a
+  refused write, the capture or test that followed ran on the old file: redo it.**
 - **Shell habits:**
   - Write or append files (scripts and markdown alike) with the Write/Edit tools, never shell heredocs or `echo`:
     heredocs drop backslashes and choke on backticks and quotes. In PowerShell, `.Replace('\', '/')` avoids regex escaping.
