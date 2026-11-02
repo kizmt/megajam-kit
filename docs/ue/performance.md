@@ -70,8 +70,8 @@ scene is the floor: real content adds cost, so re-bench after each big content r
 ## Render paths (measured on a prototype, packaged, 4K output, RTX 4060)
 
 One data point, not a rule: a stylized prototype (glossy look, 12 animated characters on screen, a ~550 m open
-level), benched on every render path on the same frame. Other genres and looks will land differently; use the method (same frame, true 1:1, something moving) and
-re-measure. avg / p95 fps:
+level), benched on every render path on the same frame. Other genres and looks will land differently; use the method
+(same frame, true 1:1, something moving) and re-measure. avg / p95 fps:
 
 | Path | fps | Look |
 |---|---|---|
@@ -157,20 +157,20 @@ Facts behind the table:
 ## Geometry
 
 - **Nanite on for every static prop** (pipeline does it). Epic: enable "wherever possible". Without it a generated
-  prop draws all its triangles at every distance (they import with one LOD) - the Unity-style "too many LODs/polys" trap.
+  prop draws all its triangles at every distance (they import with one LOD) - the Unity-style "too many LODs/polys"
+  trap.
 - Nanite supports **Opaque and Masked** materials only. Translucent (glass, water) needs a non-Nanite mesh/material.
 - Exceptions to "Nanite on": meshes used **as particles** in Niagara (keep small, non-Nanite, no collision/shadows;
   see `vfx.md`) and translucent/glass meshes (`materials.md`).
 - Nanite skeletal meshes: use animation LODs, not geometry LODs; morph targets unsupported.
-- **Thin Nanite foliage vanishes at distance.** Trees with 10-14 cm leaves read as bare sticks beyond ~60 m (Nanite
-  simplifies thin triangles away). `MeshNaniteSettings.shape_preservation` takes `NaniteShapePreservation.PRESERVE_AREA`
-  (no setup; did not fix the bare look on its own) or `VOXELIZE` (Nanite Foliage, Experimental: `features.md`). Leaf
-  size and cluster density in the source mesh matter more; check foliage from its farthest gameplay view.
-- **Nanite on plants: pick the shape preservation per size** (Static Mesh > Nanite Settings, rehearsal on 5.8.4).
-  Voxelize suits trees and big shrubs (5-7 m trees looked right). On small, thin plants (grass clumps 0.4-1.1 m)
-  it turned every clump into a speckled leafy blob 3-8 m from the gameplay camera; Preserve Area (or Nanite off) gave
-  real blades, proven by toggling the one setting. Check each plant on the gameplay camera after import, before
-  placing it in bulk.
+- **Nanite on plants: pick the shape preservation per size** (Static Mesh > Nanite Settings,
+  `MeshNaniteSettings.shape_preservation`; rehearsal on 5.8.4). With the default, thin foliage vanishes at distance:
+  trees with 10-14 cm leaves read as bare sticks beyond ~60 m (Nanite simplifies thin triangles away), and
+  `PRESERVE_AREA` alone did not fix that. `VOXELIZE` (Nanite Foliage, Experimental: `features.md`) suits trees and big
+  shrubs (5-7 m trees looked right). On small, thin plants (grass clumps 0.4-1.1 m) it turned every clump into a
+  speckled leafy blob 3-8 m from the gameplay camera; `PRESERVE_AREA` (or Nanite off) gave real blades, proven by
+  toggling the one setting. Leaf size and cluster density in the source mesh matter too. Check each plant on the
+  gameplay camera and from its farthest gameplay view after import, before placing it in bulk.
 - **Voxelize foliage can carry WPO wind** (crowns moved in a two-frame capture; `NaniteVertexFactory.ush` evaluates
   WPO for voxel clusters). Give every material slot of a plant the same WPO or leaves detach from stems, and set a
   WPO disable distance on the foliage types and components. Untested: whether far voxel bricks keep the offset.
@@ -186,7 +186,8 @@ Facts behind the table:
   is a new set of shaders to compile and a new stall.
 - Master material usage flags: a flag missing in a **packaged** build = default grey material (details and the full
   flag list: `materials.md`). `materials.ts` sets them.
-- Shader compiles after a material change make things render grey for a while in the editor. Wait before judging a screenshot.
+- Shader compiles after a material change make things render grey for a while in the editor. Wait before judging a
+  screenshot.
 
 ## Textures and memory
 
@@ -205,7 +206,8 @@ Facts behind the table:
 
 - **Tick off by default** in C++ (`PrimaryActorTick.bCanEverTick = false`) unless the actor truly changes every frame.
   Use timers, events, or a tick interval instead. Epic: don't poll a value every frame for occasional changes.
-- **Pool** frequently spawned things (projectiles, pickups, VFX) instead of spawn/destroy; spread big spawns across frames.
+- **Pool** frequently spawned things (projectiles, pickups, VFX) instead of spawn/destroy; spread big spawns across
+  frames.
   Size the pool for the peak count and log a warning when it runs dry, so an undersized pool shows up in the log.
 - **Stagger enemy thinking:** decisions (target choice, path requests, line-of-sight traces) on a timer every
   0.1-0.3 s with a random first delay per enemy, so they don't all think on the same frame. Movement and animation
