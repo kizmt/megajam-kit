@@ -9,7 +9,8 @@ CLAUDE.md "Shipping" and `SETUP.md` 9, the video in `docs/ue/cinematics-video.md
 
 - [ ] Submitted on the jam page (https://itch.io/jam/2026-epic-ai-megajam) before **10:59 JST Nov 16**
       (20:59 ET Nov 15). Late or broken entries are not accepted, and "proof of submission is not proof of receipt".
-- [ ] Packaged for Windows, playable on Windows 10/11, needing **no additional software** (rules 1, 7(f)).
+- [ ] Packaged for Windows, playable on Windows 10/11, needing **no additional software** (rules 1, 7(f)): the
+      VC++ runtime check in Windows Sandbox (`docs/ue/production.md` "Packaging and what gets shipped").
 - [ ] **Full name and email of every entrant**, one named as the team owner (rule 1(c)).
 - [ ] **Sourced assets noted at submission** (rule 1(d)): the list from `SOURCED_ASSETS.md`, with licences.
 - [ ] **Video:** 30-60 s of recorded gameplay, 1920x1080 or higher, English (rules 1(e), 7(c), 7(i)).
@@ -42,11 +43,16 @@ of the page has to sell the game and get it running.
 - **How to play:** the controls (keyboard/mouse, gamepad only if tested), the goal in one sentence, the play time
   (e.g. "8-12 minutes").
 - **How to run it:** download, unzip, run `<Game>.exe`; the unsigned-build note (`SETUP.md` 9 step 5). The
-  hardware it was tested on (the target PC) and the lowest settings preset for weaker PCs.
+  hardware it was tested on (the target PC) and the lowest settings preset for weaker PCs. Requirements (Epic's 5.8
+  spec page): Windows 10 22H2 or Windows 11, 64-bit; a DirectX 12 GPU with current drivers (Nanite and Lumen need
+  D3D12 SM6). Recommend a driver update: it fixes most D3D12 start-up crashes. Say the first launch prepares
+  shaders for up to a minute (`docs/ue/production.md` "First launch: PSO warm-up").
 - **Theme:** one or two sentences on how the theme shapes the play, not only the setting.
 - **Credits:** the team; AI tools used (models, agents, services from the kit README); sourced assets with licences.
   AI use is "considered for context only" in judging (rule 9): state it plainly.
-- **Known issues:** anything a judge might hit, with the workaround. Better said than discovered.
+- **Known issues:** anything a judge might hit, with the workaround. Better said than discovered. Only if the SM5
+  shader set is cooked (`docs/ue/production.md`): "If it crashes at start, run `<Game>.exe -dx11`". Without it the
+  flag can't help; leave it off.
 - **Visibility:** the jam must be able to accept the page. Publish it (public or as the jam requires) well before
   D − 3 h, then check it from a logged-out browser window.
 

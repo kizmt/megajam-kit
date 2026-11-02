@@ -26,6 +26,9 @@ play. The right frame rate depends on the game, so the bar has a fixed part and 
   (`audio-ui.md` "Settings menu").
   On a Lumen game the presets scale the lighting too: **Medium is Lumen Lite** (weaker PCs keep dynamic bounce
   light), **Low turns Lumen off** (unshadowed sky light). Check that the Medium and Low looks still read.
+- **Optional first-run auto-detect:** on the first launch only (no saved settings file), call
+  `UGameUserSettings::RunHardwareBenchmark()`, log `GetLastCPUBenchmarkResult` / `GetLastGPUBenchmarkResult`, and
+  call `ApplyHardwareBenchmarkResults()` only if it picks below High. Applied blindly it overwrites the shipped mix.
 
 **Per game (chosen at the style lock, recorded in the project's `DECISIONS.md`):**
 - **Target fps** on the target PC at 4K output with the shipped defaults: about 60 for a slow, heavy-looking game,
@@ -64,6 +67,7 @@ Facts:
 - In WindowedFullscreen (the default mode) the saved `ResolutionSizeX/Y` is ignored; the desktop resolution is used.
 - Unreal stores `<Build>\<Project>\Saved\Config\Windows\GameUserSettings.ini` on the first run (`<Build>` as defined
   in `debugging.md`); it overrides `DefaultGameUserSettings.ini` afterwards. Delete it when testing new defaults.
+  (Development only: a Shipping build is believed to keep `Saved\` under `%LOCALAPPDATA%\<Project>`, unverified.)
 
 The config behind the "lean" rows is SETUP step 7b (this table is the Lumen path at 1080p internal; the no-Lumen
 path is in "Render paths"). **Don't place a VolumetricCloud** (use SkyAtmosphere + a cheap sky). The empty test
@@ -239,7 +243,7 @@ Facts behind the table:
 - Nanite: https://dev.epicgames.com/documentation/en-us/unreal-engine/nanite-virtualized-geometry-in-unreal-engine?application_version=5.8
 - Common memory and CPU performance considerations: https://dev.epicgames.com/documentation/en-us/unreal-engine/common-memory-and-cpu-performance-considerations-in-unreal-engine?application_version=5.8
 - Profiling intro: https://dev.epicgames.com/documentation/en-us/unreal-engine/introduction-to-performance-profiling-and-configuration-in-unreal-engine?application_version=5.8
-- UGameUserSettings (ApplySettings saves): https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Runtime/Engine/UGameUserSettings
+- UGameUserSettings (ApplySettings saves; hardware benchmark): https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Runtime/Engine/UGameUserSettings?application_version=5.8
 - Texture streaming configuration: https://dev.epicgames.com/documentation/en-us/unreal-engine/texture-streaming-configuration-in-unreal-engine?application_version=5.8
 - BlendableLocation enum (PP material resolution): https://dev.epicgames.com/documentation/en-us/unreal-engine/python-api/class/BlendableLocation?application_version=5.8
 - Measured on the target PC 2026-10-24: generated props import with 1 LOD, Nanite off, one convex hull; enabling Nanite

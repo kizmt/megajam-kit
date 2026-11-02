@@ -14,7 +14,7 @@ it in this sense.
 | PIE stops with red text / "Accessed None" | Message Log > Play In Editor (Window > Message Log) | Fix the first error; later ones are usually fallout |
 | Editor/PIE crash | Newest `Saved/Crashes/UECC-*/` folder: `CrashContext.runtime-xml` `<ErrorMessage>` + `<CallStack>` | Also tail `Saved/Logs/<Project>.log` |
 | Packaged build crash | `<Build>\<Game>\Saved\Logs\<Game>.log`, last 100 lines | Keep the matching `.pdb` (see Crashes) |
-| `Saved/Crashes` folder appeared but nothing crashed | It's an **ensure** (`<CrashType>Ensure</CrashType>`) | Read `EnsureFailed: Error:` line in the log; fix or note it |
+| `Saved/Crashes` folder appeared but nothing crashed | It's an **ensure** (`<CrashType>Ensure</CrashType>`) | Read `EnsureFailed: Error:` line in the log; fix it before the final package (each first fire walks the stack and writes a crash folder: a hitch of tens to hundreds of ms) |
 | Game runs slow all the time | `stat unit` | Biggest of Game/Draw/GPU decides: `stat game` / `stat scenerendering` / `stat gpu` |
 | Game hitches (spikes) | `stat unitgraph`, then `stat hitches` | Unreal Insights capture with the `Loading` preset |
 | Textures blurry | `stat streaming` (Over budget?) | Live A/B `r.Streaming.PoolSize 3000`; if that fixes it, set the pool per quality level or cut texture res (`performance.md` "Textures and memory") |
@@ -23,6 +23,7 @@ it in this sense.
 | AI/pathing wrong | Gameplay Debugger (`'` key), numpad categories | `show navigation` |
 | New Nanite mesh shows blocky cubes or shards in a capture | Capture again a minute later: Nanite streams coarse pages first (looked exactly like a Voxelize fault) | Shards right after a big scripted spawn that survive a recapture: restart the editor before diagnosing the mesh (seen once, cause unproven) |
 | Packaged build worse than PIE | Packaged smoke test (below) + `-trace` | Grey material = missing usage flag (materials.md) |
+| Packaged build fails on someone else's PC | Their `<Game>.log` (A) and the startup line below | "VCRUNTIME140*.dll was not found": VC++ runtime (`production.md` "Packaging"). Engine D3D12/SM6 message box: driver update, then `-dx11` only if SM5 is cooked. Out of VRAM on 4-6 GB cards: Low preset. Blocked exe: Smart App Control (`production.md`). No audio: 5.8 uses WASAPI on Windows; `AudioMixerModuleName=AudioMixerXAudio2` in the project's `Config/Windows/WindowsEngine.ini` reverts it |
 
 ## A. Logs
 
@@ -31,7 +32,11 @@ it in this sense.
   Older runs are renamed `<Project>-backup-YYYY.MM.DD-HH.MM.SS.log`. Engine keeps 10 files / 5 days
   (`[LogFiles] MaxLogFilesOnDisk=10, PurgeLogsDays=5` in BaseEngine.ini).
 - Packaged Development build: next to the build, `<Build>\<Game>\Saved\Logs\<Game>.log`
-  (verified: `<Build>\<Project>\Saved\Logs\<Project>.log`). Not in %LOCALAPPDATA%.
+  (verified: `<Build>\<Project>\Saved\Logs\<Project>.log`). Not in %LOCALAPPDATA%. A Shipping build is believed to
+  write no log and keep `Saved\` under `%LOCALAPPDATA%\<Project>` (unverified; `cpp.md` "Build configurations").
+- **Log which render path ran**, next to the build stamp at startup: the RHI name (`GDynamicRHI->GetName()`), the
+  feature level (`GMaxRHIFeatureLevel`), GPU brand and driver (names unverified in 5.8.4: grep the RHI headers). A
+  judge's log then answers "D3D12 or D3D11, which GPU".
 - Packaging (BuildCookRun) log: wherever our package script writes it (test project: `Saved\Logs\package-*.log`).
   Success marker: `BUILD SUCCESSFUL` and `AutomationTool exiting with ExitCode=0 (Success)`.
 - Epic docs say "`.txt`"; on 5.8.4 the files are `.log`. Trust disk.
@@ -417,4 +422,5 @@ Test whether players see it at all: every recorded crash had a screen recorder r
 - Trace quick start: https://dev.epicgames.com/documentation/en-us/unreal-engine/trace-quick-start-guide-in-unreal-engine?application_version=5.8
 - Gameplay Debugger: https://dev.epicgames.com/documentation/en-us/unreal-engine/using-the-gameplay-debugger-in-unreal-engine?application_version=5.8
 - Visual Logger: https://dev.epicgames.com/documentation/en-us/unreal-engine/visual-logger-in-unreal-engine?application_version=5.8
+- 5.8 release notes (WASAPI audio backend): https://dev.epicgames.com/documentation/en-us/unreal-engine/unreal-engine-5-8-release-notes?application_version=5.8
 - Automation test framework: https://dev.epicgames.com/documentation/en-us/unreal-engine/automation-test-framework-in-unreal-engine?application_version=5.8

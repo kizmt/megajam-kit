@@ -218,6 +218,17 @@ needs dynamic bounce light but full Lumen doesn't fit the target fps (softer GI,
 - `Config/DefaultInput.ini`: add `+ConsoleKeys=F10` after `+ConsoleKeys=Tilde` (backtick is a dead key on some layouts)
 - Level: delete the template's **VolumetricCloud** actor (~2.5 ms at 4K). Keep SkyAtmosphere's aerial perspective view
   distance scale at 1-2 (higher washes out the far end).
+- Release identity, `Config/DefaultGame.ini` `[/Script/EngineSettings.GeneralProjectSettings]`: `ProjectName`,
+  `ProjectDisplayedTitle` (the window title), `ProjectVersion`, `CompanyName`, `CopyrightNotice` (Project Settings >
+  Description). The exe keeps the project's name. Icon and splash: Project Settings > Platforms > Windows > **Game
+  Icon** (`.ico` with a 256x256 layer, stored as `Build/Windows/Application.ico`, compiled into the exe, so it needs a
+  package) and **Game Splash** (`.bmp`); field names unverified in 5.8.4.
+- Window mode: `Config/DefaultGameUserSettings.ini` `[/Script/Engine.GameUserSettings]` `FullscreenMode=1` and
+  `PreferredFullscreenMode=1` (WindowedFullscreen, `docs/ue/performance.md` "Display + render defaults"). Leave **Use
+  Borderless Window** off (it only restyles a windowed game's title bar). Test Alt+Enter once.
+- No startup movies: they add a forced wait and a codec path to test; the warm-up screen covers the PSO wait
+  (`docs/ue/production.md` "First launch: PSO warm-up"). If the game ever changes level with `OpenLevel`, use
+  `GetMoviePlayer()->SetupLoadingScreen(FLoadingScreenAttributes)` (`MoviePlayer.h`) with `WidgetLoadingScreen`.
 
 **No-Lumen path (stylized looks)**
 - `[/Script/Engine.RendererSettings]`: `r.DynamicGlobalIlluminationMethod=0`, `r.ReflectionMethod=2` (SSR),

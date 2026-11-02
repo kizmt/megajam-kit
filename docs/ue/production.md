@@ -188,6 +188,8 @@ folder, never on PIE.
   https://dev.epicgames.com/documentation/en-us/unreal-engine/manually-creating-bundled-pso-caches-in-unreal-engine?application_version=5.8
 - `FShaderPipelineCache`: https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Runtime/RenderCore/FShaderPipelineCache?application_version=5.8 ;
   Blueprint: https://dev.epicgames.com/documentation/unreal-engine/BlueprintAPI/Rendering/PipelineCache/NumPrecompilingPSOsRemaining
+- Command-line arguments (`-dx11`): https://dev.epicgames.com/documentation/en-us/unreal-engine/unreal-engine-command-line-arguments-reference?application_version=5.8
+- FLoadingScreenAttributes (SETUP 7b): https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Runtime/MoviePlayer/FLoadingScreenAttributes?application_version=5.8
 - Build pipeline: https://dev.epicgames.com/documentation/en-us/unreal-engine/using-the-unreal-engine-build-pipeline?application_version=5.8
   (UBT: unreal-build-tool-in-unreal-engine, UHT: unreal-header-tool-for-unreal-engine, UAT: unreal-automation-tool-for-unreal-engine)
 
