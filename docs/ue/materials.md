@@ -168,12 +168,46 @@ in a packaged build = default material.
 | **Post-process cel** (`PPM_Toon`: quantize light from SceneTexture) | One full-screen pass | Global, easy, one asset. Hits sky/fog too: mask with depth or Custom Stencil |
 | **Outlines, post-process edge detect** (depth/normal) | One full-screen pass, several neighbour samples | Best value outline; works with Nanite |
 | **Outlines, Custom Depth/Stencil per object** | Extra depth draw for marked meshes + PP pass | Highlight interactables; set Render Custom Depth + Stencil Value |
-| **Substrate Toon BSDF + Toon Profile asset** | Per-material shading | New in 5.8, **Experimental** (release notes); forum reports of artifacts. Practice run first |
+| **Substrate Toon BSDF + Toon Profile asset** | Per-material shading; no Epic cost figure | New in 5.8, **Experimental**; open shadow bugs (below). Practice run first |
 | Inverted-hull outlines | 2x triangles, extra material | Avoid: awkward with Nanite |
 
-Post-process materials: domain Post Process, output Emissive only, read `PostProcessInput0` (not SceneColor), add to a
-Post Process Volume's Blendables. **After Tonemapping** is the cheapest location; Before Tonemapping works in HDR.
-Epic: use PP materials sparingly, prefer built-in volume settings (color grading, bloom, vignette) when they do the job.
+- **Pick a route in this order.** Cheapest and safest: PBR master + strong lighting + LUT/grade + one PP outline.
+  Next: PP cel (quantise `PostProcessInput0` luminance, mask the sky by depth or stencil). Substrate Toon gives the
+  best per-material bands with Lumen GI, but only if a practice run proved it on our lights; it is a second
+  domain-locked master (shading model is per Material).
+- **Post-process material basics (Epic):** domain Post Process, output **Emissive** only (alpha is "not yet
+  supported": use Opacity), read `PostProcessInput0`, never SceneColor (banding). Separate Translucency is invisible
+  to the SceneTexture node. Use **ViewportUV**, not SceneTextureUV, for screen-relative maths. Defaults that do
+  nothing (multiply by white, lerp by 0) let volumes blend smoothly. `Is Blendable` off = one pass per instance
+  (costly). Use PP materials sparingly; prefer built-in volume settings (grading, bloom, vignette) when they do
+  the job.
+- **Blendable Location decides the resolution (TSR on).** After Tonemapping, Before Bloom, SSR Input and Replacing the
+  Tonemapper run at **display resolution (4K for us)**; "Before Translucency" (`BL_SCENE_COLOR_BEFORE_DOF`) and
+  "Before Tonemapping" (`BL_SCENE_COLOR_AFTER_DOF`) always run at the 1080p rendering resolution, in linear HDR. Epic's
+  page calls After Tonemapping the cheapest location: true only without an upscaler. A neighbour-sampling pass
+  (outline, Kuwahara, posterize) costs ~4x the pixels after tonemapping (`performance.md`: post at 4K ~1 ms, measured).
+- **Outlines and anything reading depth go Before Tonemapping**, or they jitter: Epic shows a custom-depth outline
+  after the tonemapper "jittering around 1 pixel", stable and anti-aliased once it runs before the temporal upscale.
+  The input is then HDR: set the line colour in scene-linear units and check it across the exposure range.
+- **Custom Depth/Stencil (per-object outlines, highlights).** Project Settings > Rendering > Post-Processing >
+  **Custom Depth-Stencil Pass = Enabled with Stencil** (plain "Enabled" has no stencil; "Enabled on Demand" can stall:
+  avoid). Mesh: **Render CustomDepth Pass** on + **CustomDepth Stencil Value** 1-255 (C++ `SetRenderCustomDepth(true)`,
+  `SetCustomDepthStencilValue(N)`). Read `SceneTexture:CustomStencil` in the PP material, one colour per value. The
+  ini cvar is `r.CustomDepth` (3 = with stencil, unverified in 5.8.4: check `RendererSettings.h`).
+- **User Scene Textures (5.8) for cheap multi-pass PP.** A PP material writes a named target (Details > **User Scene
+  Texture**, e.g. `Blur1`); a later one reads it with a **User Scene Texture** node. **User Texture Divisor** 2,2 with
+  **Resolution Relative To Input** = Input halves the pass; order with **Blendable Priority**; writers "aren't
+  blended". Good for a half-res glow or painterly pass, not the outline (needs full res).
+- **Substrate Toon in 5.8 ("Substrate NPR Shading", Experimental).** Built on Blendable GBuffer (our
+  `ProjectGBufferFormat=0`: no project change). Works with all light types, sky light and Lumen GI. Node
+  `MaterialExpressionSubstrateToonBSDF` takes one **Toon Profile** asset: diffuse/specular ramps (colour curves),
+  indirect scales (Lumen GI amount), ramp offset textures (break up band edges), shadow extinction with hatching
+  (RGBA = 4 tones). Quantised reflections need `r.Substrate.Experimental.ToonReflectionQuantizationEnabled=1`
+  (unverified in 5.8.4). **Known problems, no 5.8 patch fix:** cast shadows on Toon surfaces look blurry (Epic's
+  Sebastien Hillaire: VSM enlarges the light radius on that path; fixed in main only; a user's workaround
+  `r.Shadow.Virtual.SubsurfaceShadowMinSourceAngle 0`, unverified); black stripes at shadow edges on large walls
+  (community report); a Toon Profile **override on an MI is ignored after an editor restart** until the master
+  recompiles (community report). Assign the profile on the master and A/B the packaged build.
 
 ## World-aligned / triplanar textures
 
@@ -192,8 +226,10 @@ Epic: use PP materials sparingly, prefer built-in volume settings (color grading
 - Domain **Deferred Decal**, blend Translucent or AlphaComposite (DBuffer; Modulate silently falls back). DBuffer
   decals are on by default and required with Substrate. Nanite meshes **receive** projected decals; mesh decals
   (translucent) can't be Nanite.
-- Cost = screen coverage x material complexity. Turn off Receives Decals on actors that don't need them; higher Sort
-  Order draws on top.
+- Cost = projection box screen size x material complexity; the receiving mesh's triangle count doesn't matter, so keep
+  the box tight. Turn off Receives Decals on actors that don't need them. Higher Sort Order draws on top, but many
+  distinct Sort Order values stop decals batching. **DecalDerivative** has "a very large performance impact": only to
+  fix 2x2 block artifacts. Decal textures must not stream. Check overlaps in Shader Complexity.
 
 ## Performance and shader compiles
 
@@ -285,7 +321,10 @@ Epic: use PP materials sparingly, prefer built-in volume settings (color grading
   WorldAlignedTexture/HueShift/DitherTemporalAA, which are Material Functions (assets found under `Engine/Content/Functions`).
   `MaterialExpressionSubstrateToonBSDF` and `ToonProfile` exist. Blend modes / shading models from the stub enums.
 - `<Project>/Config/DefaultEngine.ini`: `r.Substrate=True`, `ProjectGBufferFormat=0`.
-- Unverified: HueShift instruction count; FunctionCall pin refresh via set_properties; Substrate Toon artifacts (forum only).
+- Python API pages (5.8): `BlendableLocation` enum (which locations run at display vs rendering resolution),
+  `ToonProfileStruct`, `MaterialExpressionSubstrateToonBSDF`.
+- Unverified: HueShift instruction count; FunctionCall pin refresh via set_properties; `r.CustomDepth` value 3;
+  whether the Toon shadow fix reached 5.8.4; which property holds a Toon Profile override on an MI.
 
 ## Sources (5.8)
 
@@ -301,7 +340,15 @@ Epic: use PP materials sparingly, prefer built-in volume settings (color grading
 - Lumen GI/reflections + technical details: https://dev.epicgames.com/documentation/en-us/unreal-engine/lumen-global-illumination-and-reflections-in-unreal-engine?application_version=5.8 ,
   https://dev.epicgames.com/documentation/en-us/unreal-engine/lumen-technical-details-in-unreal-engine?application_version=5.8
 - Post process materials: https://dev.epicgames.com/documentation/en-us/unreal-engine/post-process-materials-in-unreal-engine?application_version=5.8
+- User Scene Textures: https://dev.epicgames.com/documentation/en-us/unreal-engine/post-process-material-user-scene-textures-in-unreal-engine?application_version=5.8
+- BlendableLocation enum: https://dev.epicgames.com/documentation/en-us/unreal-engine/python-api/class/BlendableLocation?application_version=5.8
+- ToonProfileStruct: https://dev.epicgames.com/documentation/en-us/unreal-engine/python-api/class/ToonProfileStruct
+- Rendering project settings (Custom Depth-Stencil Pass): https://dev.epicgames.com/documentation/en-us/unreal-engine/rendering-settings-in-the-unreal-engine-project-settings?application_version=5.8
 - Decal materials: https://dev.epicgames.com/documentation/en-us/unreal-engine/decal-materials-in-unreal-engine?application_version=5.8
+- Decal actors (cost, sorting): https://dev.epicgames.com/documentation/en-us/unreal-engine/decal-actors-in-unreal-engine?application_version=5.8
+- Forum (Epic reply, Hillaire) Toon blurry shadows: https://forums.unrealengine.com/t/5-8-preview-toon-bsdf-shadows-cast-on-surface-are-blurry/2736077
+- Forum (community) Toon stripes: https://forums.unrealengine.com/t/ue5-8-substrate-toon-bsdf-black-stripes-bug/2736175
+- Forum (community) Toon MI override: https://forums.unrealengine.com/t/ue-5-8-substrate-toon-profile-override-in-material-instance-fails-to-apply-after-restarting-the-editor/2738757
 - Nanite: https://dev.epicgames.com/documentation/en-us/unreal-engine/nanite-virtualized-geometry-in-unreal-engine?application_version=5.8
 - PSO precaching: https://dev.epicgames.com/documentation/en-us/unreal-engine/pso-precaching-for-unreal-engine?application_version=5.8
 - 5.8 release notes (Substrate Toon = Experimental): https://dev.epicgames.com/documentation/unreal-engine/unreal-engine-5-8-release-notes

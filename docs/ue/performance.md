@@ -98,6 +98,8 @@ Facts behind the table:
   meshes land in every cascade. "VSM off" is not a free win; measure it.
 - TSR costs ~2.1-2.6 ms at 4K output from 1080p, ~3.7 ms from 1440p. `r.TSR.History.ScreenPercentage=200` adds ~3.2 ms.
 - With TSR/TAA, post-processing runs at output resolution (~1 ms at 4K); with a spatial upscale at internal resolution.
+  PP materials set Before Tonemapping still run at internal resolution (Epic's `BlendableLocation` enum): put
+  outlines and other neighbour-sampling passes there (`materials.md` "Stylized looks").
 - **Past ~200 fps the render thread sets the frame.** With ~110 draw calls, `EventWait/Visibility` took 1.4 ms;
   `r.AllowOcclusionQueries=0` (small open scenes) took p95 173 -> 190 fps. When GPU ms < frame ms, read the render
   thread column before trimming the GPU.
@@ -235,5 +237,6 @@ Facts behind the table:
 - Common memory and CPU performance considerations: https://dev.epicgames.com/documentation/en-us/unreal-engine/common-memory-and-cpu-performance-considerations-in-unreal-engine?application_version=5.8
 - Profiling intro: https://dev.epicgames.com/documentation/en-us/unreal-engine/introduction-to-performance-profiling-and-configuration-in-unreal-engine?application_version=5.8
 - Texture streaming configuration: https://dev.epicgames.com/documentation/en-us/unreal-engine/texture-streaming-configuration-in-unreal-engine?application_version=5.8
+- BlendableLocation enum (PP material resolution): https://dev.epicgames.com/documentation/en-us/unreal-engine/python-api/class/BlendableLocation?application_version=5.8
 - Measured on the target PC 2026-10-24: generated props import with 1 LOD, Nanite off, one convex hull; enabling Nanite
   took ~0.7 s per mesh; MIs needed the Nanite usage flag.

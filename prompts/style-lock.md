@@ -27,7 +27,11 @@ Concrete and checkable, never vague adjectives:
   For a dark game, give a numeric black floor (e.g. "darkest 1% of pixels at luma ≥ N/255, under 1% near-black") and
   check in-engine shots against that number, not against the key art: image models crush blacks at the frame edges
   even when told not to.
-- **Post-process:** colour grading LUT or curve notes, bloom, vignette, outline/cel settings.
+- **Post-process:** colour grading LUT or curve notes, bloom, vignette, outline/cel settings. Name the stack
+  precisely: each PP material with its Blendable Location (Before Tonemapping for outlines), the LUT file and
+  intensity, tonemapper deviations (Tone Curve Amount, Expand Gamut), local exposure values, the Custom Depth-Stencil
+  mode and stencil value table (e.g. 1 = interactable, 2 = enemy), and whether Substrate Toon is in (only if a
+  practice run proved it). Details: `docs/ue/materials.md` "Stylized looks", `docs/ue/lighting.md` "Post-process look".
 - **Materials:** one master material approach (flat, toon, painted, PBR). Roughness range.
 - **Shape language:** proportions, silhouette rules, level of detail, scale of player vs world.
 - **Asset prompt prefix:** the exact text prepended to every image-to-3D concept prompt.

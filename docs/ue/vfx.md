@@ -13,7 +13,7 @@ GPU overdraw. These rules come from Epic's 5.8 Niagara agent skills (on disk), t
 | Lightweight (stateless) emitters | Since 5.4. Templates ship in 5.8 | Toolset **can't edit them** (see below) |
 | `NiagaraFluids` | Beta | Grid gas/fire sims. Too slow to run live in a jam game; use it only to bake flipbooks (see "Fire and smoke") |
 | `NiagaraNanite` (Nanite mesh renderer) | Experimental, off | Skip it |
-| Heterogeneous Volumes / Sparse Volume Textures | Experimental (unverified for 5.8) | For volumetric smoke/fire. Skip it: expensive and immature |
+| Heterogeneous Volumes / Sparse Volume Textures | Experimental (5.8 docs) | For volumetric smoke/fire. Skip it: costly, shadows Experimental. Mood smoke: Local Fog Volumes (`lighting.md`) or sprites |
 
 ## Epic's Niagara agent skills: load them before any Niagara MCP work
 
@@ -391,6 +391,7 @@ UNiagaraFunctionLibrary::SpawnSystemAttached(TrailFX, Mesh, NAME_None, FVector::
 ## Sources (5.8)
 
 - Scalability and best practices: https://dev.epicgames.com/documentation/en-us/unreal-engine/scalability-and-best-practices-for-niagara?application_version=5.8
+- Heterogeneous volumes: https://dev.epicgames.com/documentation/en-us/unreal-engine/heterogeneous-volumes-in-unreal-engine?application_version=5.8
 - Lightweight emitters overview: https://dev.epicgames.com/documentation/en-us/unreal-engine/niagara-lightweight-emitters-overview?application_version=5.8
 - Quick start (Simple Sprite Burst -> dust cloud): https://dev.epicgames.com/documentation/en-us/unreal-engine/quick-start-for-niagara-effects-in-unreal-engine?application_version=5.8
 - Skills: `C:\Program Files\Epic Games\UE_5.8\Engine\Plugins\Experimental\Toolsets\NiagaraToolsets\Content\Python\skills\*.py`

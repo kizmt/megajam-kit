@@ -118,6 +118,11 @@ re-encodes anyway.
 - Keyframe Transform channels (`Location.X` ... `Rotation.Z`) on the camera binding; ease/blend via
   section ease-in/out. Cine camera: Filmback / Crop Settings (1.77 = 16:9, 2.39 for scope),
   **Constrain Aspect Ratio** draws black bars = cheap letterbox. Focus: Manual or Tracking (actor).
+- **Depth of field: shots only, Cinematic method.** Keep DOF off in gameplay (readability); use it in the intro,
+  menus and trailer shots. Cinematic DOF is Epic's "faster, scalable" method (legacy Bokeh "more costly"); it runs
+  before TSR at rendering resolution. Keep Cine Camera **Current Aperture** inside Min/Max F-Stop, Focus Method
+  Tracking on the subject; blade shapes only at Epic/Cinematic post quality. Debug: Show > Visualize > Depth of Field
+  Layers. No Epic cost figure: bench the shot if it runs in-game.
 - **Blend to/from gameplay**: right-click Camera Cut track > **Can Blend**, then drag the camera-cut
   section's top corner to blend in/out from the gameplay camera. Section property **Lock Previous Camera**
   stops our camera logic switching mid-blend. Hard cuts also reset Lumen/TSR history (brief shimmer).
@@ -346,6 +351,8 @@ game has test hooks that can stage its moments.
 - MRQ -> MRG: https://dev.epicgames.com/documentation/en-us/unreal-engine/transitioning-to-the-movie-render-graph-from-movie-render-queue-in-unreal-engine?application_version=5.8
 - Camera Cut track: https://dev.epicgames.com/documentation/en-us/unreal-engine/cinematic-camera-cut-track-in-unreal-engine?application_version=5.8
 - Cinematic cameras: https://dev.epicgames.com/documentation/en-us/unreal-engine/cinematic-cameras-in-unreal-engine?application_version=5.8
+- Depth of field / Cinematic DOF: https://dev.epicgames.com/documentation/en-us/unreal-engine/depth-of-field-in-unreal-engine?application_version=5.8 ,
+  https://dev.epicgames.com/documentation/en-us/unreal-engine/cinematic-depth-of-field-in-unreal-engine?application_version=5.8
 - Play cinematics: https://dev.epicgames.com/documentation/en-us/unreal-engine/play-cinematics-from-blueprints-in-unreal-engine?application_version=5.8
 - When a cinematic ends: https://dev.epicgames.com/documentation/en-us/unreal-engine/what-happens-when-my-cinematic-ends-in-unreal-engine?application_version=5.8
 - Record gameplay (Take Recorder): https://dev.epicgames.com/documentation/en-us/unreal-engine/record-gameplay-in-unreal-engine?application_version=5.8

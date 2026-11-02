@@ -101,7 +101,8 @@ Groups: `sg.ResolutionQuality` (= screen percentage), `sg.ViewDistanceQuality`, 
   (probes around pixels, pre-calculated irradiance) plus SSR, with rough specular from the GI. Dynamic bounce light
   stays; it's softer, and reflections are screen-space only. Epic targets it at 60 fps on low-end PCs and Switch 2;
   each level costs roughly half the one above. It's a render path of its own (SETUP 7b) and also what a weaker PC
-  gets from the Medium preset of a Lumen game.
+  gets from the Medium preset of a Lumen game. The 5.8 release notes label Lumen Lite **Beta** ("about twice as fast
+  as Lumen high quality"): allowed by `features.md`, but record the pick in `DECISIONS.md`.
 - Resolution: 4K output; internal 1080p on the Lumen and Lumen Lite paths (engine default for a 4K display), 1260p
   on the no-Lumen path (SETUP 7b). Raise internal resolution only if `bench.ts` shows headroom (`performance.md`).
 
@@ -154,6 +155,9 @@ Groups: `sg.ResolutionQuality` (= screen percentage), `sg.ViewDistanceQuality`, 
 - Per-light: `Indirect Lighting Intensity` (Lumen bounce), `Affect Global Illumination`,
   `Volumetric Scattering Intensity` + `Cast Volumetric Shadow` (volumetric fog cost), `Use Temperature`/`Temperature`.
 - No Static or Stationary lights, no Lightmass Importance Volume, no Build Lighting.
+- **Contact shadows ground characters cheaply:** light > **Contact Shadow Length** (0 off; 1 = across the whole
+  screen; Epic's examples use 0.1). Screen-space march with a fixed sample count, so longer = noisier. Key light only.
+  Most useful on the no-Lumen path where feet look floaty.
 - **Lifting a dark interior evenly with no visible source (no sky light or GI):** a physical fill blows out the
   surface under it. Use a non-physical point light: `set_use_inverse_squared_falloff(False)`,
   `set_light_falloff_exponent(1.0)`, shadows and GI off, intensity far below the key lights.
@@ -194,6 +198,26 @@ Groups: `sg.ResolutionQuality` (= screen percentage), `sg.ViewDistanceQuality`, 
   **Fog colour is in physical units:** under a 20,000 lux sun a 0-1 `fog_inscattering_luminance`/colour has no visible
   effect; the colour comes from the sky atmosphere ambient (`sky_atmosphere_ambient_contribution_color_scale`). The fog
   actor's Z is the density base: check it sits at ground or sea level (a template's sat 45 m under the sea).
+- **Volumetric fog cost and traps (Epic):** cost follows voxel count (`sg.ShadowQuality`; `r.VolumetricFog.GridSizeZ`
+  trades quality for cost). **Shadowed point/spot lights in fog cost ~3x unshadowed**: Cast Volumetric Shadow only on
+  the one or two shaft lights. Fast lights (muzzle flash, flicker) leave trails: Volumetric Scattering Intensity 0 on
+  them. Fog ignores Source Radius, IES and light functions on point/spot lights. Translucent water: tick **Compute
+  Fog Per-Pixel**.
+- **Local Fog Volumes: cheap mood pockets.** Placeable sphere of fog (radial + height falloff), tile-culled, "cost
+  similar to dynamic lights". **Radial Fog Density**, **Height Fog Density/Falloff** (falloff < 1 shows horizon
+  artifacts), **Fog Albedo**, **Fog Emissive** (glowing mist with no light). Uniform scale only. Traps:
+  `r.LocalFogVolume.GlobalStartDistance` defaults to 2000 cm (nothing within 20 m of the camera: lower it for rooms);
+  translucent meshes skip them unless `r.LocalFogVolume.ApplyOnTranslucent 1`; with volumetric fog on they are
+  voxelized and density clamped. Prefer these over Heterogeneous Volumes (`vfx.md`) for mood smoke.
+- **Sky Atmosphere art controls:** **Mie Anisotropy** (0 even haze, 0.8 default, 0.9 tight sun halo); **Absorption**
+  removes a colour from the sky; **Rayleigh Exponential Distribution** (8 km default) sets how high the blue goes.
+  **Height Fog Contribution** lets the sky colour the height fog, only with the fog's inscattering colours black and
+  Project Settings **Support Sky Atmosphere Affecting Height Fog** on. Below the horizon the planet renders **black**:
+  keep terrain or height fog there. Debug `ShowFlag.VisualizeSkyAtmosphere 1`.
+- **Painted/stylized sky dome:** sphere mesh, material **Unlit + Opaque** with **Is Sky** ticked (aerial perspective
+  skipped, height/volumetric fog still apply); the SkyAtmosphere material nodes let a painted gradient follow the sun.
+  Visible In Ray Tracing and Affect Distance Field Lighting off on the dome ("Lighting gotchas"). Night: a second
+  directional light as moon with **Atmosphere Sun Light Index 1**.
 - **Volumetric Cloud (opt-in only)**: SETUP 7b deletes the template's (measured ~2.5 ms at 4K). Add one only if the
   look needs it, and bench it (`performance.md`). Look comes from its material instance (see skill).
   Known 5.8.0 report (forum, unconfirmed by Epic): jagged edges where opaque meshes overlap clouds when height-fog
@@ -211,21 +235,36 @@ Groups: `sg.ResolutionQuality` (= screen percentage), `sg.ViewDistanceQuality`, 
   `AutoExposureApplyPhysicalCameraExposure` off unless you set camera ISO/shutter/aperture.
 - Recommended for a game: auto with a tight EV100 clamp; it handles indoor/outdoor transitions.
 - **Local Exposure** (PPV > Lens > Local Exposure): Epic recommends always setting it up with Lumen. Highlight/Shadow
-  Contrast 0.6-1.0, Detail Strength 1.
+  Contrast 0.6-1.0, Detail Strength 1 (any other value turns local exposure on by itself). Method Bilateral
+  (default) or Fusion; **Blurred Luminance Blend 0.4-0.6** cuts halos round bright edges; **Middle Grey Bias** in
+  stops. Known issue UE-327117 (5.6.1, unchecked on 5.8.4): local exposure with **manual** exposure in a **dark** scene
+  pushed pre-exposure far too high; histogram did not. Dark games: test it in the darkest room.
+- **Keeping a grade stable across rooms:** **Exposure Compensation Curve** (Curve Float, X = average scene EV100,
+  Y = compensation; read X live with the "HDR (Eye Adaptation)" visualiser) lifts dark interiors and tames bright
+  exteriors. **Exposure Metering Mask** (texture) weights the centre so a bright screen edge can't swing exposure.
 
 ## Post-process look (stylized)
 
 - Tonemapper (Film): `FilmSlope` (higher = darker/contrastier), `FilmToe` (shadows), `FilmShoulder` (highlights);
-  leave `FilmBlackClip`/`FilmWhiteClip`.
+  leave `FilmBlackClip`/`FilmWhiteClip`. Defaults: Slope 0.88, Toe 0.55, Shoulder 0.26, Black Clip 0, White Clip 0.04.
+  Epic: set Film once project-wide and don't animate it; do art changes in Color Grading.
+  **Tone Curve Amount 0 + Expand Gamut 0 disable the tone curve** (flat, graphic look: colours land as authored).
+  Keep **Blue Correction** on (bright blues/neon/sky go violet without it). Exposure changes go in Exposure
+  Compensation, not Gain.
 - Colour grading: `ColorSaturation`, `ColorContrast`, `ColorGamma`, `ColorGain` per Global/Shadows/Midtones/Highlights;
   `WhiteTemp`; `SceneColorTint`. Push saturation/contrast slightly for a punchy, readable look.
-- **LUT**: `ColorGradingLUT` + `ColorGradingIntensity`. Fastest route to a strong graded look: screenshot -> grade
-  the neutral LUT strip in an image editor -> import as LUT texture (`TC_ColorLookupTable`, no mips) (unverified for 5.8 steps).
+- **LUT** (PPV > Color Grading > Global > **Color Grading LUT** + **LUT Intensity**; `ColorGradingLUT`,
+  `ColorGradingIntensity`). Fastest route to a strong graded look. Neutral LUT = 16x16x16 unwrapped to **256x16**
+  (Epic's LUT example zip, `RGBTable16x1.png`). Screenshot the scene with exposure and post final, grade it, apply the
+  same adjustment layers to the neutral strip, import. Texture: **Mip Gen Settings = NoMipMaps**, **Texture Group =
+  Color Lookup Table**. Applied after the tonemapper in LDR sRGB (not carried to HDR displays); Epic recommends the
+  grading sliders for final tweaks.
 - Bloom: `BloomIntensity`, `BloomThreshold`; Standard method is cheap, Convolution is expensive (skip).
 - Vignette: `VignetteIntensity` (5.8 also has `VignetteType`, `VignetteColor`, `VignetteSoftness`).
 - Film grain / chromatic aberration: tiny amounts or none; they fight TSR clarity.
 - Stylized recipes that stay Lumen-friendly: strong sun colour + coloured fog/Sky Atmosphere; low sun for long shadows;
-  saturated LUT; post-process material (Domain = Post Process) for outlines/posterize - one material, keep cheap.
+  saturated LUT; post-process material (Domain = Post Process) for outlines/posterize - one material, keep cheap,
+  placed Before Tonemapping (`materials.md` "Stylized looks": After Tonemapping runs at 4K with TSR).
 - Don't use Lumen `Diffuse Color Boost` above 2 to fake vibrancy (brightens reflections too).
 
 ## No-Lumen look (stylized render path)
@@ -252,6 +291,9 @@ floor); the problems are general, the numbers are that game's. What went wrong w
 - **Reflection captures without baking:** with no precomputed lighting, `LevelEditorSubsystem.build_light_maps(
   QUALITY_PREVIEW, True)` returns False ("Skipping Lighting Build") but still builds the reflection captures and writes
   `<Map>_BuiltData`. **Save the level afterwards**, or the captures are black in a packaged build.
+- **Screen Space GI is a fourth GI choice:** Dynamic Global Illumination Method = **Screen Space (Beta)**, "low cost,
+  but limited by screen space information" (bounces only what is on screen). A possible floor-bounce stand-in here;
+  unbenched by us.
 - Turning Lumen GI off switches **SSAO** on (it was skipped under Lumen): `r.AmbientOcclusionLevels=0`, and
   `r.DistanceFieldAO=0`, unless you want the look.
 
@@ -315,5 +357,14 @@ floor); the problems are general, the numbers are that game's. What went wrong w
 - 5.8 release notes (MegaLights status): https://dev.epicgames.com/documentation/en-us/unreal-engine/unreal-engine-5-8-release-notes
 - Exponential Height Fog: https://dev.epicgames.com/documentation/en-us/unreal-engine/exponential-height-fog-in-unreal-engine?application_version=5.8
 - Post process effects: https://dev.epicgames.com/documentation/en-us/unreal-engine/post-process-effects-in-unreal-engine?application_version=5.8
-- Auto exposure: https://dev.epicgames.com/documentation/en-us/unreal-engine/auto-exposure-in-unreal-engine?application_version=5.8
+- Auto exposure (incl. local exposure, compensation curve, metering mask): https://dev.epicgames.com/documentation/en-us/unreal-engine/auto-exposure-in-unreal-engine?application_version=5.8
+- LUTs: https://dev.epicgames.com/documentation/en-us/unreal-engine/using-lookup-tables-for-color-grading-in-unreal-engine?application_version=5.8
+- Color grading and filmic tonemapper: https://dev.epicgames.com/documentation/en-us/unreal-engine/color-grading-and-the-filmic-tonemapper-in-unreal-engine?application_version=5.8
+- Volumetric fog: https://dev.epicgames.com/documentation/en-us/unreal-engine/volumetric-fog-in-unreal-engine?application_version=5.8
+- Local fog volumes: https://dev.epicgames.com/documentation/en-us/unreal-engine/local-fog-volumes-in-unreal-engine?application_version=5.8
+- Sky Atmosphere: https://dev.epicgames.com/documentation/en-us/unreal-engine/sky-atmosphere-component-in-unreal-engine?application_version=5.8
+- Contact shadows: https://dev.epicgames.com/documentation/en-us/unreal-engine/contact-shadows-in-unreal-engine?application_version=5.8
+- Rendering project settings (Screen Space GI): https://dev.epicgames.com/documentation/en-us/unreal-engine/rendering-settings-in-the-unreal-engine-project-settings?application_version=5.8
+- 5.8 release notes (Lumen Lite Beta): https://dev.epicgames.com/documentation/unreal-engine/unreal-engine-5-8-release-notes
+- Issue UE-327117 (local exposure + manual exposure, dark scene): https://issues.unrealengine.com/issue/UE-327117
 - Forum (community, not Epic) 5.8.0 cloud/opaque edge bug: https://forums.unrealengine.com/t/ue5-8-volumetric-cloud-opaque/2746561
