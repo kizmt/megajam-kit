@@ -177,7 +177,16 @@ protected:
   idle at 0, walk at **300** and jog at **600** cm/s in 8 directions. The template character's `MaxWalkSpeed` is 500,
   so it never reaches the full jog. A custom blend space or clip set: read its samples
   (`bs.get_editor_property('sample_data')`) before tuning `MaxWalkSpeed` and the walk/run speeds in the tuning
-  DataAsset.
+  DataAsset. To move a sample off the axis grid, turn `snap_to_grid` off first (`editor-scripting.md` E).
+  - **Lock the feet at the real walk speed W:** put the walk samples at W and set their `rate_scale` to W / the clip's
+    root speed (root bone travel / clip length).
+  - **A long idle sample slows part-speed walks.** The blend's cycle length is the weighted mean of its samples'
+    `length / rate` (`UBlendSpace::GetAnimationLengthFromSampleData`): at 93% walk a 7.6 s idle stretched a 1.5 s walk
+    to 1.9 s and the feet slid (132 cm/s instead of 280). If the standing idle is its own ABP state, give the blend
+    space's idle samples `rate_scale = idle length * walk rate / walk length` so part-speed blends keep the walk's
+    cycle.
+  - Verify with a `-game` test that traces a foot (or a planted prop) every tick in slow motion: its world speed
+    while planted should be near 0.
 - **Montages** (attack, interact, hit react): play from C++ as the template does:
   `GetMesh()->GetAnimInstance()->Montage_Play(M, 1.f)` + `Montage_SetEndDelegate(...)`, sections via
   `Montage_JumpToSection`. Or use `ACharacter::PlayAnimMontage`. **A montage only shows if the ABP has a Slot node for
@@ -314,6 +323,11 @@ Only relevant for non-human proportions. From one prototype: a short, stubby, ro
   orphan `ABP_..._<Suffix>1` appears. The editor shows nothing wrong; the cook fails ("BlendSpace ... has a sample with
   no/invalid animation"). Fix: re-point each blend space `sample_data` entry to the real retargeted anim (same order as
   the source blend space) and delete the orphan. Grep the anim folder for `_<Suffix>1` before packaging.
+- **A clip that replaces another (reimport, consolidate, retarget) takes all three root flags from the original:**
+  `enable_root_motion`, `root_motion_root_lock` and `force_root_lock`. A replacement walk that copied only the first
+  lost `force_root_lock`; its root travelled 278 cm per loop, so the mesh slid ahead of the capsule and snapped back
+  every cycle. Check: the root bone's position at the first and last frame
+  (`AnimPoseExtensions.get_bone_pose(..., 'root', WORLD)`) must match, or root motion must be extracted.
 - **Single-node animation in editor scripts:** call `override_animation_data` only. Setting `animation_mode =
   ANIMATION_SINGLE_NODE` as a raw property first makes `SetAnimationMode` see no change, so the mesh stays in T-pose.
 - **The camera collides with characters by default:** set capsule and mesh to ignore `ECC_Camera` (`gameplay.md` "Cameras").

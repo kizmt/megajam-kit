@@ -220,6 +220,8 @@ Select-String $log -Pattern '\[PROOF\]|Log file closed'   # proof lines + clean 
   packaged exe.)
 - **`-game` Python harness facts (5.8.4):**
   - `EditorAssetLibrary` calls crash the `-game` process; `unreal.load_asset` works.
+  - The pawn is `controller.get_controlled_pawn()`; `PlayerController.get_pawn()` doesn't exist in 5.8.4 Python
+    (AttributeError; `get_pawn` is on `PlayerState`).
   - Python can't spawn into the game world: borrow a camera actor placed in the level.
   - `PlayerController.un_possess()` resets the view target: call `set_view_target_with_blend(cam, 0)` again before
     each shot, and set the FOV with `cam.camera_component.set_field_of_view`.

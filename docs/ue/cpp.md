@@ -86,6 +86,9 @@ protected:
 - Create objects with `CreateDefaultSubobject<T>(TEXT("Name"))` (constructor only, components),
   `GetWorld()->SpawnActor<T>()` (actors), `NewObject<T>(Outer)` (other UObjects). Never `new` a UObject.
 - Constructor: set defaults and create components only. No `GetWorld()`, no spawning, no gameplay; use `BeginPlay`.
+- **Anything an actor creates in `BeginPlay` (components, timers), it removes in `EndPlay`.** In a World Partition map
+  a cell that streams out calls `EndPlay` (`RemovedFromWorld`) without destroying the actor, and `BeginPlay` runs again
+  when it streams back: a herd that added its meshes in `BeginPlay` ended up with two sets, one frozen.
 - Tick off by default: `PrimaryActorTick.bCanEverTick = false;` in the constructor (`performance.md`).
 
 ## Modules: Build.cs

@@ -93,9 +93,12 @@ project (no pre-jam gameplay code in the kit).
 - Thin BPs (editor Python, no graph logic): `BP_<Name>` (mesh, ABP class, mesh Z = -capsule half-height,
   yaw -90 (= 270) for a +Y-facing mesh, input actions, DA), `BP_MainPlayerController` (IMC_Default + IMC_MouseLook), `BP_MainGameMode`
   (pawn + controller) → World Settings GameMode Override.
-- Python facts: no factory for `InputAction` in the stub, so duplicate an existing bool action
-  (`IA_Jump` → `IA_Walk`) and set `value_type`/`triggers`; `imc.map_key(action, key)` with
-  `key.set_editor_property("key_name", "LeftShift")`; data assets via `DataAssetFactory` + `data_asset_class`;
+- Python facts: the 5.8.4 stub has `InputAction_Factory` and `InputMappingContext_Factory`, so input assets can be
+  created directly (duplicating an existing bool action, `IA_Jump` → `IA_Walk`, also works: set `value_type` and
+  clear `triggers`); `imc.map_key(action, key)` with `key.set_editor_property("key_name", "LeftShift")`. **`map_key`
+  never de-duplicates**, and `key_name` is an `unreal.Name`, so `"LeftShift" in {m.key.key_name ...}` is always False
+  and a re-run mapped the key twice: make mapping scripts re-runnable with `imc.unmap_all_keys_from_action(action)`
+  then `map_key` each key, or compare `str(key_name)`; data assets via `DataAssetFactory` + `data_asset_class`;
   BPs via `BlueprintFactory` + `parent_class`, then set CDO properties (`get_default_object`) and compile.
 - Verify in PIE from script: pawn/controller/game mode classes, `MaxWalkSpeed` before/after `set_walking(True)`,
   feet on the floor, no warnings from the player's log category.
@@ -302,6 +305,10 @@ public:
   ends for a logged reason (log duration and reason when a timed state ends).
 - **Autoplay hooks are great for captures and benchmarks but bypass input.** Keep an autoplay cvar (the player driven
   by bot logic) and test input separately with real keys (`docs/ue/debugging.md` F).
+- **Prove a "can't leave here" boundary with a pawn-sized walk, not with the rule that placed it.** A fence placed
+  where the ground 6 m out fell 2.5 m still let a capsule walked sideways off the path get down at 13 places, where
+  the slope fell steadily (35-50%). The check: `capsule_trace_single_by_profile` (profile Pawn, the player's capsule)
+  stepped 0.5 m at a time off every edge, an unwalkable rise counting as a wall; any route out is a hole.
 - **After any scripted level rebuild, run a full autoplay playthrough**: rebuilds can silently break references, and
   on one prototype, characters silently headed back to their start point and nobody noticed for minutes.
 

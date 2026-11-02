@@ -56,6 +56,8 @@ space) before the next idea. Uninterrupted difficulty reads as a grind; uninterr
   organisation") and play it before any art goes in. Art follows the layout, never the other way round.
 - **Scale and metrics:** decide the player's jump height, run speed and reach early, write them in the verb table,
   and build every gap, ledge and corridor from those numbers.
+- **Boundaries are proven, not assumed.** Every edge the player must not cross gets a pawn-sized walk test
+  (`docs/ue/gameplay.md` "Verification lessons"); a gentle steady slope leaks as surely as a cliff edge.
 
 ## Difficulty and fairness
 
