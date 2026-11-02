@@ -103,7 +103,7 @@ writes `MUS_Explore.plan.json` (*tested* 2026-11-01). Edit it, then compose with
 character's lines in one batch on one day.
 
 - **Direct the delivery with audio tags** in square brackets before the words: `[low, gravelly voice, slow and
-  measured] The road remembers every pilgrim.` Describe the voice, not an event: v4 also makes sound effects and can
+  measured] The tower has stood for a thousand years.` Describe the voice, not an event: v4 also makes sound effects and can
   read an ambiguous tag (`[thunder]`) as one. Match tags to the voice: a calm voice won't shout convincingly.
 - **No SSML.** `<break>` tags don't work on v4. Pause with ellipses, `[short pause]` / `[long pause]` and line
   breaks. v4 has no Speed or Style setting; only Stability (lower is more varied) and Similarity apply
