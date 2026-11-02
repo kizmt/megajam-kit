@@ -271,10 +271,19 @@ Select-String $log -Pattern '\[PROOF\]|Log file closed'   # proof lines + clean 
   - **Runtime A/B without a rebuild:** `PrimitiveComponent.set_evaluate_world_position_offset(False)` toggles WPO per
     component; `unreal.MaterialLibrary.create_dynamic_material_instance(world, mi)` (not `KismetMaterialLibrary`)
     gives a runtime MID to scale parameters per variant.
-  - **Traversal checks:** for invisible walls, sweep the pawn's capsule along the route and label each blocking hit
-    visible or invisible by the mesh under it; then a route walker at run speed in `-game` counts falls and stalls.
-    Generic, parameterised scripts for both are to be added to `gen/test/` before the jam (director's call); until
-    they exist, write the probe per project from this method.
+  - **Traversal checks (invisible walls, lids, ledges):** write the route the player should be able to walk to
+    `<Project>\Generated\traverse\route.json` (`{"lines": {"main": [[x, y, z], ...]}, "capsule": {"radius": R,
+    "half_height": H}}`, world cm, z on the ground; format and options in the scripts' headers), then:
+    - `node gen\unreal\py.ts gen\unreal\py\traverse_survey.py` (editor, level open, streamed actors loaded): every
+      40 cm on the line and lines offset to each side, the pawn's floor and capsule with the "Pawn" profile; reports
+      holes, lids (standing on something invisible), ledges, steep spots and blockers, and whether each blocker's
+      collision is drawn there or invisible. Writes `traverse_survey.json`.
+    - `gen\test\game_test.ps1 -Script C:\dev\megajam-kit\gen\test\route_walk.py -Tag ROUTEWALK` (`-game`): the
+      pawn runs each line at run speed and logs stalls, stuck spots, falls and pushes off the line, with what blocks
+      ahead. Writes `route_walk.json`.
+    Run both after any change to collision, walls, props or terrain along the route, and before a playtest. For
+    stairs, run the pawn up with `add_movement_input` and log `current_floor` each tick. (Both scripts are untested
+    in their generic form; they come from the rehearsal's own probes.)
     For stairs, run the pawn up with `add_movement_input` and log `current_floor` each tick.
   - Image work outside the editor: the system Python had PIL but not numpy; Blender's Python had numpy but not PIL.
   - Editor-only properties don't exist: `static_mesh.get_editor_property("body_setup")` raises "Failed to find

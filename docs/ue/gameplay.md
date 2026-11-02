@@ -317,7 +317,8 @@ public:
 - **Prove a "can't leave here" boundary with a pawn-sized walk, not with the rule that placed it.** A fence placed
   where the ground 6 m out fell 2.5 m still let a capsule walked sideways off the path get down at 13 places, where
   the slope fell steadily (35-50%). The check: `capsule_trace_single_by_profile` (profile Pawn, the player's capsule)
-  stepped 0.5 m at a time off every edge, an unwalkable rise counting as a wall; any route out is a hole.
+  stepped 0.5 m at a time off every edge, an unwalkable rise counting as a wall; any route out is a hole. Along the
+  route itself, the kit's traversal survey and route walker find invisible walls and stuck spots (`debugging.md` F).
 - **After any scripted level rebuild, run a full autoplay playthrough**: rebuilds can silently break references, and
   on one prototype, characters silently headed back to their start point and nobody noticed for minutes.
 

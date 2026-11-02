@@ -55,7 +55,7 @@ Non-AI tools: Blender (headless, for model clean-up and texture packing), ffmpeg
 | `gen/vfx/` | VFX building blocks: procedural mask/noise textures, the master VFX material and instances, effect meshes |
 | `gen/unreal/` | Editor automation over MCP: master material + material instances, skeletal import checks, retargeting, screenshots, running editor Python |
 | `gen/perf/` | Benchmarking of the packaged build: CSV profile summaries and settings comparisons |
-| `gen/test/` | Real-input key tests (with approval), scripted `-game` tests, and safe recording of the game window |
+| `gen/test/` | Real-input key tests (with approval), scripted `-game` tests (including a route walker), and safe recording of the game window |
 | `scripts/` | PowerShell: C++ build (fails on warnings), packaging + itch.io zip, itch.io upload (butler), project Git/LFS setup |
 | `unreal/Plugins/MegajamTools` | The kit's small editor plugin (Python tools exposed to Unreal MCP) |
 

@@ -191,6 +191,8 @@ Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls nee
 | `gen/test/autoclip.ps1` | Film the game playing itself through an autoplay hook (no key injection) |
 | `gen/test/record_window.ps1` | Record the game window only, while it has focus |
 | `gen/test/game_test.ps1` | Run a scripted test in a standalone `-game` instance and print its result lines |
+| `gen/test/route_walk.py` | `-game` test (via `game_test.ps1`): the pawn runs the route and logs stalls, falls and stuck spots |
+| `gen/unreal/py/traverse_survey.py` | Editor survey of the route for invisible walls, lids, ledges and steep spots (`docs/ue/debugging.md` F) |
 | `gen/blender/extract_pbr.py` | Colour/normal/roughness/metallic PNGs from a Tripo textured model (FBX or GLB) |
 | `gen/unreal/py/import_skeletal.py` / `check_skeletal.py` / `retarget_setup.py` / `clean_character.py` / `make_character_bp.py` | Skeletal import, root-scale check, IK retarget, safe rebuild, thin BP |
 | `gen/unreal/materials.ts` | `M_PBR_Master` + per-asset material instances |
