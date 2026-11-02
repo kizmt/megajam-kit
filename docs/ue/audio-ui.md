@@ -189,10 +189,10 @@ C->SetTriggerParameter(TEXT("Explode"));     // fires a Trigger input
   sounds' class needs **Apply Ambient Volumes**. Audio Gameplay Volumes (Beta, plugin off) aren't needed.
 - Voice budget: `FAudioQualitySettings::MaxChannels` defaults to 32 (Project Settings > Audio > Quality). Concurrency +
   attenuation (inaudible sounds get virtualized) keep you under it; raise only if sounds audibly drop out.
-- Debug (on Epic's 5.8 audio console page): `au.3dVisualize.Enabled 1` (+ `.ActiveSounds`, `.Attenuation`),
+- Debug (all found in the 5.8.4 source): `au.3dVisualize.Enabled 1` (+ `.ActiveSounds`, `.Attenuation`),
   `au.Debug.Sounds 1`, `au.Debug.SoundMixes 1`, `au.Debug.SoundReverb 1`, `au.DumpActiveSounds`,
-  `au.Debug.AudioMemReport`, `au.BypassAllSubmixEffects`, `au.ClearMutesAndSolos`. (`stat soundwaves` is not on
-  that page: untested.)
+  `au.BypassAllSubmixEffects`, `au.ClearMutesAndSolos`. (Epic's page also lists `au.Debug.AudioMemReport`, which is
+  not in the 5.8.4 source; `stat soundwaves` is untested.)
 - **Measure the game's loudness in Audio Insights** (Production Ready in 5.8, on by default): Tools > Audio
   Insights, check Monitoring is green, Reset, then PIE a full run. The Loudness tab (editor only) shows Momentary,
   Short Term and Integrated LUFS, loudness range and true peak of the final mix; set the target and peak limit in
@@ -435,13 +435,15 @@ Functions (C++ names; the MCP may expose them snake_cased):
 - `Engine\Plugins\Experimental\Toolsets\UMGToolSet\Source\UMGToolSet\Private\UMGToolSet.h` (full tool list),
   `...\MVVMToolset\...\MVVMToolset.h`.
 - `...\Classes\Components\AudioComponent.h`: `PlayQuantized` signature (checked on the target PC).
-- From Epic's 5.8 docs only, not yet checked in 5.8.4 headers: the Quartz subsystem/handle calls and
-  `FQuartzQuantizationBoundary`, `FSubmixEffectDynamicsProcessorSettings` fields, MetaSound node names, audio cvars.
+- Names found in the 5.8.4 engine source on the target PC (2026-11-02; existence, not behaviour): the Quartz calls
+  (`CreateNewClock`, `SetBeatsPerMinute`, `SubscribeToQuantizationEvent`, `GetBeatProgressPercent`,
+  `EQuarztQuantizationReference::TransportRelative`, `FOnQuartzCommandEventBP`), `bCanPlayMultipleInstances`,
+  `FSubmixEffectDynamicsProcessorSettings` (`ExternalSubmix`, `bKeyAudition`), `VolumeAdjuster`,
+  `MaxVolumeThreshold`, `SPATIALIZATION_Default`, `AudioMixerXAudio2`, the audio cvars listed above; the
+  `UGameUserSettings` calls, `SetInputMode_UIOnlyEx`, `SetFocusToGameViewport`, `SetColorVisionDeficiencyType`,
+  `RenderFocusRule`, the `UInputSettings` mouse fields, `OnInputMethodChangedNative`, `QueueSingleSubtitle`.
 - Not verified: Windows per-platform MaxChannels; the 5.8.4 defaults of `PanningMethod`, `MaxVolumeThreshold` and
-  `VolumeAdjuster`; the Quartz delegate parameter lists; the WASAPI fallback ini key.
-- Not checked against headers (from Epic's 5.8 API pages, 2026-11-02): the `UGameUserSettings` calls,
-  `UWidgetBlueprintLibrary::SetInputMode_UIOnlyEx` / `SetFocusToGameViewport` / `SetColorVisionDeficiencyType`,
-  `UUserInterfaceSettings::RenderFocusRule`, the `UInputSettings` mouse fields, `UCommonInputSubsystem`.
+  `VolumeAdjuster`; the Quartz delegate parameter lists.
 
 ## Sources (5.8)
 

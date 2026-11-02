@@ -36,7 +36,8 @@ the risk is.
 | PCG Editor Mode | Experimental | Faster PCG authoring | untested |
 | Dynamic Asset Selection (Choosers) | Experimental | Data-driven asset/animation picking | untested |
 | Water plugin | Experimental (`Water.uplugin`) | Sea, rivers, lakes with waves, shoreline and SLW shading for free | **works from Python** (rehearsal): many gotchas, recipe in `worldbuilding.md` "Water"; packaged perf not isolated |
-| Nanite Foliage (shape preservation `VOXELIZE`) | Experimental (Project Settings > Rendering > Nanite Foliage, editor restart) | Thin leaves that survive at distance | untested; the 5.8 doc says most voxel settings "don't actually work as intended yet" (`performance.md` "Geometry") |
+| Motion Warping | Beta | Lines up attacks, vaults and climbs with a target by warping root motion | untested in the kit; `animation-library.md` "Combat animation pattern" |
+| Nanite Foliage (shape preservation `VOXELIZE`) | Experimental (Project Settings > Rendering > Nanite Foliage, editor restart) | Thin leaves that survive at distance | **tested in the rehearsal:** right for trees (5-7 m), wrong for small thin plants (use Preserve Area); WPO wind works. The 5.8 doc says most voxel settings "don't actually work as intended yet" (`performance.md` "Geometry") |
 | MegaLights | Production Ready per the 5.8 release notes; doc page and source help text still say Experimental | Many shadowed local lights at near-constant cost | untested; only for a night or interior level, after a practice-run measurement; not for the sun (`lighting.md` "MegaLights") |
 | Lumen Lite | Beta (5.8 release notes) | "Twice as fast as Lumen high quality"; the kit ships it as the Medium preset | untested in a packaged build: prove it (rule 2; `lighting.md` "Scalability") |
 | Sandboxes | Experimental (5.8 launch post) | Isolated workspace keeping only chosen changes | **skip**: Git branches do this; interaction with Git and World Partition external actors undocumented |

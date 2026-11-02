@@ -45,7 +45,8 @@
 - **Pak compression alone doesn't shrink BC textures or Nanite pages.** Oodle Texture RDO is off by default
   (`bFinalUsesRDO=false` in BaseEngine.ini `[/Script/Engine.TextureEncodingProjectSettings]`). If the zip is near the
   limit, turn it on in `DefaultEngine.ini` before the first package (the saving was not measured in the rehearsal).
-  Epic's numbers: `[TextureFormatOodle] DefaultRDOLambda=30` "still produces high quality results"; per LOD group or
+  Epic's numbers: `[TextureFormatOodle] DefaultRDOLambda=30` (key not found in the 5.8.4 source or ini: check the
+  log line below) "still produces high quality results"; per LOD group or
   texture, **Lossy Compression Amount** (Lowest 1, Low 10, Medium 20, High 30, Highest 40), 5-20 for normal maps.
   The log line `Oodle Texture ... init RDO On with DefaultRDOLambda=30` confirms it. RDO only pays off after pak
   compression (Kraken).
@@ -77,8 +78,8 @@
      count left). Log the wait with the build stamp.
 - **Test cold:** run the packaged build with `-clearPSODriverCache` (otherwise "hitches may be masked") and
   `r.PSOPrecache.Validation=1` (lightweight) or `2` (logs each `PSO PRECACHING MISS:` with material and pass), then
-  `stat PSOPrecache`; Insights shows `PSOPrecache: Missed` / `Too Late`. Add `-corelimit=8` to act like a typical
-  player CPU. One cold run per packaged milestone. Leave `r.PSOPrecache.KeepInMemoryUntilUsed` off (can add > 1 GB).
+  `stat PSOPrecache`; Insights shows `PSOPrecache: Missed` / `Too Late`. `-corelimit=8` (from Epic's page; not found in the
+  5.8.4 engine source) may limit cores like a typical player CPU. One cold run per packaged milestone. Leave `r.PSOPrecache.KeepInMemoryUntilUsed` off (can add > 1 GB).
 - **Skip the bundled PSO cache** (`-logPSO` play-throughs, the `ShaderPipelineCacheTools` commandlet, an `.spc` in
   `Build/Windows/PipelineCaches`, a second package, redone after big content changes). With precaching Epic says it
   "may not be necessary anymore". Consider it only if a cold run on day 3 still shows global-shader hitches.
