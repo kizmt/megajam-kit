@@ -69,7 +69,7 @@ headers; the patterns are unbuilt in a prototype.
 - **Jump buffer: 0.1 s.** A press just before landing should still jump. Store the press time when `CanJump()` is
   false; in `Landed()` (override, call Super), `Jump()` if the press is within the window, then clear it so one
   press gives one jump. The same idea queues the next attack during recovery or hit-stop and fires it at the combo
-  window (`animation-library.md` "Hit window").
+  window (`animation-library.md` "Combat animation pattern", cancel window).
 - **Fall damage: reset the fall's top on a teleport too, not only on landing.** A rehearsal game measured
   `FallTopZ - Z` on landing, with `FallTopZ` set when a fall starts. A test script teleported the pawn out of a glide
   ending high in the air, the fall never ended, and the landing far below counted a 90 m drop. Reset it in the
@@ -82,7 +82,7 @@ headers; the patterns are unbuilt in a prototype.
 - **Invincibility after a hit: 0.5-1 s for the player**, shown by a blink (~10 Hz, the master material's flash or
   visibility) and a knockback away from the source. Enemies get little or none, or combos stop landing.
 - **Fast movers tunnel.** Move by `SetActorLocation(..., bSweep=true)`, keep `UProjectileMovementComponent`'s sweep
-  on, and set `bUseCCD` on fast simulated bodies (`FBodyInstance`).
+  on, and set `bUseCCD` on fast simulated bodies (`FBodyInstance`; `physics.md` "CCD (fast objects)").
 
 ## Example: third-person player
 
@@ -120,8 +120,9 @@ project (no pre-jam gameplay code in the kit).
   `cpp.md` "Modules"). The plugin is on by default.
 - Assets: one `UInputAction` (IA_) per verb, with Value Type Bool, Axis1D, Axis2D (FVector2D) or Axis3D. One
   `UInputMappingContext` (IMC_) maps keys to actions, with per-key **modifiers** and **triggers**.
-  - WASD into one Axis2D `IA_Move`: W = no modifier. S = `Negate`. D = `Swizzle Input Axis Values` (YXZ).
-    A = Swizzle + Negate. A missing Swizzle makes W/S move sideways (a classic bug).
+  - WASD into one Axis2D `IA_Move`, read as the template's `Move` reads it (Y = forward, X = right): W = `Swizzle
+    Input Axis Values` (YXZ), S = Swizzle + `Negate`, D = no modifier, A = Negate. A missing Swizzle makes W/S move
+    sideways (a classic bug).
   - Common modifiers: `Negate`, `SwizzleAxis`, `DeadZone` (gamepad sticks), `Scalar` (sensitivity).
   - Common triggers: none (= Down, fires every frame while held), `Pressed` (once), `Released`, `Hold`, `Tap`, `Pulse`.
     Put "press E once" behaviour in a `Pressed` trigger on the IA, or bind `ETriggerEvent::Started`.

@@ -25,14 +25,15 @@ in 5.8. Keep physics props few, simple-collided and asleep when idle. Collision 
 - Epic 5.8: "if you are using UseComplexAsSimple you cannot simulate the object." **Never** set
   "Use Complex Collision As Simple" on anything dynamic. Static world architecture is where it belongs (below).
 - One hull around a concave shape (chair, arch, cup, crate with open top) fills the hollow: things rest on air, and
-  an arch's opening blocks (a prototype's characters could only pass around its posts). Fix with convex decomposition
-  via MCP:
+  an arch's opening blocks (a prototype's characters could only pass around its posts). Fix props with convex
+  decomposition via MCP (static architecture such as that arch: complex-as-simple, below):
   `editor_toolset.toolsets.static_mesh.StaticMeshTools.generate_convex_collisions(mesh, hull_count=4,
   max_hull_verts=16, hull_precision=100000)` - replaces existing collision. Use 4-8 hulls for props the player
   interacts with; leave background props at 1 hull. More hulls = more cost per contact.
 - `remove_collisions(mesh)` for pure decoration (grass, small clutter): no collision is the cheapest collision.
-- Shapes passed through or under (arches, gates, tunnels, walk-in hollows): hand-placed boxes beat any decomposition.
-  Check with a line trace through the opening.
+- Shapes passed through or under (arches, gates, tunnels, walk-in hollows): static ones are world architecture and
+  take complex-as-simple (below); on anything that moves, hand-placed boxes beat any decomposition. Check with a line
+  trace through the opening.
 - **Static world architecture uses complex-as-simple collision** (walls, terraces, buildings, ground pieces, any long
   or curved mesh); convex hulls are for compact props. On a prototype, importers kept single FBX/auto hulls on long
   and curved world meshes: one hull over a curved wall run filled its inside, roofing the road 4-5 m up and walling its
@@ -176,7 +177,7 @@ Mesh->OnComponentHit.AddDynamic(this, &AMyProp::OnHit);   // in BeginPlay (not t
 
 ## What the agent can do via MCP
 
-- `StaticMeshTools.generate_convex_collisions` / `remove_collisions` (EditorToolset, Python) - see Collision.
+- `StaticMeshTools.generate_convex_collisions` / `remove_collisions` (EditorToolset, Python) - see "Collision for generated meshes".
 - **PhysicsToolsets** (`UPhysicsAssetToolset`, Experimental, enabled through `AllToolsets`) - Physics Assets only:
   `CreateFromMesh(MeshPath, bAssignToMesh)`, `GetBodyNames`, `GetBodyShapes`, `SetSphere`/`SetCapsule`/`SetBox`,
   `RemoveShape`, `AddBody`/`RemoveBody`, `Get/SetBodyPhysicsMode` (Default/Kinematic/Simulated),
@@ -190,7 +191,8 @@ Mesh->OnComponentHit.AddDynamic(this, &AMyProp::OnHit);   // in BeginPlay (not t
 ## Collision lessons (from a prototype)
 
 - **Meshes built with Geometry Script have no simple collision**, so characters fall through them
-  (`editor-scripting.md`). Complex-as-simple is fine for a few low-poly walkable pieces; never for dense generated meshes.
+  (fix and check: `editor-scripting.md` C, Geometry Script). Static walkable pieces follow the world
+  architecture rule above (complex-as-simple); props get simple shapes.
 - **Match collision to the visible shape** after swapping a mesh (e.g. a shorter bumper): a taller hidden collider
   makes jumps feel unfair.
 
