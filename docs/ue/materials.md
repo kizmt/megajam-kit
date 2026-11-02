@@ -212,6 +212,8 @@ Epic: use PP materials sparingly, prefer built-in volume settings (color grading
   `delete_unused_expressions` doesn't recompile. No tool for usage flags, blend mode or domain: set them with
   `ObjectTools.set_properties` (`BlendMode`, `MaterialDomain`, `bUsedWith*`), as materials.ts does. Texture sampler
   type must match compression (Normal/`TC_Normalmap`, Masks/`TC_Masks`, LinearGrayscale/`TC_Grayscale`) or compile fails.
+  For `TC_Grayscale` it also follows sRGB: sRGB off takes `SAMPLERTYPE_LINEAR_GRAYSCALE`, sRGB on
+  `SAMPLERTYPE_GRAYSCALE` ("Sampler type is Grayscale, should be Linear Grayscale" fails the whole material).
   `create_material` itself warns: prefer an MI.
 - Setting `material_function` on a FunctionCall through generic `set_properties` may not refresh its pins; check with
   `get_expression_input_names` and recompile (unverified).
@@ -223,6 +225,9 @@ Epic: use PP materials sparingly, prefer built-in volume settings (color grading
   (a landscape material drew the checker everywhere). Connect the `A` pin separately where it has one, otherwise pack
   data in R/G/B or use a second parameter. (A Custom node reading `.w` fails with "vector swizzle 'w' is out of
   bounds".)
+- **Query a material's inputs one named property at a time** (`MaterialEditingLibrary.get_material_property_input_node`
+  for BaseColor, Normal, Roughness, EmissiveColor, WorldPositionOffset...). Looping over every `MaterialProperty.MP_*`
+  crashed the 5.8.4 editor (access violation in MaterialEditor).
 - In a Custom node, sample a texture object input with `Texture2DSample(Tex, TexSampler, uv)`.
 
 ## Scripted materials: checks and traps (5.8.4, rehearsal)

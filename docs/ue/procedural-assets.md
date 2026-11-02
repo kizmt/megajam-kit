@@ -63,11 +63,19 @@ generated crates and shelves with a baked timber texture (5 meshes + texture set
   knocked) always use real UVs.
 - **Writing UV0:** `bpy.ops.uv.smart_project` needs Edit Mode and an active object headless: avoid it.
   Order: build, transform, bevel, **then** collect `bm.faces`, call `f.normal_update()` (transforms leave normals
-  stale) and write UVs. Check that the largest faces have a UV extent above 0; a zero extent renders as flat colour.
+  stale) and write UVs. **Call `bm.normal_update()` before `bmesh.ops.triangulate`** (and any op that projects faces):
+  faces made with `bm.faces.new` have no normal until then, and concave n-gons wrapped round door and window openings
+  were triangulated across the holes (428 covered openings on 35 meshes; 0 after the fix). Check walls with openings
+  by ray-casting through each opening's centre on the finished mesh, not by eye. Check that the largest faces have a UV extent above 0; a zero extent renders as flat colour.
 - **Proud trim needs its own UVs or material.** With one shared projection (box-projected or world-aligned), piers, jambs and frames standing
   out from a wall line up with the wall's blocks and read as see-through, especially without contact shading (no
   SSAO/DFAO). Give trim a different scale and offset, or a different (slightly darker) material instance.
-- **No lightmap UVs** with dynamic lighting (Lumen or not): turn off Generate Lightmap UVs.
+- **No lightmap UVs** with dynamic lighting (Lumen or not): turn off Generate Lightmap UVs. It matters for custom
+  data too: the import writes its generated lightmap UVs into UV1 and overwrites the FBX's own UV1 (a fade stored there
+  vanished; proven by re-importing with it off). Script it with `StaticMeshEditorSubsystem.get_lod_build_settings(mesh,
+  0)`, `generate_lightmap_u_vs = False`, `set_lod_build_settings(mesh, 0, bs)`, then re-import.
+- **Linear 0-1 data (fades, masks) goes in a UV channel, not vertex colour.** The same fade as vertex-colour bytes
+  arrived darker (0.5 read as ~0.2), as if decoded as sRGB (suspected, not proven).
 - **Materials:** in Blender, only name slots, exactly as the UE material instances (`MI_Stone`, `MI_Trim`), in a
   fixed order per piece type. Build the look in UE (master material, `materials.md`).
 - **Baking a tileable texture set in Blender is cheap** (Cycles CPU, 8 samples, 1024 px, 4D noise on a torus for
