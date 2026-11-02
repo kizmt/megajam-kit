@@ -56,6 +56,14 @@ unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
 mesh = unreal.load_asset(f"{folder}/{name}")
 if not isinstance(mesh, unreal.SkeletalMesh):
     raise RuntimeError(f"no SkeletalMesh at {folder}/{name}; imported: {list(task.imported_object_paths)}")
+# task.save writes the mesh only: the new Skeleton and PhysicsAsset stay in memory (5.8.4), and the mesh and every
+# animation reference them, so an editor restart would lose them. Save both explicitly.
+for dep in (mesh.skeleton, mesh.get_editor_property("physics_asset")):
+    if dep is None:
+        continue
+    if not _eal.save_loaded_asset(dep, False):
+        raise RuntimeError(f"saving {dep.get_path_name()} failed")
+    print(f"saved {dep.get_path_name()}")
 b = mesh.get_bounds()
 e = b.box_extent
 print(f"mesh {mesh.get_path_name()}")
