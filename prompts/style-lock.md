@@ -7,16 +7,16 @@ Goal: a look the director approves, written down precisely enough that every lat
 checked against it. Budget: ~3 hours of the jam, ~1 hour in practice runs.
 
 ## 1. Direction (the director, 15 min)
-The director gives (with the picked concept in `design/concept.md`): 3–5 mood words, 2–3 real-world or game references for *feel only*
-(no copying), and one sentence on what the player should feel in the first 10 seconds.
+The director gives (with the picked concept in `design/concept.md`): 3–5 mood words, 2–3 real-world or game
+references for *feel only* (no copying), and one sentence on what the player should feel in the first 10 seconds.
 
 ## 2. Key art (Claude, 30 min)
 1. **Directions in words first (free).** Write 2–3 distinct directions as short paragraphs (setting, light,
    palette, material feel, character idea), all for the same scene. The director can often pick or merge from the
    text alone; then only that direction gets images.
-2. **Images for the chosen direction(s)** (image model, cost stated first; prices in `PIPELINE.md`): per direction, 2 key frames of the
-   game's main view (different parts of the level) + **1 character sheet** if the game has a player character
-   (a few colour variants). The character sheet becomes the reference for `gen/character.ts` concepts.
+2. **Images for the chosen direction(s)** (image model, cost stated first; prices in `PIPELINE.md`): per direction,
+   2 key frames of the game's main view (different parts of the level) + **1 character sheet** if the game has a
+   player character (a few colour variants). The character sheet becomes the reference for `gen/character.ts` concepts.
 3. Present side by side. The director picks or asks for changes. Repeat once at most.
 4. Copy the approved images into `art/reference/` (the screenshots in step 4 are compared against them).
 
@@ -38,7 +38,8 @@ Graybox room + sky + fog + post-process volume + master material + 3 generated h
 The Basic level has no post-process volume: build an unbound one here, and on the Lumen path set its
 `LumenMaxRoughnessToTraceReflections` to 0.25 (`SETUP.md` 7b).
 Define 4-6 fixed camera transforms in `art/camera-set.md` (the gameplay view plus key spots), capture those
-shots and compare with the key art. Iterate lighting and post until the director says it matches. This scene becomes the template every level is built from.
+shots and compare with the key art. Iterate lighting and post until the director says it matches. This scene becomes
+the template every level is built from.
 
 ## Audio direction (words in the theme window, first sounds at S)
 Audio is a full judging category; the look gets locked, so does the sound. Write `design/audio.md`

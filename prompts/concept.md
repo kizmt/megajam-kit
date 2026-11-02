@@ -37,7 +37,8 @@ in the morning; the window fits either.
 ## 1. Direction (the director, 10 min)
 The director gives: first reactions to the theme, any genre or feel they want or want to avoid, and how many hours
 they can review each day. Also ask, so the concepts don't have to be redone:
-- **Target length** for a first-time player (the kit's default is 5-10 min; the director's answer sets it, CLAUDE.md rule 1).
+- **Target length** for a first-time player (the kit's default is 5-10 min; the director's answer sets it, CLAUDE.md
+  rule 1).
 - **Paid-generation budget and appetite:** should credit cost or the number of characters to generate and rig count
   as build risk in step 3, or not?
 - **Naming taste:** what kind of working titles they like.
@@ -103,7 +104,7 @@ Write `design/concept.md` (in the planning folder until S):
 ## 5. Schedule with freeze points (Claude, 10 min)
 S = contest start, D = submission deadline (S + 93 h). Sleep is announced, not planned: the director says when
 a block starts. Before it, batch the questions into one message, and move any milestone that falls inside the block
-earlier, never later; then run unattended rounds until the wake-up (CLAUDE.md "Work long stretches unassisted").
+earlier, never later; then run unattended rounds until the wake-up (CLAUDE.md "While the director sleeps").
 Keep the order and the gaps:
 
 | When | Milestone (pass/fail) |
@@ -121,7 +122,7 @@ Keep the order and the gaps:
 
 Package and bench from first playable onward, at every round close that added content (CLAUDE.md "Working model").
 Write the table to `design/schedule.md`; at S it is copied into `PROGRESS.md`. At every round close, compare against
-it; if a milestone slips by more than one round (~3 h), cut from the lowest tier first and say what was cut.
+it; if a milestone slips by more than one round (~2 h), cut from the lowest tier first and say what was cut.
 
 ## 6. Style and audio directions in words (director + Claude, 20 min)
 The "Before S" row needs them, and they are free. Run `prompts/style-lock.md` steps 1 and 2.1 now (the director's

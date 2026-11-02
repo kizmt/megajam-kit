@@ -41,7 +41,7 @@ opinion of the result.
 >    would fix it ("left wall is one flat colour: add a light pool or a trim break", not "make it better").
 > 3. Say what the stronger image does that the weaker one doesn't.
 >
-> Be specific and blunt. Ignore UI text and the build stamp. Answer in under 400 words.
+> Be specific and blunt. Ignore UI text and the build stamp. About 120 words per camera, 600 words at most.
 
 ## After the critic answers
 
@@ -51,7 +51,8 @@ opinion of the result.
   (in practice: "cut the fill light" against a frozen lighting call).
 - Don't spend tuning cycles on a rubric item the design or a frozen call blocks: a score that won't move under the
   constraints is a question for the director, not a task. Report it.
-- Report to the director: the scores, the top 3 flaws, what you changed. Never present the critic's verdict as the director's.
+- Report to the director: the scores, the top 3 flaws, what you changed. Never present the critic's verdict as the
+  director's.
 - **Scores only compare within one run.** The same image scored 34/50 in one run and 26/50 in the next with the same
   brief; the A-versus-B ranking was consistent. For a trend, put the old and new images in the same run (or average
   2-3 critics), never compare totals across runs.

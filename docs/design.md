@@ -108,8 +108,8 @@ Audio is a full judging category; plan it with the beats, not at the end (the au
 
 Log a line, with the time since the run started, for: run start (log it when recording starts too), title
 dismissed, first input, first use of the core verb, each beat start, each goal reached, each checkpoint, each death
-(cause and position), respawn complete, and the end (one log category, `docs/ue/debugging.md` "A. Logs"). The playtest and tuning numbers below come from
-these lines, not from memory.
+(cause and position), respawn complete, and the end (one log category, `docs/ue/debugging.md` "A. Logs"). The
+playtest and tuning numbers below come from these lines, not from memory.
 
 ## Playtesting
 
@@ -119,9 +119,9 @@ The builder can't play the game for the first time again, so test with fresh eye
    from the start with no help. Whoever watches (usually the director) writes short notes with the clock time of
    anything confusing; clips have no microphone. Claude records with `gen/test/record_window.ps1` (never
    `autoclip.ps1`: that one lets the game play itself) and reads the event log afterwards.
-2. **Fresh-agent review of the run.** A new helper agent gets only the clip's contact sheet, the event log, the
-   pitch and the beat list (no code, no history) and reports where a first-time player would be confused, stuck or
-   bored: brief in `prompts/playtest.md`. Like the visual critic, the director's calls overrule it.
+2. **Fresh-agent review of the run.** A new helper agent gets only the clip's contact sheets, the event log, the
+   pitch, goal, controls and beat list, and the watcher's notes (no code, no history) and reports where a first-time
+   player would be confused, stuck or bored: brief in `prompts/playtest.md`. Like the visual critic, the director's calls overrule it.
 3. **Numbers per run** (from the log): time to first input, time to first goal, deaths and time per beat,
    longest time without progress, total length, whether the end was reached.
 
