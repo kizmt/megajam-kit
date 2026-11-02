@@ -27,10 +27,15 @@ director). **The target PC** is the machine the game is built and measured on (R
   Commands that hide a relative target: `sed -i <file>`, `git add <file>`, PowerShell `Out-File $var`. **After a
   refused write, the capture or test that followed ran on the old file: redo it.**
 - **Shell habits:**
-  - Write or append files (scripts and markdown alike) with the Write/Edit tools, never shell heredocs or `echo`:
-    heredocs drop backslashes and choke on backticks and quotes. In PowerShell, `.Replace('\', '/')` avoids regex escaping.
+  - Write or append files (scripts and markdown alike) with the Write/Edit tools, never shell heredocs, `echo`,
+    `Set-Content` or `Out-File`: heredocs drop backslashes and choke on backticks and quotes; PowerShell 5.1's
+    `-Encoding utf8` adds a BOM that breaks Python ("invalid non-printable character U+FEFF"); and in an in-place
+    rewrite (`$t | Set-Content $s`) the permission check reads the piped variable as a relative target path and
+    blocks it. Read the file, then Write it. In PowerShell, `.Replace('\', '/')` avoids regex escaping.
   - Permission check "gave no verdict": retry once, then do read-only prep (grep the stub, write the script) and come back.
   - MCP `ECONNREFUSED`: see `docs/ue/debugging.md` before diagnosing.
+  - Start the editor in its own short foreground command (`Start-Process UnrealEditor.exe <uproject>`), then poll for
+    it in a separate one. Stopping a background task stops its whole process tree, an editor it started included.
 - At the start of a session: read `PROGRESS.md` and `DECISIONS.md` if they exist, then `C:\dev\megajam-kit\docs\ue\README.md`.
   Compare the project's `CLAUDE.md` with the kit's (`Get-FileHash` or a diff); if the copy is behind, tell the director.
 - **The kit is read-only for game sessions.** Read it and run its scripts, but never edit, commit or push
