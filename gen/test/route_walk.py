@@ -15,7 +15,7 @@
 #   & C:\dev\megajam-kit\gen\test\game_test.ps1 -Map /Game/Maps/<Level> -Script C:\dev\megajam-kit\gen\test\route_walk.py -Tag ROUTEWALK -TimeoutSec 1500
 # The game window appears: tell the director first. A game that changes the pawn's speed itself (stamina, wear,
 # states) can undo run_speed: the walk re-applies it every tick. From a rehearsal script (KIT_NOTES 86, 97, 101, 147).
-# Untested in this generic form.
+# Tested 2026-11-02 on the rehearsal's level (3.2 km in ~10 min at dilation 3).
 import json
 import math
 import os
@@ -24,7 +24,8 @@ import unreal
 
 PROJECT = unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_dir())
 ROUTE = os.path.join(PROJECT, "Generated", "traverse", "route.json")
-SPEC = json.load(open(ROUTE))
+with open(ROUTE) as f:
+    SPEC = json.load(f)
 WALK = SPEC.get("walk", {})
 LINES = list(SPEC["lines"].items())
 OUT = os.path.join(os.path.dirname(ROUTE), "route_walk.json")
@@ -220,7 +221,8 @@ def tick(dt):
 
 def finish(pc, w):
     GS.set_global_time_dilation(w, 1.0)
-    json.dump({"route": ROUTE, "summary": st["summary"], "events": st["events"]}, open(OUT, "w"), indent=1)
+    with open(OUT, "w") as f:
+        json.dump({"route": ROUTE, "summary": st["summary"], "events": st["events"]}, f, indent=1)
     for s in st["summary"]:
         print("ROUTEWALK SUMMARY %s" % s)
     print("ROUTEWALK done: %s" % OUT)

@@ -40,7 +40,15 @@ $deadline = (Get-Date).AddSeconds($TimeoutSec)
 while (-not $p.WaitForExit(5000)) {
     if ((Get-Date) -gt $deadline) { Write-Host 'FAIL: timeout'; Stop-Process -Id $p.Id -Force; exit 1 }
     if (Test-Path $log) {
-        $errs = @(Select-String -Path $log -Pattern 'LogPython: Error' -ErrorAction SilentlyContinue)
+        # Count only errors after the test script started: at startup, experimental toolset plugins log dozens of
+        # Python errors in -game (their init_unreal.py needs editor-only classes), which are harmless noise.
+        $start = Select-String -Path $log -Pattern "LogPython: .*($([regex]::Escape($py))|$([regex]::Escape($Tag)))" -ErrorAction SilentlyContinue |
+            Select-Object -First 1
+        $errs = @()
+        if ($start) {
+            $errs = @(Select-String -Path $log -Pattern 'LogPython: Error' -ErrorAction SilentlyContinue |
+                Where-Object { $_.LineNumber -gt $start.LineNumber })
+        }
         if ($errs.Count -gt $MaxPyErrors) {
             Write-Host "FAIL: $($errs.Count) Python error lines in $log; stopping the run. First ones:"
             $errs | Select-Object -First 8 | ForEach-Object { $_.Line }

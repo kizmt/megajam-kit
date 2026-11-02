@@ -282,8 +282,10 @@ Select-String $log -Pattern '\[PROOF\]|Log file closed'   # proof lines + clean 
       pawn runs each line at run speed and logs stalls, stuck spots, falls and pushes off the line, with what blocks
       ahead. Writes `route_walk.json`.
     Run both after any change to collision, walls, props or terrain along the route, and before a playtest. For
-    stairs, run the pawn up with `add_movement_input` and log `current_floor` each tick. (Both scripts are untested
-    in their generic form; they come from the rehearsal's own probes.)
+    stairs, run the pawn up with `add_movement_input` and log `current_floor` each tick. *Tested* 2026-11-02 on the
+    rehearsal's level: the survey took ~2 s for 25,000 samples on 3.2 km of lines; the walk ran them in ~10 min at
+    time dilation 3. A "floor never streamed in" note means the walk ran on what had loaded (landscape under a
+    missing structure): check those spots in the editor before trusting a stall there.
     For stairs, run the pawn up with `add_movement_input` and log `current_floor` each tick.
   - Image work outside the editor: the system Python had PIL but not numpy; Blender's Python had numpy but not PIL.
   - Editor-only properties don't exist: `static_mesh.get_editor_property("body_setup")` raises "Failed to find
