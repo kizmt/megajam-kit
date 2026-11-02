@@ -74,8 +74,8 @@ Sections marked **(Lumen path)** apply to full Lumen; Lumen Lite ships Medium GI
 - Turn off **Visible In Ray Tracing** on skydomes and huge overlapping background meshes.
 - Nanite meshes are ray traced via a **fallback mesh** (Static Mesh `Fallback Relative Error`). Self-shadow/leak
   artifacts on Nanite props in HWRT: raise Fallback Relative Error accuracy or check `Show > Advanced > Nanite Meshes`.
-- A/B: if Lumen passes exceed ~2 ms (4K output, 1080p internal), try `r.Lumen.HardwareRayTracing 0` (SW RT, Global Tracing is the
-  fastest path; cost doesn't scale with instance count). Keep whichever is faster *in the packaged build*.
+- A/B: if Lumen passes exceed ~2 ms (4K output, 1080p internal), try `r.Lumen.HardwareRayTracing 0` (SW RT, Global
+  Tracing is the fastest path; cost doesn't scale with instance count). Keep whichever is faster *in the packaged build*.
 
 ## Scalability (sg.*) - what each level means for Lumen/VSM
 
@@ -91,9 +91,11 @@ Groups: `sg.ResolutionQuality` (= screen percentage), `sg.ViewDistanceQuality`, 
 | 2 High | Screen Probe Gather, downsample 32, no mesh-SDF tracing | Lumen, half res (`DownsampleFactor=2`) | pool 2048, volumetric fog on |
 | 3 Epic | Screen Probe Gather, downsample 16, hit lighting allowed | Lumen, full res | pool 4096, sharper directional |
 
-- **Lumen path: target High (2) for GI, Reflections and Shadows** on the 4060: Epic: High = 60 fps budget, Epic = 30 fps. Measured: High is +22 fps at 4K (`performance.md`).
+- **Lumen path: target High (2) for GI, Reflections and Shadows** on the 4060: Epic: High = 60 fps budget, Epic =
+  30 fps. Measured: High is +22 fps at 4K (`performance.md`).
   Lumen GI+reflections+translucency+volumetric fog budget at 60 fps is **~4 ms** (console 1080p figure).
-- Lumen path: ship a settings default of High for these three groups (`DefaultGameUserSettings.ini`, SETUP step 7b), not Epic.
+- Lumen path: ship a settings default of High for these three groups (`DefaultGameUserSettings.ini`, SETUP step 7b),
+  not Epic.
   Other groups can stay Epic if `stat unit` allows.
 - **Lumen Lite = Medium (1) for GI and Reflections** (Epic's Lumen Performance Guide): the Irradiance final gather
   (probes around pixels, pre-calculated irradiance) plus SSR, with rough specular from the GI. Dynamic bounce light
@@ -189,8 +191,9 @@ Groups: `sg.ResolutionQuality` (= screen percentage), `sg.ViewDistanceQuality`, 
 
 - Decide one mode per level and write it down. Read the PPV first (skill rule).
 - **Auto** (`AutoExposureMethod` = Auto Exposure Histogram, default): set `AutoExposureMinBrightness` and
-  `AutoExposureMaxBrightness` (EV100 when Extend range is on) to a narrow range (e.g. 8-12 outdoors with a non-physical sun; with a physical ~100,000 lux sun the scene sits near EV100 14, so clamp around it) so it can't
-  wander; `AutoExposureBias` (Exposure Compensation) only -2..+2. Speed Up high, Speed Down low.
+  `AutoExposureMaxBrightness` (EV100 when Extend range is on) to a narrow range so it can't wander (e.g. 8-12
+  outdoors with a non-physical sun; with a physical ~100,000 lux sun the scene sits near EV100 14, so clamp around
+  it); `AutoExposureBias` (Exposure Compensation) only -2..+2. Speed Up high, Speed Down low.
 - **Fixed**: Min = Max (disables adaptation) or Method = Manual. With physical sun lux and no auto range, large
   negative bias is needed (direct sun -10 to -14 EV, sunset -1 to -3; table in the skill).
   `AutoExposureApplyPhysicalCameraExposure` off unless you set camera ISO/shutter/aperture.
@@ -251,7 +254,8 @@ floor); the problems are general, the numbers are that game's. What went wrong w
   `sky_luminance_factor` ~2.5.
 - **Aerial perspective view distance scale** (SkyAtmosphere): UI range up to 3, default 1. Higher values wash the far
   end of a level out to grey; keep 1-2 for a crisp stylized look and judge it at the far end, not at the start camera.
-  Height fog density and bloom have the same effect; cutting fog density hard and turning bloom off brings the far colours back.
+  Height fog density and bloom have the same effect; cutting fog density hard and turning bloom off brings the far
+  colours back.
 - **Physical sun and Lumen cached lighting:** with a ~100,000 lux sun the scene settles near EV100 14. The default
   `r.EyeAdaptation.CachedLightingPreExposure=4` covers only about EV -8..12, so Lumen's cached lighting and the sky
   capture clip (black shadows, on-screen "Cached lighting in Lumen ... clipped"). `=8` (about -4..16) fixes it.

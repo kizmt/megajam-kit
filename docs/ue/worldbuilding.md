@@ -7,7 +7,8 @@ their own sections below.
 ## Lighting: dynamic only, no baking (Lumen or not by art style)
 
 - All lighting rules (render path, outdoor stack without a VolumetricCloud, the outdoor-lighting agent skill) live in
-  `lighting.md`; the render path and its settings are SETUP.md step 7b and `performance.md` "Render paths". Skip the Level Designer Quick Start's baking steps.
+  `lighting.md`; the render path and its settings are SETUP.md step 7b and `performance.md` "Render paths". Skip the
+  Level Designer Quick Start's baking steps.
 
 ## Blockout and level organisation
 
@@ -24,8 +25,8 @@ their own sections below.
 - Use for **rule-based** placement: scattering props/rocks/vegetation, filling an area, along a path. Not for one-off
   hero placement (place those directly).
 - PCG via MCP is **Experimental** and follows Epic's supervised agent workflow (load `Skill_PCGGraphGeneration`
-  first, adapt an example graph, the director picks the assets, small supervised steps, inspect with Dataview): the full
-  workflow, skills, tools and recipes are in `pcg.md`.
+  first, adapt an example graph, the director picks the assets, small supervised steps, inspect with Dataview): the
+  full workflow, skills, tools and recipes are in `pcg.md`.
 - Pairs with our pipeline: generate 4-6 props, then let PCG dress the level with instanced copies (cheap, see `performance.md`).
 
 ## Foliage and landscape grass (5.8.4, from the rehearsal)
@@ -74,8 +75,7 @@ Nanite settings for plants (Voxelize vs Preserve Area, wind): `performance.md` "
   then `InstancedFoliageActor.add_instances(world, ft, transforms)` / `remove_all_instances(world, ft)`.
 - Collision on the type's `BodyInstance`: `set_editor_property("collision_profile_name", ...)` and
   `collision_enabled` (there is no `set_collision_profile_name` in Python).
-- Thin grass goes black against the sun with Default Lit: `materials.md` "Lessons". Thin Nanite leaves vanish at
-  distance: `performance.md` "Geometry".
+- Thin grass goes black against the sun with Default Lit: `materials.md` "Lessons from a prototype".
 
 ## Ambition on a budget: making a small game feel big
 

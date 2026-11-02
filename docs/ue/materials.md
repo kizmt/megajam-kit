@@ -19,7 +19,8 @@ with instances. Keep this list short; every new Material is new shaders to compi
 | `PPM_<Look>` (optional) | Post Process | Cel shading, outlines, damage vignette |
 | `MPC_Global` | Material Parameter Collection | Global wetness, tint, time (not a material) |
 
-Naming: `PPM_` (Epic's 5.8 list) and `MPC_` (kit convention) are both in `naming.md`. Masked foliage/fences: a Masked variant would need its own master too (or one static switch, see below).
+Naming: `PPM_` (Epic's 5.8 list) and `MPC_` (kit convention) are both in `naming.md`. Masked foliage/fences: a
+Masked variant would need its own master too (or one static switch, see below).
 
 ## Master + instance best practice
 
@@ -80,8 +81,8 @@ Each item: what, nodes (all verified in the 5.8 Python stub / engine content), c
 | 9 (built) | Per-object flash/dissolve via **Custom Primitive Data** | ScalarParameter with `use_custom_primitive_data` + `primitive_data_index` | ~ALU only | Hit flash/highlight per actor without a MID |
 | 10 | (Optional static switch) `UseTriplanar` | MaterialFunctionCall -> `/Engine/Functions/Engine_MaterialFunctions01/Texturing/WorldAlignedTexture` | 3x samples per texture when on | Level geometry/blockout with bad UVs |
 
-Item 7's packing is done by `gen/blender/pack_orm.py` (`T_<Name>_orm`). Keep `bUsedWithNanite/SkeletalMesh/InstancedStaticMeshes` and add any new usage
-the game needs **before packaging**: `bUsedWithSplineMeshes`, `bUsedWithNiagaraMeshParticles`,
+Item 7's packing is done by `gen/blender/pack_orm.py` (`T_<Name>_orm`). Keep
+`bUsedWithNanite/SkeletalMesh/InstancedStaticMeshes` and add any new usage the game needs **before packaging**: `bUsedWithSplineMeshes`, `bUsedWithNiagaraMeshParticles`,
 `bUsedWithGeometryCollections` (Chaos destruction), `bUsedWithMorphTargets` (all exist on UMaterial in 5.8). Missing flag
 in a packaged build = default material.
 
@@ -89,8 +90,8 @@ in a packaged build = default material.
 
 - Nanite supports **Opaque and Masked** only. Unsupported material on a Nanite mesh = default material + Output Log
   warning. Translucent = non-Nanite mesh.
-- Masked and World Position Offset work with Nanite but cost more (programmable raster; unverified on the 5.8 page). WPO is "supported, but
-  limited": clamp displacement. Custom UVs / Vertex Interpolator are evaluated 3x per pixel under Nanite. Custom HLSL
+- Masked and World Position Offset work with Nanite but cost more (programmable raster; unverified on the 5.8 page).
+  WPO is "supported, but limited": clamp displacement. Custom UVs / Vertex Interpolator are evaluated 3x per pixel under Nanite. Custom HLSL
   nodes "might result in artifacts". Prefer Opaque; use Masked only where the cutout is visible (leaves, fences).
 - Blend modes in 5.8: Opaque, Masked, Translucent, Additive, Modulate, AlphaComposite, AlphaHoldout,
   TranslucentColoredTransmittance (Substrate).
@@ -196,8 +197,8 @@ Epic: use PP materials sparingly, prefer built-in volume settings (color grading
 
 ## Performance and shader compiles
 
-- Count matters more than graph size: texture samples (each prop = 3: colour, normal, ORM; +1 with an emissive texture), translucent overdraw, full-
-  screen PP passes. Check Material Editor Stats (instruction/sampler counts) and Shader Complexity view.
+- Count matters more than graph size: texture samples (each prop = 3: colour, normal, ORM; +1 with an emissive
+  texture), translucent overdraw, full-screen PP passes. Check Material Editor Stats (instruction/sampler counts) and Shader Complexity view.
 - Every new Material / static permutation = shader compiles in editor (grey meshes until done) and more PSOs at runtime.
 - **PSO precaching** is on by default in 5.8: if a component's PSOs aren't ready the engine **skips drawing it**
   (pop-in) rather than hitching (`r.PSOPrecache.ProxyCreationStrategy`, default 1 = delay; the older
