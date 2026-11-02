@@ -337,7 +337,8 @@ SetInputMode(Mode); SetShowMouseCursor(true); SetPause(true);
 - **The shipped mix reads as "Custom".** We ship mixed groups (`performance.md` "The bar"), so
   `GetOverallScalabilityLevel()` returns -1. The preset list needs a **Recommended** entry that re-applies the
   shipped per-group values (not `SetOverallScalabilityLevel(3)`), and shows "Custom" once the player changes a
-  group. Never call `RunHardwareBenchmark` / `ApplyHardwareBenchmarkResults`: they overwrite the benched mix.
+  group. The menu never calls `RunHardwareBenchmark` / `ApplyHardwareBenchmarkResults` (they overwrite the benched
+  mix); the only use is the optional first-launch check in `performance.md` "The bar" (applied only below High).
 - **Resolution scale can undo the bench's internal resolution** (unverified in 5.8.4). SETUP pins it with
   `r.ScreenPercentage.Default`; the menu's scale writes `r.ScreenPercentage`, which may override it, so a slider saved
   at 100% could render native 4K (about 4x the benched pixels). After `ApplySettings`, type `r.ScreenPercentage` in
