@@ -27,7 +27,8 @@ their own sections below.
 - PCG via MCP is **Experimental** and follows Epic's supervised agent workflow (load `Skill_PCGGraphGeneration`
   first, adapt an example graph, the director picks the assets, small supervised steps, inspect with Dataview): the
   full workflow, skills, tools and recipes are in `pcg.md`.
-- Pairs with our pipeline: generate 4-6 props, then let PCG dress the level with instanced copies (cheap, see `performance.md`).
+- Pairs with our pipeline: generate 4-6 props, then let PCG dress the level with instanced copies (cheap, see
+  `performance.md`).
 
 ## Foliage and landscape grass (5.8.4, from the rehearsal)
 

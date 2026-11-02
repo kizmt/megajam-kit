@@ -170,8 +170,8 @@ fills `{Subgraphs}`, `{Nodes}`, `{Examples}`, `{Instant Graphs}` at load time fr
 - Attribute names must match explicitly between nodes (`OutputAttributeName` -> downstream `InputSource`);
   unnamed outputs are called `None`.
 - Node comments: real newlines, not `\n` escapes; verify with `GetNodeInfo`.
-- **On errors after `ExecuteGraphInstance`: do NOT auto-fix** ("error messaging is not reliable"); report to the director
-  with suggested fixes and wait.
+- **On errors after `ExecuteGraphInstance`: do NOT auto-fix** ("error messaging is not reliable"); report to the
+  director with suggested fixes and wait.
 - One graph per session unless asked; prefer programmatic (scripted) tool calling for whole-graph builds;
   no screenshot feedback loops unless asked.
 
@@ -198,7 +198,8 @@ for the director to review a batch of generated props side by side.
 - Data: `GetNodeDataView(PCGVolume, Node, PinLabel="Out", AttributeName, StartIndex, EndIndex)`. First call enables
   inspection; re-execute, then read. **Never run it/Execute on two volumes sharing a graph at once: freeze.**
 - Comments: `AddCommentBox`, `UpdateCommentBox`, `RemoveCommentBox`. Other: `DrawSpline(ActorLabel, ActorTag,
-  bRedraw, bClosedSpline)` (waits for the director to draw). Spatial: `RunPCGInstantGraph(Graph, Params)` (fire-and-forget).
+  bRedraw, bClosedSpline)` (waits for the director to draw). Spatial: `RunPCGInstantGraph(Graph, Params)`
+  (fire-and-forget).
 
 ## Recipes (node chains; build by adapting the named example)
 

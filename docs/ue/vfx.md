@@ -139,9 +139,9 @@ at third-person distance.
 | Confetti / win | `ConfettiBurst` | Mesh or sprite tumble, gravity, drag | CPU | AutoRelease | S |
 | Debris chunks | `UpwardMeshBurst` | Low-poly particle mesh, collision only if needed | CPU | AutoRelease | S-M |
 
-Lightweight variants (`*Lightweight` templates) are the cheapest for simple bursts and fountains. But they're fixed-function
-(limited modules, no scratchpads or dynamic inputs) and the MCP toolset can't edit them. Use one only when the
-user wants it and the effect is hand-tuned in the editor.
+Lightweight variants (`*Lightweight` templates) are the cheapest for simple bursts and fountains. But they're
+fixed-function (limited modules, no scratchpads or dynamic inputs) and the MCP toolset can't edit them. Use one only
+when the user wants it and the effect is hand-tuned in the editor.
 
 **Fire and smoke:** no fire or smoke content ships. Two routes, in order:
 1. **Bake a flipbook** with the Niagara Flipbook Baker (Niagara editor toolbar > Baker) from a Niagara Fluids
@@ -206,7 +206,7 @@ Parameter x (erosion) and y (emissive) confirmed, and a baked colour flipbook pl
   the colour right? 3) switch the instance to translucent for a capture: **black sprites mean the emissive is too low
   for the exposure**, and a near-black additive sprite adds nothing. With
   `r.DefaultFeature.AutoExposure.ExtendDefaultLuminanceRange=True` and a sunlit scene, EmissiveStrength 8-200 read as
-  near black; 1200-3000 read (match a known unlit glow in the level: there, a lamp flame needed 3000). An additive
+  near black; 1200-3000 read (match a known unlit glow in the level: there, a flame needed 3000). An additive
   marker in daylight needed hundreds (faint at 150 from 30 m, clear at 300-600): sweep it in a `-game` shot at the
   play distance before choosing. The master's default (5) and the `vfx.ts` examples suit night or indoor scenes.
   Translucent keeps a coloured glow's hue over a bright sky; additive washes it toward white.
@@ -333,8 +333,8 @@ UNiagaraFunctionLibrary::SpawnSystemAttached(TrailFX, Mesh, NAME_None, FVector::
   *Optimization Viewmodes > Shader Complexity / Quad Overdraw*. A few huge smoke sprites filling the screen can cost
   more than a thousand sparks.
 - **Particle-only meshes:** no collision, no shadow casting, Distance Field Resolution Scale 0, no extra UVs.
-  **Exception to `performance.md` "Nanite on for every static prop"** (listed there): that rule is for level props. Particle
-  meshes are tiny, low-poly, non-Nanite meshes (the Nanite renderer is the Experimental `NiagaraNanite`).
+  **Exception to `performance.md` "Nanite on for every static prop"** (listed there): that rule is for level props.
+  Particle meshes are tiny, low-poly, non-Nanite meshes (the Nanite renderer is the Experimental `NiagaraNanite`).
 - Measure with `stat Niagara`, `stat gpu`, and the Niagara Debugger (Tools > Debug) (unverified menu path).
 
 ## Effect Types and scalability
@@ -365,8 +365,8 @@ UNiagaraFunctionLibrary::SpawnSystemAttached(TrailFX, Mesh, NAME_None, FVector::
   Directional mode. Turn on Two Sided for anything seen from both sides.
 - **Light renderer** = hero accents only: one particle, low count, short life, never on high-count emitters. No
   material. It forces CPU. `bAffectsTranslucency` and `bAllowMegaLights` say "use with caution": **leave
-  MegaLights off** (kit: MegaLights not used, `lighting.md`). Particle lights don't cast shadows. `bAlphaScalesBrightness`
-  lets you fade lights with alpha.
+  MegaLights off** (kit: MegaLights not used, `lighting.md`). Particle lights don't cast shadows.
+  `bAlphaScalesBrightness` lets you fade lights with alpha.
 - **Lumen:** emissive sprites don't light the world through Lumen GI, because particles aren't in the Lumen scene
   (unverified for 5.8). For a glow that lights surroundings, use a Light renderer particle or a real light on the
   actor. Torches and campfires should use an actor PointLight with shadows off, counted against `performance.md`'s

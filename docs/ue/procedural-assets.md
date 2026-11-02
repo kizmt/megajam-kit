@@ -33,11 +33,11 @@ generated crates and shelves with a baked timber texture (5 meshes + texture set
   Windows (holes that don't reach an edge): build the frame as the outline plus an inner loop and bridge them
   (`bridge_loops`), or split the wall into an outline that wraps the hole. Avoid booleans headless (n-gons, bad
   normals).
-- **Silhouette:** `bmesh.ops.bevel(bm, geom=edges, offset=0.015-0.03 (m), segments=1-2, affect='EDGES',
-  profile=0.5, clamp_overlap=True)` on outer convex edges only, never on faces that touch another piece. Leave
-  `harden_normals` off: its custom normals streak flat faces once more geometry is added (seen on a prototype).
-  **The bevel replaces the faces it touches**, so anything written to faces collected earlier (UVs, materials) is
-  lost: bevel first, then collect faces. (5.2 signature: `bevel(bmesh, geom, offset, offset_type, profile_type, segments, profile, affect,
+- **Silhouette:** `bmesh.ops.bevel(bm, geom=edges, offset=0.015-0.03 (m), segments=1-2, affect='EDGES', profile=0.5,
+  clamp_overlap=True)` on outer convex edges only, never on faces that touch another piece. Leave `harden_normals`
+  off: its custom normals streak flat faces once more geometry is added (seen on a prototype). **The bevel replaces
+  the faces it touches**, so anything written to faces collected earlier (UVs, materials) is lost: bevel first, then
+  collect faces. (5.2 signature: `bevel(bmesh, geom, offset, offset_type, profile_type, segments, profile, affect,
   clamp_overlap, material, loop_slide, mark_seam, mark_sharp, harden_normals, face_strength_mode, miter_outer,
   miter_inner, spread, custom_profile, vmesh_method)`; `affect` defaults to 'VERTICES', so set it.)
 - **Panels and bricks:** `inset_region` / `inset_individual` (~5 cm) then `extrude_face_region` + translate (-2 cm).
@@ -66,10 +66,12 @@ generated crates and shelves with a baked timber texture (5 meshes + texture set
   stale) and write UVs. **Call `bm.normal_update()` before `bmesh.ops.triangulate`** (and any op that projects faces):
   faces made with `bm.faces.new` have no normal until then, and concave n-gons wrapped round door and window openings
   were triangulated across the holes (428 covered openings on 35 meshes; 0 after the fix). Check walls with openings
-  by ray-casting through each opening's centre on the finished mesh, not by eye. Check that the largest faces have a UV extent above 0; a zero extent renders as flat colour.
-- **Proud trim needs its own UVs or material.** With one shared projection (box-projected or world-aligned), piers, jambs and frames standing
-  out from a wall line up with the wall's blocks and read as see-through, especially without contact shading (no
-  SSAO/DFAO). Give trim a different scale and offset, or a different (slightly darker) material instance.
+  by ray-casting through each opening's centre on the finished mesh, not by eye. Check that the largest faces have a
+  UV extent above 0; a zero extent renders as flat colour.
+- **Proud trim needs its own UVs or material.** With one shared projection (box-projected or world-aligned), piers,
+  jambs and frames standing out from a wall line up with the wall's blocks and read as see-through, especially
+  without contact shading (no SSAO/DFAO). Give trim a different scale and offset, or a different (slightly darker)
+  material instance.
 - **No lightmap UVs** with dynamic lighting (Lumen or not): turn off Generate Lightmap UVs. It matters for custom
   data too: the import writes its generated lightmap UVs into UV1 and overwrites the FBX's own UV1 (a fade stored there
   vanished; proven by re-importing with it off). Script it with `StaticMeshEditorSubsystem.get_lod_build_settings(mesh,
@@ -102,8 +104,8 @@ generated crates and shelves with a baked timber texture (5 meshes + texture set
 - Set names explicitly after creation: Blender's `.001` suffixes break the UCX match.
 - Alternative: no UCX; add simple collision after import (below). Long or curved pieces without UCX hulls use
   complex-as-simple instead of one auto hull (`physics.md`); with Nanite, complex collision uses the fallback mesh.
-- UCX hulls survive only a fresh import: a reimport over the asset keeps its old collision (`editor-scripting.md`
-  "Reimports").
+- UCX hulls survive only a fresh import: a reimport over the asset keeps its old collision (`editor-scripting.md` A,
+  "Reimports keep the old asset's settings").
 
 ## 6. Export (verified option names and defaults in 5.2.2)
 

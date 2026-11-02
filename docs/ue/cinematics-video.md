@@ -19,16 +19,16 @@ intro/ending or one or two hero shots, never the critical path.
 | - | NVIDIA App (ShadowPlay), OBS, Windows Game Bar, raw ffmpeg `ddagrab` | - | **Not for agent use: records whatever is on screen** (`debugging.md` "Recording the screen safely"). The director may use them by hand |
 | - | `HighResShot` / legacy "Render Movie" capture | Stills only / legacy | Not for the video |
 
-Why live capture wins: it shows exactly what judges will play, costs zero engine work, and works on the
-packaged build we make daily anyway. For a polished trailer, MRQ can render gameplay if the game has an autoplay mode (section D3).
+Why live capture is the fallback: it shows exactly what judges will play, costs zero engine work, and works on the
+packaged build we make daily anyway. But it films whatever happened, hitches and HUD included, so the trailer comes
+from D3b when the hooks exist; MRQ can also render gameplay if the game has an autoplay mode (section D3).
 
 ### Capture settings
 
-- Final footage comes from the **packaged Development build** (autoclip's `-game` clips are for review), captured at
-  **2560x1440 or 1920x1080** (not 4K: D2). Capturing at 1440p and downscaling to 1080p in ffmpeg looks sharper than
-  native 1080p capture.
-  Windowed launch for testing: `MyGame.exe -windowed -ResX=1920 -ResY=1080` (verified: `gen/test/autoclip.ps1` and
-  `gen/test/game_test.ps1` launch with these).
+- Live-capture footage (route 1) comes from the **packaged Development build** (autoclip's `-game` clips are for
+  review), captured at **2560x1440 or 1920x1080** (not 4K: D2). Capturing at 1440p and downscaling to 1080p in ffmpeg
+  looks sharper than native 1080p capture. Windowed launch for testing: `MyGame.exe -windowed -ResX=1920 -ResY=1080`
+  (verified: `gen/test/autoclip.ps1` and `gen/test/game_test.ps1` launch with these).
 - **60 fps, H.264 (or HEVC), high bitrate**: 50+ Mbps at 1440p60 / 30+ Mbps at 1080p60. The capture is the
   master; ffmpeg makes the upload file.
 - Audio: game audio only (record the engine's own mix if the capture can't hear it: D1). **No mic** (English-only
@@ -186,9 +186,10 @@ Run `describe_toolset` first; schemas are strict.
 - **Avoiding Lumen/TAA noise and smear** (settings exist in `MoviePipelineAntiAliasingSetting.h`):
   - Anti-aliasing: Spatial Sample Count 1, **Temporal Sample Count 8** (more = cleaner Lumen + motion blur, slower).
     With temporal samples > 1, Override AA = **None** is the usual choice (unverified for 5.8).
-  - **Warm-up** (scripted shots only; a game playing itself inside the render uses none: D3): tick "Use Camera Cut for Warm Up" (needs camera-cut section starting before frame 0) or Engine
-    Warm Up Count ~32-64 frames; Render Warm Up Count ~32 so Lumen/TSR history and streaming settle
-    (counts unverified; increase if first frames shimmer). Graph equivalent: Warm Up node `NumWarmUpFrames`.
+  - **Warm-up** (scripted shots only; a game playing itself inside the render uses none: D3): tick "Use Camera Cut for
+    Warm Up" (needs camera-cut section starting before frame 0) or Engine Warm Up Count ~32-64 frames; Render Warm Up
+    Count ~32 so Lumen/TSR history and streaming settle (counts unverified; increase if first frames shimmer). Graph
+    equivalent: Warm Up node `NumWarmUpFrames`.
   - Game Overrides: Cinematic Quality on, texture streaming fully loaded, LOD0 (`bUseLODZero`), high-quality shadows.
   - Console Variables setting applies cvars only during the render and reverts after.
 - Resolution 1920x1080 (or 2560x1440 and let ffmpeg scale). Output frame rate 60 to match gameplay footage.
@@ -216,9 +217,9 @@ Screen recorders don't reliably hear the game. Record the master submix in the e
 ### D2. Live screen capture (raw footage)
 
 - Use the kit scripts (route 1; they use ffmpeg `ddagrab` under the hood, guarded). Raw `ddagrab` or the NVIDIA App
-  are not for agent use (`debugging.md` "Recording the screen safely"). **At 4K the capture drops frames on an RTX 4060** (~38-56 fps captured
-  while the game ran at 110+): gaps padded with duplicates read as stutter. Capture at 1440p or 1080p, and count frames
-  and gaps (`ffprobe -count_frames`) before cutting.
+  are not for agent use (`debugging.md` "Recording the screen safely"). **At 4K the capture drops frames on an RTX
+  4060** (~38-56 fps captured while the game ran at 110+): gaps padded with duplicates read as stutter. Capture at
+  1440p or 1080p, and count frames and gaps (`ffprobe -count_frames`) before cutting.
 - **Recording a whole play session** (e.g. the director's run, for footage to cut from): call `record_window.ps1` in
   segments (300 s each in the rehearsal) and keep each segment's `REC` lines. Line clips up with the game's log by
   `REC first frame`, not `REC start` (ffmpeg's first frame came 0.25-0.35 s after launch). Check the offset once per
@@ -251,8 +252,9 @@ to supply the cameras.
   seq.get_binding_id(rig))`. Camera cut: `add_section()` + `set_camera_binding_id`.
 - **Gotcha:** deleting a loaded Level Sequence fails ("Failed to unload all packages") and the following
   `create_asset` opens a modal "Overwrite?" dialog that freezes MCP. Reuse the asset and clear its bindings and tracks.
-- **Autoplay runs (AI, physics) aren't deterministic between renders**, even with fixed 1/60 steps. Lay out shots from a cheap 960x540
-  preview, keep fixed world shots with margins, then pick in-points from the final render's frames and log.
+- **Autoplay runs (AI, physics) aren't deterministic between renders**, even with fixed 1/60 steps. Lay out shots from
+  a cheap 960x540 preview, keep fixed world shots with margins, then pick in-points from the final render's frames and
+  log.
 - AA: 8 temporal samples with Override AA = None gave clean, settled frames with no warm-up.
 - Cost: 4K, 8 temporal samples, PNG: ~3 frames/s on an RTX 4060 (160 s of footage in ~52 min) and ~7 MB per frame
   (66 GB): plan the disk. The MRQ render has no game audio (that needs the deterministic audio mixer): add music
@@ -292,7 +294,7 @@ game has test hooks that can stage its moments.
     stateful shot first in its own run, or give the game a reset hook.
   - Look at each shot's first frames while the batch is still running: the frames land on disk as they go.
 - **Framing:** aim at the hero, not at the action. A follow camera leaning 45% toward an attacker striking from 3-4 m
-  up lost the hero out of the frame; slow height smoothing (0.06 a frame) lost a rider on a slope; a front camera on a
+  up lost the hero out of the frame; slow height smoothing (0.06 a frame) lost the hero on a slope; a front camera on a
   downhill road filmed the hillside. Dark enemies read in silhouette against the sky: a level camera at the hero's
   height, 4.5 m back, read where a camera 2.3 m up behind the hero gave blobs (blind critic readability 2/5). Stage
   fights at the hero's height.
@@ -308,10 +310,10 @@ game has test hooks that can stage its moments.
 - Audio mix: music + SFX (`adelay`/`amix normalize=0`), a limiter (`alimiter=limit=0.79`) on a float pre-mix, then
   two-pass `loudnorm` to -14 LUFS, TP -1.5. Generated music can already peak near 0 dBFS, so SFX on top clip without
   the limiter and single-pass loudnorm falls back to dynamic mode.
-- **MRQ 4K renders only: deliver 4K60 as HEVC (or AV1), never H.264.** (Live captures are 1440p/1080p: D2.) H.264 4K60 is Level 5.2 and stuttered in the Windows player on an
-  RTX 4060 PC while 1080p played clean. HEVC: `hevc_nvenc -preset p7 -cq 18 -profile main -level 5.1 -maxrate 38M
-  -tag:v hvc1` (NVENC refuses Level 5.1 with a max rate above 40 Mbps). 1080p60: libx264 CRF 16-20, AAC 192k,
-  `+faststart`.
+- **MRQ 4K renders only: deliver 4K60 as HEVC (or AV1), never H.264.** (Live captures are 1440p/1080p: D2.) H.264 4K60
+  is Level 5.2 and stuttered in the Windows player on an RTX 4060 PC while 1080p played clean. HEVC: `hevc_nvenc
+  -preset p7 -cq 18 -profile main -level 5.1 -maxrate 38M -tag:v hvc1` (NVENC refuses Level 5.1 with a max rate above
+  40 Mbps). 1080p60: libx264 CRF 16-20, AAC 192k, `+faststart`.
 - Check the final file against the submission checklist above (ffprobe), then watch it once **with sound**.
 
 ## Kit decisions: fit and contradictions
@@ -320,8 +322,8 @@ game has test hooks that can stage its moments.
   (flag: keep them as thin calls into C++).
 - Lumen path: live capture inherits Lumen ghosting/settling; MRQ temporal samples fix it offline.
 - **features.md rule "never first used on jam day"**: MRQ and Take Recorder plugins are off by default, so try
-  them in a practice project **before** 2026-11-12 or don't use them. The video route (kit capture scripts + ffmpeg)
-  needs no plugin.
+  them in a practice project **before** 2026-11-12 or don't use them. The video routes (D3b frame capture, or the kit
+  capture scripts, then ffmpeg) need no plugin.
 - Capture live footage at 1440p or 1080p (4K live capture drops frames on an RTX 4060, D2); >= 1080p rule satisfied.
   This is the capture size, not the game's internal render resolution (SETUP 7b).
 - Package daily: also record a 20 s test capture from each daily build (doubles as devlog footage).
