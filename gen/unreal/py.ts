@@ -28,7 +28,15 @@ for (const a of o.arg) {
   args[a.slice(0, i)] = a.slice(i + 1);
 }
 
+// Asset creation, duplication and saves fail during PIE with only a LogUtils error in the Output Log (the script's
+// own output says nothing). Warn, don't refuse: read-only probes and PIE capture scripts are fine during PIE.
+const PIE_CHECK = 'import unreal\nprint("PIE_RUNNING=" + str(unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_game_world() is not None))';
+
 try {
+  const pie = await runPythonCode(PIE_CHECK);
+  if (pie.output.includes('PIE_RUNNING=True')) {
+    console.error('WARN: PIE is running (the director may be playing): asset edits and saves will fail. Wait or ask; never stop their PIE.');
+  }
   const r = o.c !== undefined ? await runPythonCode(o.c, args) : await runPythonFile(file ?? '', args);
   console.log(r.output);
   process.exit(r.ok ? 0 : 1);
