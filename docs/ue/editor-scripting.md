@@ -34,6 +34,8 @@ Python stub or headers before writing an API call from memory.
   CDO but spawns as the old value (seen on an Actor BP and an Anim BP). Respawn instances placed before the edit.
 - **Opening an asset editor can write `Config/DefaultEditor.ini`** (a blend space editor wrote preview-scene
   settings). Run `git status Config/` after any scripted asset-editor open and revert what you didn't mean to change.
+- **Opening a World Partition level from a script loads none of its streamed actors**, so the level looks empty and
+  scripts miss actors. Load them first: `worldbuilding.md` "World Partition from Python".
 - **Not during PIE.** Asset and level tools act differently while Play-In-Editor runs. Stop PIE first.
 - **Python runs only in the editor** (embedded Python 3.11.8). It is not available in PIE, standalone or packaged
   builds, so gameplay code is C++.
@@ -64,7 +66,7 @@ Paths / `UE_PYTHONPATH`. The interpreter is isolated by default.
 | Get a subsystem | `unreal.get_editor_subsystem(unreal.EditorActorSubsystem)` | - |
 | Spawn, list, select, destroy actors | `EditorActorSubsystem.spawn_actor_from_object/_from_class`, `get_all_level_actors`, `get_selected_level_actors`, `set_selected_level_actors`, `destroy_actor`, `duplicate_actor` | `EditorLevelLibrary.*` (whole class) |
 | Editor world, viewport camera | `UnrealEditorSubsystem.get_editor_world`, `get_level_viewport_camera_info`, `set_level_viewport_camera_info` | `EditorLevelLibrary.get_editor_world` |
-| Levels, PIE | `LevelEditorSubsystem.load_level`, `new_level`, `save_current_level`, `save_all_dirty_levels`, `editor_play_simulate`, `editor_request_end_play`, `is_in_play_in_editor` | `EditorLevelLibrary.load_level/save_*` |
+| Levels, PIE | `LevelEditorSubsystem.load_level`, `new_level`, `save_current_level`, `save_all_dirty_levels`, `editor_play_simulate`, `editor_request_end_play`, `is_in_play_in_editor`. Copy a level with `new_level_from_template(new, template)` (creates, saves and opens the copy). Open or create a map in its own `run_python` call | `EditorLevelLibrary.load_level/save_*`; `duplicate_asset` of a map then `load_level` of the copy in one call (editor crash: "World Memory Leaks", `EditorServer.cpp`) |
 | Assets | `EditorAssetLibrary` (not deprecated) or `EditorAssetSubsystem`: `does_asset_exist`, `load_asset`, `save_asset`, `list_assets`, `delete_asset`, `rename_asset`, `duplicate_asset` | `os.rename`/`shutil` on .uasset files |
 | Mesh LODs, Nanite | `StaticMeshEditorSubsystem.get_nanite_settings/set_nanite_settings`, `set_lods`, `get_lod_count` | `EditorStaticMeshLibrary.*`, `EditorSkeletalMeshLibrary.*` |
 | Import a file | `AssetImportTask` + `AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])` | - |
@@ -85,6 +87,8 @@ Import task fields: `filename`, `destination_path`, `destination_name`, `automat
 `mesh_type_to_import=FBXIT_ANIMATION`, skeleton set) goes through Interchange in 5.8 and still makes a SkeletalMesh,
 a PhysicsAsset and the animation named `<name>_Anim` (on the given skeleton, and correct). Delete the
 non-AnimSequence outputs and rename the animation. Driving the Interchange pipeline settings directly is untried.
+**An FBX with named material slots** imports one material per slot next to the mesh: delete them after assigning
+the real MIs.
 
 Other notes: Epic no longer supports defining a `BlueprintFunctionLibrary` in Python (the types are transient
 and break on save/load). Old `remove_lo_ds`-style names were renamed (`remove_lods`). Prefer engine types
@@ -142,8 +146,9 @@ function. Register with `UToolsetRegistry::RegisterToolsetClass` in `StartupModu
 **Schema strictness (C++ tools).** The `required` list comes from the C++ signature, and struct parameters
 are often required even when the docs call them optional. Found so far: `EditorAppToolset.CaptureViewport` needs
 `captureTransform` + `annotations` (see `captureViewport()` in `mcp.ts`); `find_actors` needs `tag: ''` +
-`collision_channels: []`. If a call fails with "input param X is required", pass an empty/zero value, and add
-the case to PIPELINE.md.
+`collision_channels: []`; `AgentSkillToolset.GetSkills` needs `{"skillPaths": [...]}`; `LogsToolset.GetLogEntries`
+needs `pattern`, `category` and `maxEntries` (all required). If a call fails with "input param X is required",
+pass an empty/zero value, and add the case to PIPELINE.md.
 
 Tests (Epic's convention): `ToolCallTestCase` in Python, and a Live Coding compile before running
 `AutomationTestToolset` (`DiscoverTests`, then `RunTests`). For the jam, one real call plus a read-back is enough.
@@ -269,6 +274,10 @@ session must follow.
     {refPath: "/Script/Engine.RotatingMovementComponent"}, name)` and set them with `ObjectTools.set_properties`
     (camelCase names, e.g. `rotationRate`, `pivotTranslation`).
   - `ExponentialHeightFogComponent` properties are read-only in the stub: use its `set_*` functions.
+  - `BodyInstance` has no `set_collision_profile_name` in Python: `set_editor_property("collision_profile_name", ...)`
+    and `collision_enabled`.
+  - Water plugin bodies: `on_water_body_changed` is an empty deprecated function; rebuild with a forced-notify property
+    set (`worldbuilding.md` "Water").
   - `EditorPerformanceSettings` is reachable only via `unreal.find_object(None,
     "/Script/UnrealEd.Default__EditorPerformanceSettings")`, and its throttle flag only by the C++ name
     `bThrottleCPUWhenNotForeground` ("Use Less CPU when in Background": the user's setting, SETUP step 8; read it,

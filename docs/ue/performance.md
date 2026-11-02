@@ -144,6 +144,10 @@ Facts behind the table:
 - Exceptions to "Nanite on": meshes used **as particles** in Niagara (keep small, non-Nanite, no collision/shadows;
   see `vfx.md`) and translucent/glass meshes (`materials.md`).
 - Nanite skeletal meshes: use animation LODs, not geometry LODs; morph targets unsupported.
+- **Thin Nanite foliage vanishes at distance.** Trees with 10-14 cm leaves read as bare sticks beyond ~60 m (Nanite
+  simplifies thin triangles away). `MeshNaniteSettings.shape_preservation` takes `NaniteShapePreservation.PRESERVE_AREA`
+  (no setup; did not fix the bare look on its own) or `VOXELIZE` (Nanite Foliage, Experimental: `features.md`). Leaf
+  size and cluster density in the source mesh matter more; check foliage from its farthest gameplay view.
 - Many copies of one prop (rocks, crates, trees): place as **instances** (instanced static mesh / PCG), not hundreds of
   separate actors.
 - Collision: imported props get one auto **convex hull** (cheap). For openings and walk-in shapes use authored

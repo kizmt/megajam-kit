@@ -100,7 +100,9 @@ in a packaged build = default material.
 ## Glass / translucency
 
 - Separate `M_Glass` master, non-Nanite mesh. Blend Translucent. Lighting Mode **Surface TranslucencyVolume** to get
-  scene reflections, or **Surface ForwardShading** for specular from multiple lights (+ needs SSR). Thin Translucent
+  scene reflections, or **Surface ForwardShading** for specular from multiple lights (+ needs SSR).
+  TranslucencyVolume (`TLM_SURFACE`) lights from the translucency volume, which ends ~50 m from the camera: for
+  translucency seen from further away use `TLM_SURFACE_PER_PIXEL_LIGHTING`. Thin Translucent
   shading model (+ Surface ForwardShading) = tinted glass.
 - Lumen: with **High Quality Translucency Reflections** (project setting) Lumen gives mirror reflections on the frontmost
   translucent layer; deeper layers fall back to glossy Radiance Cache reflections. Single Layer Water gets mirror reflections.
@@ -215,12 +217,41 @@ Epic: use PP materials sparingly, prefer built-in volume settings (color grading
   `get_expression_input_names` and recompile (unverified).
 - **Read back, don't trust the bool:** `MaterialEditingLibrary.set_material_instance_*_parameter_value` returned False
   even when the value was set (confirmed with the matching `get_material_instance_*_parameter_value`).
-- A `VectorParameter`'s default output pin (`""`) is RGB only. For the fourth value connect its `A` pin separately
-  (a Custom node reading `.w` fails with "vector swizzle 'w' is out of bounds").
+- **A connection by name gets the expression's first output.** A `VectorParameter`'s default pin (`""`) is RGB only,
+  and `MaterialExpressionVertexColor` has five outputs all named `""` (RGB, R, G, B, A), so by name you always get RGB
+  (5.8 `MaterialExpressions.cpp`). A mask on A (or a 4-channel mask) then breaks the **whole** material's compile
+  (a landscape material drew the checker everywhere). Connect the `A` pin separately where it has one, otherwise pack
+  data in R/G/B or use a second parameter. (A Custom node reading `.w` fails with "vector swizzle 'w' is out of
+  bounds".)
 - In a Custom node, sample a texture object input with `Texture2DSample(Tex, TexSampler, uv)`.
+
+## Scripted materials: checks and traps (5.8.4, rehearsal)
+
+- **Check every scripted build with MCP `MaterialTools.recompile`**: it raises with the real error ("(Node
+  ComponentMask) Not enough components in ... for component mask 0001"). `MaterialEditingLibrary.recompile_material`
+  returns nothing, and the Output Log says only "Failed to compile Material ... Default Material will be used" (grep
+  for it as a second check). A failed material renders as the grey default material.
+- **`MaterialExpressionComponentMask` from Python:** set `r`/`g`/`b`/`a` explicitly; don't rely on its defaults, or the
+  compile can fail ("Cannot cast float3 to float2").
+- **Guard every division:** a 0/0 in a world-aligned blend weight (`|Nx| / (|Nx| + |Ny|)` on flat tops) made a NaN
+  that a lerp with alpha 1 did not hide: a third of the ground went black and stippled. Add an epsilon.
+- **Per-instance pan speed:** the Panner's `speed_x`/`speed_y` are constants, not inputs. Feed
+  `Time x ScalarParameter("FlowRate")` into its `Time` pin (pins: Coordinate, Time, Speed).
+- **`TextureSampleParameter2D` nodes with the same parameter name share one value**: one MI swaps the texture of
+  every layer at once. Give each layer its own name if they must differ.
+- **Translucent overlays on Single Layer Water:** SLW writes depth, so a DepthFade on foam riding 5 cm above the water
+  sees 5 cm of depth everywhere and erases it. Leave DepthFade off (~2 cm) on overlays; use it (e.g. 1 m) only on
+  sheets well off the water (spray).
+- **Noise foam on translucent water:** the average of two noise samples sits near the middle, so a low cut smears
+  ~40% foam everywhere and the water reads pale. Cut high and sharp (threshold ~0.55, contrast x8).
+- **A dark lit translucent film barely darkens what's behind it** (it picks up the sky's specular). For a stain (wet
+  rock), use `BLEND_MODULATE` + Unlit.
+- Water plugin materials on plain meshes: `worldbuilding.md` "Waterfalls and custom bodies".
 
 ## Lessons from a prototype
 
+- **Thin Default Lit grass goes black when seen against the sun.** Two Sided Foliage shading with a subsurface colour
+  fixes it (a separate master: shading model is per Material).
 - **`M_PBR_Master`'s default BaseColor texture is mid-grey**, so an untextured MI that only sets `Tint` comes out dark.
   Override BaseColor with `/Engine/EngineResources/WhiteSquareTexture` for flat-colour pieces.
 - **Generated textures drift from a hex palette in the prompt.** Two generated props came back redder and glossier

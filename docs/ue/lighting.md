@@ -169,11 +169,17 @@ Groups: `sg.ResolutionQuality` (= screen percentage), `sg.ViewDistanceQuality`, 
 ## Environment (outdoor stack, all in the Basic level; no VolumetricCloud by default)
 
 - **Sky Atmosphere**: physically based sky + aerial perspective, driven by the sun. Rayleigh = blue sky, Mie = haze.
+  **The scattering "scale" setters take absolute coefficients, not multipliers**: `set_rayleigh_scattering_scale(0.75)`
+  meant as "75%" turned the frame Mars-orange. Defaults (`SkyAtmosphereComponent.cpp`): Rayleigh scattering 0.0331,
+  Mie scattering 0.003996, Mie absorption 0.000444. Scale those (`0.0331 * 0.75`).
 - **Sky Light**: `Real Time Capture` on (`bRealTimeCapture`), source = captured scene. Fills shadows; Lumen uses it
   for sky occlusion. Real-time capture follows sun/time-of-day changes.
 - **Exponential Height Fog**: `Fog Density`, `Fog Height Falloff`, `Start Distance` (also saves cost), `Second Fog Data`.
   **Volumetric Fog** (off by default) for god rays: `Scattering Distribution` (~0 for side-visible shafts, ~0.9 toward
   light), `Albedo`, `Extinction Scale`, `View Distance`. Needs sg.ShadowQuality >= 2. Costs GPU; tint for mood.
+  **Fog colour is in physical units:** under a 20,000 lux sun a 0-1 `fog_inscattering_luminance`/colour has no visible
+  effect; the colour comes from the sky atmosphere ambient (`sky_atmosphere_ambient_contribution_color_scale`). The fog
+  actor's Z is the density base: check it sits at ground or sea level (a template's sat 45 m under the sea).
 - **Volumetric Cloud (opt-in only)**: SETUP 7b deletes the template's (measured ~2.5 ms at 4K). Add one only if the
   look needs it, and bench it (`performance.md`). Look comes from its material instance (see skill).
   Known 5.8.0 report (forum, unconfirmed by Epic): jagged edges where opaque meshes overlap clouds when height-fog
