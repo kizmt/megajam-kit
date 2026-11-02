@@ -12,7 +12,8 @@ Target: ~10 minutes on jam day. Do the steps in order.
 - **Windows Smart App Control off** (Windows Security > App & browser control > Smart App Control settings).
   With it on, freshly compiled editor DLLs get blocked at random ("Bad Image ... 0xc0e90002", then "The game module
   could not be loaded"). Check: `VerifiedAndReputablePolicyState` under
-  `HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy` is 0. Since the April 2026 update it can be re-enabled later if needed.
+  `HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy` is 0. Since the April 2026 update it can be re-enabled later if
+  needed.
 - Node 24+ (runs the kit's `.ts` scripts directly) and pnpm (`pnpm --version`). Once per machine: `pnpm install` in
   the kit folder (TypeScript + Node types for `pnpm typecheck`; nothing is needed at runtime)
 - Blender 5.2 on PATH (`blender --version`; the pipeline runs it headless)
@@ -40,7 +41,8 @@ The theme window runs before the project exists (`prompts/concept.md`). Check it
 
 ## 2. Plugins (2 min)
 
-1. Edit → Plugins → enable **Unreal MCP** and **All Toolsets**. (Python Editor Script Plugin is already on by default.)
+1. Edit → Plugins → enable **Unreal MCP** and **All Toolsets**. (Python Editor Script Plugin is already on by
+   default.)
 2. Restart Now.
    **Launcher plugin updates can arrive mid-jam.** If a build or `package.ps1` fails with `RulesError` naming
    `FabToolset` (a Fab plugin update added a module the installed engine's precompiled rules don't know), set
@@ -72,7 +74,8 @@ The theme window runs before the project exists (`prompts/concept.md`). Check it
 
 ## 3. MCP server (1 min)
 
-1. Edit → Editor Preferences → General → Model Context Protocol → tick **Auto Start Server** (port 8000, path `/mcp`). Do not use "Set as Default".
+1. Edit → Editor Preferences → General → Model Context Protocol → tick **Auto Start Server** (port 8000, path
+   `/mcp`). Do not use "Set as Default".
 2. Console: Window → Output Log → the **Cmd** box at the bottom (backtick is a dead key on some layouts). Run:
 
    ```
@@ -114,8 +117,9 @@ The Blank template opens a temporary Open World level (Landscape, World Partitio
    }
    ```
 
-   `additionalDirectories` gives the session the kit (scripts, `PIPELINE.md`, `docs/ue/`) without leaving the project;
-   the `deny` rule keeps it read-only (Windows paths match as `//c/...`). Kit suggestions go to the project's `KIT_NOTES.md`.
+   `additionalDirectories` gives the session the kit (scripts, `PIPELINE.md`, `docs/ue/`) without leaving the
+   project; the `deny` rule keeps it read-only (Windows paths match as `//c/...`). Kit suggestions go to the
+   project's `KIT_NOTES.md`.
    `attribution` with empty strings keeps "Co-Authored-By" and session links out of commit messages and PRs.
    `autoCompactWindow` compacts at 300K tokens instead of ~967K (Opus 5.5 has a 1M window): faster, cheaper turns.
    Keep `PROGRESS.md` current so nothing important lives only in the conversation when it compacts.
@@ -123,10 +127,11 @@ The Blank template opens a temporary Open World level (Landscape, World Partitio
    Optional: `allow` rules for the read-only calls sessions make most (`git status`, `Get-Process`) mean fewer calls
    wait on the auto-mode permission check, which sometimes fails with "no verdict". Check the rule syntax first.
 
-   This limits the session to Unreal only. Remove `disableClaudeAiConnectors` / widen the allowlist if a jam idea needs another service (e.g. Vercel for a backend).
+   This limits the session to Unreal only. Remove `disableClaudeAiConnectors` / widen the allowlist if a jam idea
+   needs another service (e.g. Vercel for a backend).
 2. Set effort to **high** (`/effort high`, or have Claude set it as the project default).
-3. Copy the kit's `CLAUDE.md` into the project root. Re-copy it whenever the kit's copy changes (sessions compare the two
-   at start and say when the copy is behind; a stale copy silently misses newer rules).
+3. Copy the kit's `CLAUDE.md` into the project root. Re-copy it whenever the kit's copy changes (sessions compare
+   the two at start and say when the copy is behind; a stale copy silently misses newer rules).
    **Copy out of the kit with robocopy.** The `deny` rule makes the session's permission check treat a `Copy-Item`
    *source* in the kit as a write target and refuse it (the error misleadingly lists the kit as allowed).
    robocopy works (exit code 1 means "files copied", not an error):
@@ -136,16 +141,17 @@ The Blank template opens a temporary Open World level (Landscape, World Partitio
    robocopy C:\dev\megajam-kit\agents C:\dev\<ProjectName>\.claude\agents critic.md
    ```
 
-   The second line installs the blind `critic` subagent (`prompts/critic.md`). Do it **before** the first session
-   starts: Claude Code hot-reloads `.claude\agents\` only if the folder existed when the session started.
+   The second line installs the blind `critic` subagent (`agents/critic.md`; its brief is `prompts/critic.md`). Do
+   it **before** the first session starts: Claude Code hot-reloads `.claude\agents\` only if the folder existed when the session started.
 4. With the editor already open: `cd C:\dev\<ProjectName>` → `claude` → approve `unreal-mcp`.
 5. `/mcp` should list only `unreal-mcp` (3 tools: tool search mode).
 6. Test: "What actors are in the current level?" — should list the Basic level's actors.
 
 ## 6. Kit scripts, plugin + Git (2 min)
 
-1. Copy the kit's `scripts\` folder (`build.ps1`, `package.ps1`, `init-repo.ps1`, `upload.ps1`) into the project root (`C:\dev\<ProjectName>\scripts\`).
-   The scripts find the project from their own location, so they must live inside the project.
+1. Copy the kit's `scripts\` folder (`build.ps1`, `package.ps1`, `init-repo.ps1`, `upload.ps1`) into the project
+   root (`C:\dev\<ProjectName>\scripts\`). The scripts find the project from their own location, so they must live
+   inside the project.
    Copy `unreal\Plugins\MegajamTools` into `C:\dev\<ProjectName>\Plugins\` and restart the editor. Use robocopy
    (step 5.3):
 
@@ -198,10 +204,11 @@ needs dynamic bounce light but full Lumen doesn't fit the target fps (softer GI,
 **All paths**
 - `Config/DefaultEngine.ini`:
   - under the existing `[/Script/Engine.RendererSettings]`: `r.DefaultFeature.MotionBlur=False`
-  - under the existing `[/Script/Engine.UserInterfaceSettings]`: `bAllowHighDPIInGameMode=True` (true 4K, not 2560x1440 stretched)
+  - under the existing `[/Script/Engine.UserInterfaceSettings]`: `bAllowHighDPIInGameMode=True` (true 4K, not
+    2560x1440 stretched)
   - `[SystemSettings]`: `r.Tonemapper.Sharpen=0` (sharpening an upscaled image adds halos, not detail)
-- `Config/DefaultScalability.ini`: `[AntiAliasingQuality@3]` and `[AntiAliasingQuality@Cine]` each `r.TSR.History.ScreenPercentage=100`
-  (200% costs ~3 ms at 4K and is only marginally cleaner)
+- `Config/DefaultScalability.ini`: `[AntiAliasingQuality@3]` and `[AntiAliasingQuality@Cine]` each
+  `r.TSR.History.ScreenPercentage=100` (200% costs ~3 ms at 4K and is only marginally cleaner)
 - `Config/DefaultScalability.ini`: texture pool per quality level (the engine's 800 MB at High blurs a dense 4K scene;
   `docs/ue/performance.md` "Textures and memory"). A prototype's working values: `[TextureQuality@1]`
   `r.Streaming.PoolSize=1000`, `@2` 1800, `@3` 2500, `@Cine` 3000, with `r.Streaming.LimitPoolSizeToVRAM=1` under
@@ -268,13 +275,14 @@ Do this before jam day so the first real upload isn't on the final night.
 2. `butler login` once (opens a browser). The credentials file `%USERPROFILE%\.config\itch\butler_creds` is a secret;
    revoke at itch.io/user/settings/api-keys.
 3. Create the game page as a **draft** early (itch.io/game/new). butler can't push to a page that doesn't exist.
-4. `upload.ps1` is in the project's `scripts\` (step 6). `.\scripts\upload.ps1 -ZipName <TeamName> -Target user/game` is a dry
-   run (checks the zip, build stamp, butler, login, no `Saved/` in the zip, and prints the commands);
-   `-Push` uploads. It pushes the **zip**, never the build folder. A channel name containing `windows` tags the platform.
-5. Game page text: the exe is unsigned. Add a line like *"Unsigned build: Windows SmartScreen may need More info > Run
-   anyway. If Smart App Control is on, Windows blocks the game; it can only be turned off machine-wide (Windows Security >
-   App & browser control)."* Code signing (Microsoft Artifact Signing, or an OV certificate) removes this but needs
-   identity verification of 1-20 business days; see `docs/ue/production.md`.
+4. `upload.ps1` is in the project's `scripts\` (step 6). `.\scripts\upload.ps1 -ZipName <TeamName> -Target user/game`
+   is a dry run (checks the zip, build stamp, butler, login, no `Saved/` in the zip, and prints the commands);
+   `-Push` uploads. It pushes the **zip**, never the build folder. A channel name containing `windows` tags the
+   platform.
+5. Game page text: the exe is unsigned. Add a line like *"Unsigned build: Windows SmartScreen may need More info >
+   Run anyway. If Smart App Control is on, Windows blocks the game; it can only be turned off machine-wide (Windows
+   Security > App & browser control)."* Code signing (Microsoft Artifact Signing, or an OV certificate) removes this
+   but needs identity verification of 1-20 business days; see `docs/ue/production.md`.
 6. Trailer: the jam wants a link (YouTube, unlisted is fine), not an upload. Recipes in `docs/ue/cinematics-video.md`.
 
 ## 10. Animation library (once per machine, before the jam; you do the Fab steps)
@@ -290,5 +298,5 @@ scored); download them now, retarget them onto the game's characters during the 
 2. Create a library project `C:\dev\AnimLibrary` (Blank, UE 5.8.4) and add those packs to it from the launcher's
    Library tab ("Add to Project"). Not tracked in any game repo.
 3. Optional: an Adobe ID for Mixamo (rolls, knockdowns, get-ups, extra deaths); a paid melee pack for parries.
-4. During the jam, migrate only the folders you need into the game (Migrate keeps each pack's `/Game/<Pack>/` path) and run
-   `node gen/unreal/retarget_library.ts` with the arguments in `docs/ue/animation-library.md` "Workflow".
+4. During the jam, migrate only the folders you need into the game (Migrate keeps each pack's `/Game/<Pack>/` path)
+   and run `node gen/unreal/retarget_library.ts` with the arguments in `docs/ue/animation-library.md` "Workflow".
