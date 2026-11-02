@@ -20,7 +20,8 @@ node gen/asset.ts "a weathered treasure chest" --name Chest --max 0.8 --place 30
 
 Steps: concept image (Gemini) -> Tripo image-to-3D -> Blender prep -> Blender preview ->
 Unreal import + `MI_<Name>` from `M_PBR_Master` + place + screenshot.
-Output: `<Project>/Generated/assets/<name>/` (concept, tripo/, SM_<Name>.fbx, textures, preview.png, shot.png, manifest.json).
+Output: `<Project>/Generated/assets/<name>/` (concept, tripo/, SM_<Name>.fbx, textures, preview.png, shot.png,
+manifest.json).
 Unreal: `/Game/Props/<Name>/` (SM_, MI_, T_*).
 
 | Option | Use |
@@ -136,6 +137,7 @@ any flagged take before importing it; level-matching a batch: `docs/elevenlabs.m
 
 | Option | Use |
 |---|---|
+| `--seconds S` | Length. SFX 0.5-30 s (a set length bills per second; omit it and the model picks); music and `plan` 3-600 s. |
 | `--n 3` | Variants, named `_1`, `_2`, `_3` (1-6), at most 2 (music) or 3 at once. Each is billed. A re-run with the same name moves the old take to `old\`. |
 | `--plan file` / `--seed N` | Music from an edited composition plan (`plan` command) / seed for voice or plan music. |
 | `--timestamps` | Voice: per-character timing in the `.json` sidecar for subtitles. |
@@ -145,7 +147,10 @@ any flagged take before importing it; level-matching a batch: `docs/elevenlabs.m
 | `--voice id` | Voice for `voice` lines (`node gen/audio.ts voices` lists ids). |
 | `--vocals` / `--loop` / `--mono` | Music with vocals / looping SFX / one channel (see above). |
 | `--no-unreal` | Files only, no import. |
-| `--model id` | Override the model. Defaults: SFX `eleven_text_to_sound_v3` (v2 is deprecated and retired 2027-02-01; same parameters), voice `eleven_v4` (`eleven_multilingual_v2` is the old default). |
+| `--out dir` | Output folder instead of `<Project>/Generated/audio` (also where `save` looks for design sidecars). |
+| `--model id` | Override the model. Defaults: SFX `eleven_text_to_sound_v3` (v2 is deprecated and retired 2027-02-01; same parameters), music `music_v2_5`, voice `eleven_v4` (`eleven_multilingual_v2` is the old default). |
+| `--preview`, `--guidance`, `--design-model`, `--loudness`, `--enhance` | `design` only: preview text (100-1000 characters), prompt adherence, `eleven_ttv_v3` or `eleven_multilingual_ttv_v2`, loudness (-1 to 1), let ElevenLabs expand the description (`docs/elevenlabs.md` "Making a narrator or character voice"). |
+| `--description "..."` | `save` only: the design prompt, when no design sidecar lists the chosen preview. |
 
 **How to prompt, limits, prices and licence: `docs/elevenlabs.md`** (sound effects, music with composition plans,
 voice lines on Eleven v4, designing a narrator or character voice). Read it before generating.
@@ -203,7 +208,8 @@ Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls nee
 
 - Tripo CLI: `tripo docs --llm` (full agent guide, offline), `tripo docs --topic commands/make`,
   `tripo docs --topic examples/game-asset`, `tripo docs --topic examples/animation`.
-  API docs as raw markdown: https://developers.tripo3d.com/en/docs/<page>.md (index: https://developers.tripo3d.com/llms.txt).
+  API docs as raw markdown: https://developers.tripo3d.com/en/docs/<page>.md
+  (index: https://developers.tripo3d.com/llms.txt).
   The docs site serves binary to some fetchers; fetching the .md with curl/Invoke-WebRequest works.
 - ElevenLabs: sound effects https://elevenlabs.io/docs/api-reference/text-to-sound-effects/convert.md ,
   music https://elevenlabs.io/docs/api-reference/music/compose.md ,
@@ -213,13 +219,16 @@ Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls nee
 
 ## Hard-won facts (UE 5.8.4)
 
-- FBX from Blender must use `apply_scale_options=FBX_SCALE_NONE`; the other modes import 100x too small and UE drops triangles.
+- FBX from Blender must use `apply_scale_options=FBX_SCALE_NONE`; the other modes import 100x too small and UE drops
+  triangles.
 - The FBX importer's auto materials drop the metallic map and can fail to compile. Always use `M_PBR_Master`.
 - `CaptureViewport` requires `captureTransform` and `annotations`; the image comes back inside JSON.
 - `add_to_scene_from_asset` `snap_to_ground` did not move the actor; place at z=0 (pivots are at the base).
 - Generated props import with 1 LOD and Nanite off; the pipeline enables Nanite. See `docs/ue/performance.md`.
-- Master material needs usage flags (Nanite, skeletal, instanced) set up front; a missing flag in a packaged build = default material.
-- After material/Nanite changes, wait ~20 s for shader compiles before taking a judging screenshot (props render grey/blocky meanwhile).
+- Master material needs usage flags (Nanite, skeletal, instanced) set up front; a missing flag in a packaged build =
+  default material.
+- After material/Nanite changes, wait ~20 s for shader compiles before taking a judging screenshot (props render
+  grey/blocky meanwhile).
 - **Skeletal meshes: the root bone must have scale 1.** Unreal's FBX `import_uniform_scale` and Blender's
   `FBX_SCALE_NONE` both put the scale on the root bone (x180 / x100); the mesh looks right in T-pose, but every
   retargeted animation collapses to ~1 cm or flies km away (player looks "invisible", camera seems first-person).
@@ -229,11 +238,13 @@ Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls nee
   reject `convert_model` tasks (API 2006): pass the `image_to_model` task id. The `tripo` CLI only reads
   `TRIPO_API_KEY` from the environment (asset.ts loads `.env`; manual runs must too).
 - Retargeted `ABP_Unarmed` keeps the `CR_Mannequin_FootIK` Control Rig node: compile warnings "Hierarchy
-  discrepancy" and twisted feet on non-Manny skeletons. `gen/unreal/abp.ts` removes it (BlueprintTools edits AnimGraphs via MCP).
+  discrepancy" and twisted feet on non-Manny skeletons. `gen/unreal/abp.ts` removes it (BlueprintTools edits
+  AnimGraphs via MCP).
 - Placed SkeletalMeshActors don't evaluate animation in the editor viewport (even with `set_update_animation_in_editor`).
   Verify animation in PIE: start with `LevelEditorSubsystem.editor_request_begin_play()`, screenshot with
   `HighResShot WxH filename=...` on the PIE world, read bone positions with `get_socket_location`.
-- Inline Python through PowerShell breaks on quotes. Put scripts in files and run `node gen/unreal/py.ts file.py --arg k=v`.
+- Inline Python through PowerShell breaks on quotes. Put scripts in files and run
+  `node gen/unreal/py.ts file.py --arg k=v`.
 - **Tripo's rig FBX keeps only the colour image** and points its normal-map slot at that same image (verified by
   scanning the file: 1 JPEG inside; the textured GLB has 3 maps). Imported as is, the colour map is used as the
   normal map: blotchy, wrong lighting in Unreal. Take PBR maps from the textured model (`extract_pbr.py`) and
@@ -293,7 +304,7 @@ Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls nee
   `materials.ts apply ... --opengl-normals` (FlipGreenChannel), or the bumps light inside out. A lone `_roughness`
   map needs `pack_orm.py` first (it fills AO 1 and metallic 0); `applyPbr` warns if it finds one unpacked.
 - **Blender's FBX import resets the scene frame rate** to the file's. A script that sets `scene.render.fps = 30` and
-  then imports an FBX (e.g. to rebuild a skeleton) exported every clip at 24 fps, and UE played a 1.0 s flap in 1.25 s.
+  then imports an FBX (e.g. to rebuild a skeleton) exported every clip at 24 fps, and UE played a 1.0 s clip in 1.25 s.
   Set `scene.render.fps` (and `fps_base = 1`) right before each animation export, and check the imported
   AnimSequence's length.
 - **Uploads:** `SETUP.md` section 9.
