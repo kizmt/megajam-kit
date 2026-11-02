@@ -5,7 +5,9 @@
 .DESCRIPTION
   BuildCookRun -archive copies the staged build over the archive folder and never deletes, so a file from an older
   package (a DLL of a plugin since turned off) would ship again. The script first deletes every file in the archive
-  folder except those under a Saved\ folder (bench CSVs, logs: they are never zipped anyway). It prints the ten
+  folder except those under a Saved\ folder (bench CSVs, logs: they are never zipped anyway). It refuses when the
+  archive folder (<BuildRoot>\<Project>) is or contains the project, holds a .uproject or .git, or contains a junction
+  or symbolic link, so the delete stays inside a build folder. It prints the ten
   largest zip entries, so a stale or oversized file shows up.
 .EXAMPLE
   .\scripts\package.ps1 -ZipName MyTeam
@@ -42,6 +44,24 @@ $archiveDir = Join-Path $BuildRoot $projectName
 $zipPath    = Join-Path $BuildRoot "${ZipName}_$projectName.zip"
 $logDir     = Join-Path $projectDir 'Saved\Logs'
 New-Item -ItemType Directory -Force -Path $logDir, $archiveDir | Out-Null
+# Full paths (a relative -BuildRoot would break the relative-path cuts below) without a trailing backslash.
+$archiveDir = (Resolve-Path -LiteralPath $archiveDir).ProviderPath.TrimEnd('\')
+$projFull   = (Resolve-Path -LiteralPath $projectDir).ProviderPath.TrimEnd('\')
+
+# Guard the delete below: the archive folder must be a build folder of its own. -BuildRoot C:\dev would make it the
+# project folder itself; a junction inside it would lead the recursive listing (and the delete) outside it.
+if ($archiveDir -ieq $projFull -or $projFull.StartsWith($archiveDir + '\', [StringComparison]::OrdinalIgnoreCase)) {
+    Write-Host "FAIL: the archive folder $archiveDir is the project folder or contains it; pass another -BuildRoot."; exit 1
+}
+if ((Get-ChildItem -LiteralPath $archiveDir -Force -Filter *.uproject -File) -or
+    (Test-Path -LiteralPath (Join-Path $archiveDir '.git'))) {
+    Write-Host "FAIL: $archiveDir holds a .uproject or .git, so it is not a build folder; pass another -BuildRoot."; exit 1
+}
+$links = @(Get-ChildItem -LiteralPath $archiveDir -Recurse -Force -Directory -ErrorAction SilentlyContinue |
+    Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint })
+if ($links.Count -gt 0) {
+    Write-Host "FAIL: $archiveDir contains a junction or symbolic link ($($links[0].FullName)); remove it first."; exit 1
+}
 
 # Clear the last build out of the archive folder (BuildCookRun only adds and overwrites). Saved\ stays.
 $stale = @(Get-ChildItem -Path $archiveDir -Recurse -File -ErrorAction SilentlyContinue |
@@ -58,7 +78,7 @@ $uatArgs = @(
     '-platform=Win64',
     "-clientconfig=$Config",
     '-build', '-cook', '-stage', '-pak', '-archive',
-    "-archivedirectory=`"$BuildRoot\$projectName`"",
+    "-archivedirectory=`"$archiveDir`"",
     '-utf8output',
     '-unattended',
     '-nop4',
