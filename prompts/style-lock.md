@@ -1,7 +1,7 @@
 # Style lock — run after `prompts/concept.md`, before any gameplay
 
-Starts at the contest start: key art images are created art (rule 7(h)); directions in words can be drafted in the
-theme window (`prompts/concept.md`).
+Starts at the contest start: key art images are created art (rule 7(h)). Steps 1 and 2.1 and the audio direction in
+words run in the theme window (`prompts/concept.md` step 6).
 
 Goal: a look the director approves, written down precisely enough that every later asset and scene can be
 checked against it. Budget: ~3 hours of the jam, ~1 hour in practice runs.
@@ -40,10 +40,24 @@ The Basic level has no post-process volume: build an unbound one here, and on th
 Define 4-6 fixed camera transforms in `art/camera-set.md` (the gameplay view plus key spots), capture those
 shots and compare with the key art. Iterate lighting and post until the director says it matches. This scene becomes the template every level is built from.
 
+## Audio direction (words in the theme window, first sounds at S)
+Audio is a full judging category; the look gets locked, so does the sound. Write `design/audio.md`
+(principles: `docs/design.md` "Audio and pacing"; generation: `docs/elevenlabs.md`):
+- **Mood:** the director's 3-5 audio mood words and 1-2 references for feel.
+- **Pillars:** 3-4 rules every sound follows (e.g. "dry and close", "no reverb tails over 1 s").
+- **Music approach:** cues per area or adaptive layers; which cue for calm, pressure and the climax.
+- **Ambience table:** one bed per area or beat.
+- **SFX list:** one line per verb from the verb table (`design/concept.md`), plus every telegraph.
+- **Mix rules and checks:** what sits on top (danger, success), music under effects, nothing clips; each with a
+  pass/fail check.
+
+After S, prove the music approach early: the first cue and a few verb sounds are generated and heard in the editor
+by the risk spike (S + 6 h). The first playable has a sound on every verb.
+
 ## 5. Freeze
 The director approves. From here, any change to the look goes through `art/style-lock.md` first.
-Start the project's `DECISIONS.md` now with the style-lock calls (direction, render path, lighting, palette, and the
-target fps: `docs/ue/performance.md` "The bar").
+Append the style-lock calls to `DECISIONS.md` (started in the theme window with the concept pick): direction, render
+path, lighting, palette, and the target fps (`docs/ue/performance.md` "The bar").
 
 ## Why this order
 Mismatched generated assets look cohesive under a strong, consistent lighting/post/material setup,

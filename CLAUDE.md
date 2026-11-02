@@ -60,7 +60,7 @@ director). **The target PC** is the machine the game is built and measured on (R
 - **`DECISIONS.md` (in the game project) records the director's explicit calls** ("responsiveness beats foot accuracy",
   "accept this shot"), one line each with the date. Read it at the start of every round. Never silently undo one;
   to change one, propose it with evidence and ask. It records what the director decided, not what is forbidden: new ideas
-  are welcome. Create it in Round 1 with the style-lock calls; append whenever the director makes a call, grouped by area; strike
+  are welcome. Start it in the theme window with the concept pick (`prompts/concept.md`); append whenever the director makes a call, grouped by area; strike
   through superseded calls with a pointer; record "your call" decisions too.
 - **One flagged improvement per round.** Beyond the plan, each round may add one unrequested improvement that makes
   the game better, labelled as such in the report so the director can keep or drop it.
@@ -231,7 +231,9 @@ add an entry to the project's `KIT_NOTES.md` in the same round.
 - **The Unreal Engine EULA no longer limits AI use of the engine or MetaHuman** (Epic's 2026-10-29 update, accepted
   by the director): engine source can be read by the agent, and MetaHuman Creator, Animator and Mesh to MetaHuman
   output can be used with AI tools. NoAI rules for Fab and Epic content (section 17 above) are unchanged.
-- Judging (rules 9): Ambition and Innovation, Use of Theme, Fun Factor, Gameplay, Visuals, Level Design, Audio (up to 5 points each; ties re-scored with Fun Factor doubled). The amount of AI used doesn't change the score.
+- Judging (rules 9): Ambition and Innovation, Use of Theme, Fun Factor, Gameplay, Visuals, Level Design and Game
+  Progression, Audio (up to 5 points each; ties re-scored with Fun Factor doubled; the jam page's definitions are in
+  `docs/design.md`). The amount of AI used doesn't change the score.
 - The Glass Box devlog must be submitted with the game, during the contest.
 - Content must be Teen-appropriate, contain no third-party IP, and show no trademarks except the
   Unreal Engine logo. All in-game text and audio in English.

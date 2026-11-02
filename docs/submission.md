@@ -19,6 +19,14 @@ CLAUDE.md "Shipping" and `SETUP.md` 9, the video in `docs/ue/cinematics-video.md
 - [ ] Teen-appropriate, no third-party IP, no trademarks except the Unreal Engine logo (CLAUDE.md "Jam compliance").
 - [ ] **Devlog submitted with the game, during the contest** (rule 10, Glass Box), if competing for it.
 
+## Grants and credits
+
+- **Development Continuation Grants:** the jam page lists them per engine as $50,000 / $25,000 / $10,000 for first,
+  second and third place. They follow overall placement, the total across all seven categories, not one category.
+  At kickoff, check whether they need anything on the submission form.
+- **AI tool credits:** a jam page section ("coming soon" in late October); claim them before S
+  (`prompts/concept.md` step 0).
+
 ## The game page (itch.io)
 
 Draft it at D − 14 h (`prompts/concept.md` schedule), finish it in the final pass. Judges skim: the first screen
