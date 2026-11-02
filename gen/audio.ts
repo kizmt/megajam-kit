@@ -45,6 +45,8 @@ const { values: o, positionals } = parseArgs({
     guidance: { type: 'string' },
     'design-model': { type: 'string' },
     loudness: { type: 'string' },
+    stability: { type: 'string' },
+    similarity: { type: 'string' },
     enhance: { type: 'boolean', default: false },
     description: { type: 'string' },
     out: { type: 'string' },
@@ -59,6 +61,7 @@ const USAGE = `usage: node gen/audio.ts sfx|music|voice "<prompt or line>" [--na
        --mono: downmix to one channel (any sound played at a 3D location: spatialised stereo plays as two spread emitters, 6 dB quieter; docs/ue/audio-ui.md)
        --seed N: voice, or music with --plan (the API refuses a seed with a music prompt; SFX has no seed)
        --timestamps: voice only, saves per-character timing in the .json sidecar (subtitles)
+       --stability 0.45 / --similarity 0.75: voice only, voice_settings (0-1; lower stability is more varied)
        node gen/audio.ts plan "<music prompt>" [--seconds S] [--name N]   (free; edit the JSON, then: music --plan <file>)
        node gen/audio.ts voices
        node gen/audio.ts design "<voice description>" --name N [--preview "<100-1000 chars in character>"] [--seed N]
@@ -210,6 +213,10 @@ function request(): ApiRequest {
   }
   const body: Record<string, unknown> = { text, model_id: o.model ?? 'eleven_v4' };
   if (seed !== undefined) body['seed'] = seed;
+  const settings: Record<string, number> = {};
+  if (o.stability !== undefined) settings['stability'] = Number(o.stability);
+  if (o.similarity !== undefined) settings['similarity_boost'] = Number(o.similarity);
+  if (Object.keys(settings).length) body['voice_settings'] = settings;
   const path = o.timestamps ? `${o.voice}/with-timestamps` : o.voice;
   return { url: `${API}/v1/text-to-speech/${path}?output_format=${o.format}`, body };
 }

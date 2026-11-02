@@ -106,7 +106,8 @@ character's lines in one batch on one day.
   measured] The road remembers every pilgrim.` Describe the voice, not an event: v4 also makes sound effects and can
   read an ambiguous tag (`[thunder]`) as one. Match tags to the voice: a calm voice won't shout convincingly.
 - **No SSML.** `<break>` tags don't work on v4. Pause with ellipses, `[short pause]` / `[long pause]` and line
-  breaks. v4 has no Speed or Style setting; only Stability (lower is more varied) and Similarity apply.
+  breaks. v4 has no Speed or Style setting; only Stability (lower is more varied) and Similarity apply
+  (`--stability`, `--similarity`, untested).
 - **CAPITALS add emphasis**, ellipses add weight. Write what is said: numbers and abbreviations in words
   ("forty-two", "Doctor"). Stage directions in the text ("she said softly") are spoken aloud: use tags instead.
 - **Names:** IPA between slashes in the text (`"/ˈθeɪlɪs/"`), with stress marks; or one pronunciation dictionary for

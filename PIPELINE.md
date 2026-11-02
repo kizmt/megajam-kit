@@ -125,6 +125,7 @@ Measured: SFX ~2 s end to end, 30 s music track ~6 s.
 | `--n 3` | Variants, named `_1`, `_2`, `_3` (1-6), at most 2 (music) or 3 at once. Each is billed. A re-run with the same name moves the old take to `old\`. |
 | `--plan file` / `--seed N` | Music from an edited composition plan (`plan` command) / seed for voice or plan music. |
 | `--timestamps` | Voice: per-character timing in the `.json` sidecar for subtitles. |
+| `--stability 0.45`, `--similarity 0.75` | Voice: `voice_settings` (0-1). Lower stability is more varied; keep one value per character. |
 | `--influence 0.4` | SFX only: how closely the sound follows the prompt (ElevenLabs `prompt_influence`, 0-1). |
 | `--format mp3_44100_128` | ElevenLabs output format (`mp3_*`, `opus_*`, `wav_*`, `pcm_*`); the WAV for Unreal is made by ffmpeg either way. |
 | `--voice id` | Voice for `voice` lines (`node gen/audio.ts voices` lists ids). |
