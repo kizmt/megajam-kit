@@ -78,16 +78,36 @@ if (variants.length === 0) fail('no variants to run');
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
-/** GPU load before we start: other programs on the GPU make every number meaningless. */
-function gpuReading(): { util: number; memMiB: number; text: string } | undefined {
-  try {
-    const out = execFileSync('nvidia-smi', ['--query-gpu=utilization.gpu,memory.used', '--format=csv,noheader,nounits'], { encoding: 'utf8' });
-    const [util, mem] = (out.trim().split('\n')[0] ?? '').split(',').map((s) => Number(s.trim()));
-    if (util === undefined || mem === undefined || Number.isNaN(util) || Number.isNaN(mem)) return undefined;
-    return { util, memMiB: mem, text: `GPU ${util}% busy, ${mem} MiB used` };
-  } catch {
-    return undefined;
+/**
+ * GPU load before we start: other programs on the GPU make every number meaningless.
+ * One `utilization.gpu` read is noisy at idle clocks (a 4K desktop alone jumped 6-31% in P5 at 210 MHz), so take
+ * several samples, report the lowest, and treat a GPU in an idle power state (P5 or higher) as free.
+ */
+async function gpuReading(samples = 5): Promise<{ util: number; memMiB: number; idle: boolean; text: string } | undefined> {
+  const reads: { util: number; mem: number; pstate: number; clock: number }[] = [];
+  for (let i = 0; i < samples; i++) {
+    try {
+      const out = execFileSync('nvidia-smi', ['--query-gpu=utilization.gpu,memory.used,pstate,clocks.gr', '--format=csv,noheader,nounits'], { encoding: 'utf8' });
+      const [u, m, p, c] = (out.trim().split('\n')[0] ?? '').split(',').map((x) => x.trim());
+      const util = Number(u);
+      const mem = Number(m);
+      if (Number.isNaN(util) || Number.isNaN(mem)) return undefined;
+      reads.push({ util, mem, pstate: Number((p ?? '').replace(/^P/i, '')), clock: Number(c) });
+    } catch {
+      return undefined;
+    }
+    if (i < samples - 1) await sleep(500);
   }
+  const low = reads.reduce((a, b) => (b.util < a.util ? b : a));
+  const idle = reads.every((r) => !Number.isNaN(r.pstate) && r.pstate >= 5);
+  const utils = reads.map((r) => r.util).join('/');
+  const last = reads[reads.length - 1] ?? low;
+  return {
+    util: low.util,
+    memMiB: low.mem,
+    idle,
+    text: `GPU ${utils}% busy (lowest ${low.util}%), P${last.pstate} at ${last.clock} MHz, ${low.mem} MiB used${idle ? ' (idle power state)' : ''}`,
+  };
 }
 
 function newestCsv(after: number): string | undefined {
@@ -145,9 +165,9 @@ async function runVariant(name: string, cvars: string, frames = o.frames ?? '120
   throw new Error(`no capture (${name})`);
 }
 
-const gpu = gpuReading();
+const gpu = await gpuReading();
 console.log(gpu ? `machine check: ${gpu.text}` : 'machine check: nvidia-smi not available (check the GPU is idle yourself)');
-if (gpu && gpu.util >= 40 && !o.force) {
+if (gpu && gpu.util >= 40 && !gpu.idle && !o.force) {
   fail(`the GPU is already ${gpu.util}% busy: another program would distort the numbers. Close it or ask first, then rerun (or pass --force).`);
 }
 

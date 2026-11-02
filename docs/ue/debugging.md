@@ -238,6 +238,18 @@ Select-String $log -Pattern '\[PROOF\]|Log file closed'   # proof lines + clean 
   False, unreal.ComparisonTolerance.LOW, "", 0.5, True)`. It pilots the viewport, writes `<path>.png` and releases
   the pilot. With the editor in the background the request waits until the viewport draws: one MCP `CaptureViewport`
   call forces the draw (`editor_invalidate_viewports()` did not).
+- **Editor captures at High scalability show black shade after an editor restart** (rehearsal: ~12% of pixels below
+  luma 20 for minutes, vs 0.23% in the packaged game at the same settings). High sets
+  `r.LumenScene.DirectLighting.UpdateFactor 64` and `r.LumenScene.Radiosity.UpdateFactor 128`, and a background editor
+  renders so few frames that Lumen's surface cache barely converges. Set both to 8 in the editor console before
+  capturing (not saved; `shot.ts --converge` does it): 0.17-1.17%. Ruled out first: surface cache atlas size, GI
+  on/off, `r.Lumen.TraceMeshSDFs`, reflections.
+- **Before capturing a World Partition level,** load its streamed actors (`worldbuilding.md` "World Partition from
+  Python"); unloaded cells show coarse stand-ins that look like a Nanite bug.
+- **After a water rebuild,** wait a few seconds or capture twice before judging an underwater-tinted shot
+  (`worldbuilding.md` "Judging water in captures").
+- **Viewport captures use whatever camera the viewport has.** When the director is working in the editor, a capture
+  can come from their camera: ask for the viewport first, and use fixed cameras for the camera set.
 - **Particles in editor captures:** the editor world doesn't tick while the editor is unfocused, so placed Niagara
   systems show nothing. Before each capture, on every `NiagaraActor`'s component: `nc.reinitialize_system();
   nc.advance_simulation_by_time(1.0, 1/60)`. Also wait for any edited system to compile (`editor-scripting.md`).
