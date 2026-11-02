@@ -177,7 +177,8 @@ protected:
   idle at 0, walk at **300** and jog at **600** cm/s in 8 directions. The template character's `MaxWalkSpeed` is 500,
   so it never reaches the full jog. A custom blend space or clip set: read its samples
   (`bs.get_editor_property('sample_data')`) before tuning `MaxWalkSpeed` and the walk/run speeds in the tuning
-  DataAsset. To move a sample off the axis grid, turn `snap_to_grid` off first (`editor-scripting.md` E).
+  DataAsset. To move a sample off the axis grid, turn `snap_to_grid` off first, on every axis that has it
+  (`editor-scripting.md` E).
   - **Lock the feet at the real walk speed W:** put the walk samples at W and set their `rate_scale` to W / the clip's
     root speed (root bone travel / clip length).
   - **A long idle sample slows part-speed walks.** The blend's cycle length is the weighted mean of its samples'
@@ -245,8 +246,8 @@ in `animation-library.md` "Library clips".
 ## Recommended path for a generated character
 
 **Automated (2026-10-24):** `gen/character.ts` runs steps 1-9 below in one command (~4 min, 90 Tripo credits) and
-includes step 8 (scripted since 2026-10-25: `gen/unreal/abp.ts`). Usage, options and the failure modes found while building it: `PIPELINE.md`
-"Characters" and "Hard-won facts". Material differs from step 4 below: PBR maps come from the textured model,
+includes step 8 (scripted since 2026-10-25: `gen/unreal/abp.ts`). Usage, options and the failure modes found while
+building it: `PIPELINE.md` "Characters" and "Hard-won facts". Material differs from step 4 below: PBR maps come from the textured model,
 not the rig (the rig FBX wires its colour image as the normal map). The steps stay here as the explanation.
 
 `[S]` = scriptable (MCP/Python/CLI), `[UI]` = editor UI needed, `[V]` = verify with screenshot/PIE.
@@ -298,8 +299,9 @@ Budget: steps 2-10 are ~1-2 h for the first character (estimate), mostly in step
 
 ## Lessons from a prototype: stylized (non-human) characters
 
-Only relevant for non-human proportions. From one prototype: a short, stubby, rounded stylized character
-(~1.2 m, short arms and legs) built with the kit pipeline. Human-proportioned characters retarget cleanly without this.
+From one prototype: a short, stubby, rounded stylized character (~1.2 m, short arms and legs) built with the kit
+pipeline. The first three bullets matter only for non-human proportions (human-proportioned characters retarget
+cleanly without them); the rest apply to any character.
 
 - **Tripo's auto-rig can be wrong for non-human proportions.** Diagnosis in Blender showed the shoulder joint ~15 cm
   (13% of height) above the arm's centre line, the arm chain ending mid-arm, the outer arm weighted to finger bones,
@@ -309,8 +311,8 @@ Only relevant for non-human proportions. From one prototype: a short, stubby, ro
   rebuild with `character.ts --rig <fixed.fbx> --pbr <glb>`. Check joint-to-mesh offsets before importing any
   non-human character.
 - **Always smooth after scripted weight edits.** Hard cut-offs (100% arm bones, stripped body weights) leave sharp
-  weight steps between neighbouring vertices, which crease and blotch the body when bones move. Laplacian-smooth all weights except the arm core
-  and lower legs, then keep the top 4 influences and renormalise. Report the step statistics before and after, and
+  weight steps between neighbouring vertices, which crease and blotch the body when bones move. Laplacian-smooth all
+  weights except the arm core and lower legs, then keep the top 4 influences and renormalise. Report the step statistics before and after, and
   check a bent pose with a reflective matcap.
 - **Human animations on a stubby body look stiff; tune the retarget, then add procedural motion.** 5.8's IK
   retargeter default op stack has no IK Chains op (Pelvis Motion, FK Chains, Run IK Rig, Root Motion, Remap Curves),

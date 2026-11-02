@@ -40,7 +40,8 @@ a BT or StateTree, so an agent-authored tree means hand-editing in the editor. P
 - Place a **Nav Mesh Bounds Volume** covering every walkable area. Press **P** in the viewport to show it (green).
   `RecastNavMesh-Default` appears in the Outliner; its Details hold Generation + Display (Draw Poly Edges, Draw Offset).
 - Engine defaults (`BaseEngine.ini`): `AgentRadius=34`, `AgentHeight=144`, `AgentMaxStepHeight=35`, `AgentMaxSlope=44`,
-  `CellSize=19`, `TileSizeUU=1000`. ACharacter's default capsule (radius 34) matches. Gaps narrower than 2x radius are
+  `CellSize=19`, `TileSizeUU=1000`. ACharacter's default capsule (radius 34) matches; the TP template's 42
+  (`gameplay.md`) is wider than the default agent (check 7 below). Gaps narrower than 2x radius are
   not walkable; a much bigger enemy needs its own Supported Agent in Project Settings > Navigation System.
 - **Runtime Generation** (Project Settings > Navigation Mesh, or the RecastNavMesh actor), `ERuntimeGenerationType`:
   - `Static` (engine default) - built in editor, saved with the level. Cheapest. Fine for hand-built/PCG-in-editor levels.
@@ -125,9 +126,9 @@ virtual void OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult&
 - **Smart Objects** (plugin, off by default): claimable world slots ("sit here", "use terminal") for ambient NPCs.
 - **NPC routines (ambient townsfolk, 6-12 NPCs): a plain C++ world subsystem was enough** on the rehearsal: it holds
   spot claims, fans out world events to the NPCs and pairs NPCs up. No Mass, StateTree or Smart Objects plugin.
-  StateTree + Smart Objects were not tried, so don't make them the default; re-read the `.uplugin` files for their
-  5.8.4 status before choosing (the rehearsal's research, unverified here: StateTree and Smart Objects Production but
-  off by default; Mass, MassCrowd, ZoneGraph and UAF Experimental).
+  StateTree + Smart Objects were not tried, so don't make them the default. Status: StateTree and Smart Objects are
+  not beta and off by default, MassGameplay is Experimental ("Verified against"); MassCrowd, ZoneGraph and UAF
+  Experimental is the rehearsal's research, unverified here.
 - **Mass**: ECS crowds/traffic; MassGameplay is Experimental. Skip. For 10-30 moving agents use
   `ADetourCrowdAIController` or CharacterMovement RVO avoidance instead.
 
