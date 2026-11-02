@@ -178,6 +178,11 @@ From the rehearsal (2026-11-01). A take can come back broken and still count as 
   (`ffmpeg -i bed.wav -lavfi showspectrumpic=s=1024x512 bed.png`).
 - **Mix beds well under the music:** about -30 LUFS against music at -21. At 2 LU apart the bed read as a fault, not
   as atmosphere. Beds of one loop that overlap in the level: `docs/ue/audio-ui.md` "Attenuation".
+- **Three loudness numbers, three jobs; don't mix them up:** -14 LUFS is the uploaded trailer (web platforms,
+  `docs/ue/cinematics-video.md`); -30 LUFS beds under -21 LUFS music is the balance measured in the rehearsal; -24
+  LUFS integrated is the target for the whole game's output mix, measured in-engine (`docs/design.md` "Audio and
+  pacing"). Don't normalise game files to -14 or -24; balance them against each other, then check the game's mix.
+  (The `--loudness` "-24 LUFS" in voice design above is only that API's scale.)
 - **Cutting a take into lines (or any cut with fades):** seek on the input side (`-ss` before `-i`) or trim in the
   filter chain and restart its clock before the fades:
   `-af "atrim=start=<a>:end=<b>,asetpts=PTS-STARTPTS,afade=t=in:d=0.03,afade=t=out:st=<len-0.12>:d=0.12"`.

@@ -96,7 +96,11 @@ Audio is a full judging category; plan it with the beats, not at the end (the au
 - **Every telegraph has a sound** before the hit lands; every player action has a sound (the verb table).
 - **Silence is a tool:** a short quiet moment before the climax makes it land.
 - **Mix check** in the packaged build: music under effects, nothing clips, the important cues (danger, success)
-  are heard over everything else.
+  are heard over everything else. **Whole-game target: -24 LUFS integrated (+/-2 LU), true peak at most -1 dBTP**
+  over one full run (IESD's console/PC reference level), measured on the final mix in Audio Insights
+  (`docs/ue/audio-ui.md` "Reverb, voices, memory"). This is the game's output, not a per-file level: the trailer's
+  -14 LUFS (web) and the bed-under-music balance are separate numbers (`docs/elevenlabs.md` "Checking and matching
+  levels").
 
 ## Ending
 
