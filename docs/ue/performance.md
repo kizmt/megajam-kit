@@ -51,8 +51,8 @@ Facts:
 - The game is GPU-bound (game thread ~2 ms). The biggest costs were **TSR at Epic (200% history, ~3 ms)** and the
   template level's **VolumetricCloud (~2.5 ms)**. Our models/materials cost under 1 ms.
 - Internal resolution is the expensive crispness lever: 1080p -> 1440p internal costs ~4 ms at 4K output.
-- Desktop screen percentage defaults to "based on display resolution": 4K display -> 1080p internal (50%), 1440p -> ~900p
-  (`r.ScreenPercentage` 0 = `r.ScreenPercentage.Default.Desktop.Mode`, mapped in `BaseEngine.ini`
+- Desktop screen percentage defaults to "based on display resolution": 4K display -> 1080p internal (50%), 1440p ->
+  ~900p (`r.ScreenPercentage` 0 = `r.ScreenPercentage.Default.Desktop.Mode`, mapped in `BaseEngine.ini`
   `[Rendering.AutoScreenPercentage]`). **The render-path pick names the internal resolution at 4K**; left unset it is
   50%, which thin foliage shows as grain under TSR. Compare candidates on foliage in motion, not on a still frame.
 - High-DPI: without `bAllowHighDPIInGameMode=True` a 150%-scaled 4K monitor gives the game 2560x1440 and Windows
