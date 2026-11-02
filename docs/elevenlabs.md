@@ -103,8 +103,8 @@ writes `MUS_Explore.plan.json` (*tested* 2026-11-01). Edit it, then compose with
 character's lines in one batch on one day.
 
 - **Direct the delivery with audio tags** in square brackets before the words: `[low, gravelly voice, slow and
-  measured] The tower has stood for a thousand years.` Describe the voice, not an event: v4 also makes sound effects and can
-  read an ambiguous tag (`[thunder]`) as one. Match tags to the voice: a calm voice won't shout convincingly.
+  measured] The tower has stood for a thousand years.` Describe the voice, not an event: v4 also makes sound effects
+  and can read an ambiguous tag (`[thunder]`) as one. Match tags to the voice: a calm voice won't shout convincingly.
 - **No SSML.** `<break>` tags don't work on v4. Pause with ellipses, `[short pause]` / `[long pause]` and line
   breaks. v4 has no Speed or Style setting; only Stability (lower is more varied) and Similarity apply
   (`--stability`, `--similarity`, untested).
@@ -131,10 +131,11 @@ node gen/audio.ts save <generated_voice_id> --name Narrator      # the preview t
 node gen/audio.ts voice "[slow, measured narration] ..." --voice <voice id> --name Line01
 ```
 
-Each `design` call bills only the preview text's characters, once for all three previews. Change one thing per call (wording, `--guidance`, `--design-model eleven_ttv_v3`, `--seed`) so the director can
-compare. `save` adds a voice to the account, so save only the pick. Record the voice id, description, seed and
-settings in `DECISIONS.md`. The site's Voice Design page works too; `voices` then lists the id. The rehearsal narrator
-(a bare "Greek accent" label, ignored in every preview) taught us the first rule below.
+Each `design` call bills only the preview text's characters, once for all three previews. Change one thing per call
+(wording, `--guidance`, `--design-model eleven_ttv_v3`, `--seed`) so the director can compare. `save` adds a voice
+to the account, so save only the pick. Record the voice id, description, seed and settings in `DECISIONS.md`. The
+site's Voice Design page works too; `voices` then lists the id. The rehearsal narrator (a bare "Greek accent"
+label, ignored in every preview) taught us the first rule below.
 
 - **Write the accent into the description, using ElevenLabs' structure:**
   `Native <language>. <Gender>, <age range>. <Quality level>.` then `Persona: <2-5 words>. Emotion: <2-3 adjectives>.`
