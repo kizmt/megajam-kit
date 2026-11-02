@@ -16,7 +16,7 @@ itself, escalates and ends well. Engine how-tos live in `docs/ue/` (`gameplay.md
 - **Respect the player's time.** A death or a mistake costs seconds, not minutes. Judges play many games: confusion
   in the first minute loses them.
 
-## Shape of a short game (5-10 min for a first-time player)
+## Shape of a short game (default 5-10 min for a first-time player; the director sets it at the concept stage)
 
 | Part | Time | Job | Checks |
 |---|---|---|---|

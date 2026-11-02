@@ -2,15 +2,18 @@
 
 The submission needs a **30-60 s gameplay video, >= 1920x1080, gameplay in the first 5 s, English only**.
 This note covers getting that video with the least risk, then optional in-game cinematics.
-Rule of thumb: the video is **real gameplay captured from the packaged build**. Sequencer and Movie Render
-Queue are extras for an intro/ending or one or two hero shots, never the critical path.
+Rule of thumb: the video is **real gameplay**, filmed the way the director's call says. **Default: offline frame
+capture in `-game` (D3b)**, if the game has its reset hook and test hooks by S + 48 h (`prompts/concept.md` step 4);
+the rehearsal's live-capture cut was rejected and the D3b re-shoot accepted. Without the hooks by then, or as the
+fallback, **live capture from the packaged build** (route 1). Sequencer and Movie Render Queue are extras for an
+intro/ending or one or two hero shots, never the critical path.
 
 ## A. Getting the gameplay video (ranked for 3am on deadline day)
 
 | # | Route | Use for | Verdict |
 |---|---|---|---|
-| 1 | **Kit capture scripts**: `gen/test/record_window.ps1` (records one game window, e.g. the packaged build you launched, given its PID and window handle) or `gen/test/autoclip.ps1` (launches a map with `-game` in a 1920x1080 window plus the game's autoplay flag and records it through record_window.ps1) | The gameplay footage | Default. Records only while the game is alive, focused and uncovered (`debugging.md` "Recording the screen safely"). The game takes the foreground: tell the director first. 60 fps by default (`-Fps`); clips are video only, so add the D1 audio (or `anullsrc` silence) before recipes that use `[0:a]` |
-| 1b | **Offline frame capture in `-game`** (D3b): the game runs at a fixed 1/60 s step, a script stages each shot through the game's test hooks and saves every frame | The trailer | The rehearsal's accepted trailer (its live-capture cut was rejected). No plugin. Slow (~2 frames/s; ~2 h of runs for 45 s); needs test hooks in the game; no game audio |
+| 1 | **Kit capture scripts**: `gen/test/record_window.ps1` (records one game window, e.g. the packaged build you launched, given its PID and window handle) or `gen/test/autoclip.ps1` (launches a map with `-game` in a 1920x1080 window plus the game's autoplay flag and records it through record_window.ps1) | The gameplay footage | The fallback, and the safe route on deadline night. Records only while the game is alive, focused and uncovered (`debugging.md` "Recording the screen safely"). The game takes the foreground: tell the director first. 60 fps by default (`-Fps`); clips are video only, so add the D1 audio (or `anullsrc` silence) before recipes that use `[0:a]` |
+| 1b | **Offline frame capture in `-game`** (D3b): the game runs at a fixed 1/60 s step, a script stages each shot through the game's test hooks and saves every frame | The trailer | **Default** when the game has its reset and test hooks by S + 48 h. The rehearsal's accepted trailer (its live-capture cut was rejected). No plugin. Slow (~2 frames/s; ~2 h of runs for 45 s); needs test hooks in the game; no game audio |
 | 2 | Movie Render Queue/Graph from a Level Sequence | Rendered trailer shots, intro/ending | Renders a Sequence; with an autoplay mode the game plays itself inside the render (D3). Offline, slow, plugin off by default |
 | 3 | Take Recorder -> re-render with MRQ | "Gameplay with nicer cameras" | Too fragile for a jam (see B). Skip |
 | - | NVIDIA App (ShadowPlay), OBS, Windows Game Bar, raw ffmpeg `ddagrab` | - | **Not for agent use: records whatever is on screen** (`debugging.md` "Recording the screen safely"). The director may use them by hand |
@@ -96,7 +99,8 @@ re-encodes anyway.
 
 ### Submission video checklist
 
-- [ ] Captured from the **packaged** build (not PIE), no debug text, no stat overlays, no third-party overlays
+- [ ] Gameplay from the game itself (D3b frames from `-game`, or live capture of the **packaged** build; not PIE), no
+  debug text, no stat overlays, no third-party overlays
 - [ ] Gameplay visible by **0:05** (title only as overlay on gameplay; card at the end)
 - [ ] Duration **30-60 s** (aim 45-55 s); resolution **>= 1920x1080**; 60 fps; H.264 MP4, yuv420p, AAC
 - [ ] **English only**: on-screen text, UI, VO; no mic audio; no music with lyrics in another language

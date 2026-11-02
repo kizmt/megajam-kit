@@ -37,7 +37,7 @@ in the morning; the window fits either.
 ## 1. Direction (the director, 10 min)
 The director gives: first reactions to the theme, any genre or feel they want or want to avoid, and how many hours
 they can review each day. Also ask, so the concepts don't have to be redone:
-- **Target length** for a first-time player (the kit's default is 5-10 min, CLAUDE.md rule 1).
+- **Target length** for a first-time player (the kit's default is 5-10 min; the director's answer sets it, CLAUDE.md rule 1).
 - **Paid-generation budget and appetite:** should credit cost or the number of characters to generate and rig count
   as build risk in step 3, or not?
 - **Naming taste:** what kind of working titles they like.
@@ -90,7 +90,9 @@ Write `design/concept.md` (in the planning folder until S):
 - **The set-piece shot:** the one image the climax is built around; the video must contain it.
 - **Cut list in three tiers.**
   - *Must* (not a game without it): the core verb with 3-channel feedback; onboarding, 2-3 twists and an end,
-    playable start to finish; one music track and a sound on every action; start and end screens.
+    playable start to finish; one music track and a sound on every action; start and end screens; **by S + 48 h**, a
+    reset hook and the test hooks the trailer needs (stage a shot, log events), so the video can be filmed offline
+    (`docs/ue/cinematics-video.md` D3b).
   - *Should* (makes it good): the set piece, a second music cue for the climax, the full juice pass, extra props.
   - *Could* (only when ahead): side goals, a secret, extra polish.
   - **No *Should* work before every *Must* is playable; no *Could* before every *Should*.** Everything starts in
@@ -99,8 +101,10 @@ Write `design/concept.md` (in the planning folder until S):
   fails, switch to its fallback then, not later.
 
 ## 5. Schedule with freeze points (Claude, 10 min)
-S = contest start, D = submission deadline (S + 93 h). Sleep is part of the plan: put the sleep blocks in the
-table first, then fit the milestones between them. Keep the order and the gaps:
+S = contest start, D = submission deadline (S + 93 h). Sleep is announced, not planned: the director says when
+a block starts. Before it, batch the questions into one message, and move any milestone that falls inside the block
+earlier, never later; then run unattended rounds until the wake-up (CLAUDE.md "Work long stretches unassisted").
+Keep the order and the gaps:
 
 | When | Milestone (pass/fail) |
 |---|---|

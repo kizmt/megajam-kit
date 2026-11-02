@@ -273,12 +273,14 @@ Select-String $log -Pattern '\[PROOF\]|Log file closed'   # proof lines + clean 
     gives a runtime MID to scale parameters per variant.
   - **Traversal checks:** for invisible walls, sweep the pawn's capsule along the route and label each blocking hit
     visible or invisible by the mesh under it; then a route walker at run speed in `-game` counts falls and stalls.
+    Generic, parameterised scripts for both are to be added to `gen/test/` before the jam (director's call); until
+    they exist, write the probe per project from this method.
     For stairs, run the pawn up with `add_movement_input` and log `current_floor` each tick.
   - Image work outside the editor: the system Python had PIL but not numpy; Blender's Python had numpy but not PIL.
   - Editor-only properties don't exist: `static_mesh.get_editor_property("body_setup")` raises "Failed to find
     property". Have an editor probe write what the test needs (collision shapes, bounds) to JSON and read that.
   - Landscape grass is render-side: its components report `get_instance_count() == 0` while the grass renders. Test
-    grass with shots (`worldbuilding.md` "World Partition, foliage and grass").
+    grass with shots (`worldbuilding.md` "Foliage and landscape grass").
   - **Moving the pawn between steps:** end any fall or glide first
     (`set_movement_mode(MOVE_WALKING)` on the movement component; check the stub's enum name), or the game's fall
     damage counts from where the fall started: a teleport out of a glide landed as a 90 m fall and a respawn. After a

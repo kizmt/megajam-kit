@@ -1,7 +1,9 @@
-# Blind critic: brief for a fresh helper agent
+# Blind critic: brief for the critic subagent
 
-Use after a visual or level change, before reporting it to the director. The critic is a **new** helper agent that has not
-seen the work being built. Give it only what is below; never your own opinion of the result.
+Use after a visual or level change, before reporting it to the director. The critic is the project's `critic` subagent
+(`.claude/agents/critic.md`, copied from the kit's `agents/critic.md` by SETUP step 5): a fresh agent with only the
+Read tool and no `CLAUDE.md`, so it knows nothing of the work being built. Give it only what is below; never your own
+opinion of the result.
 
 ## What the main session prepares
 
@@ -19,7 +21,8 @@ seen the work being built. Give it only what is below; never your own opinion of
      room", "fight spaces are readable from the gameplay camera", "no flat, evenly lit walls").
 3. Copies with neutral names (`A_1.jpg`, `B_1.jpg`...) and a random A/B order per camera, recorded in your own notes.
    The critic must not know which image is the game, which is the reference, or which is newer.
-4. `art/style-lock.md` (palette, lighting, materials) if it exists, **cut down to the look itself**: remove round
+4. `art/critic-look.md`: `art/style-lock.md` (palette, lighting, materials) **cut down to the look itself**, written
+   once after the style lock and updated when the look changes: remove round
    numbers, dates, version names and anything that describes what was built when ("Round 7 room"), or the critic
    can tell which image is newer.
 5. Write the rubric **before** running the critic, and keep it to what the camera can show. List the deliberate

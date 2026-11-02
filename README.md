@@ -45,6 +45,7 @@ Non-AI tools: Blender (headless, for model clean-up and texture packing), ffmpeg
 | `prompts/concept.md` | Jam-start procedure: concepts scored against the judging categories, cut list, schedule with freeze points |
 | `prompts/style-lock.md` | Procedure for agreeing and writing down the game's visual style |
 | `prompts/playtest.md` | Brief for a fresh agent reviewing a recorded first-time play |
+| `agents/critic.md` | The blind critic subagent (Read only, no CLAUDE.md); SETUP step 5 copies it into the project's `.claude\agents\` |
 | `prompts/critic.md` | Brief for a blind critic agent that scores screenshots against references or a rubric |
 | `gen/image.ts` | Concept image generation |
 | `gen/asset.ts` | One command from a prompt to a prop placed in the level: concept → 3D model → Blender prep → import (Nanite, collision, material) |

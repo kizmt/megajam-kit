@@ -12,7 +12,7 @@ director). **The target PC** is the machine the game is built and measured on (R
 - **This file is a copy.** The session runs in the game project (`C:\dev\<ProjectName>`); the kit lives at
   **`C:\dev\megajam-kit`** (added as a working directory in `.claude\settings.local.json`, SETUP step 5).
 - Kit paths in this file (`PIPELINE.md`, `SETUP.md`, `docs/design.md`, `docs/submission.md`, `docs/ue/`,
-  `gen/`, `prompts/`) are relative to the kit. `docs/design.md` is the game, level and progression design
+  `agents/`, `gen/`, `prompts/`) are relative to the kit. `docs/design.md` is the game, level and progression design
   playbook (with playtesting).
   Run generators from the kit folder in PowerShell (Git Bash rewrites `/Game/...` arguments; `PIPELINE.md`):
   `cd C:\dev\megajam-kit; node gen\asset.ts ...`. Their output goes to the
@@ -45,9 +45,11 @@ director). **The target PC** is the machine the game is built and measured on (R
 
 ## The two rules that matter most
 
-1. **Small scope, always.** One playable space, a 5–10 minute experience, finished and polished.
-   Never an open world, never "systems first, content later". If a feature isn't visible in the
-   60-second video, it's cut. When in doubt, cut.
+1. **Small scope, always.** One playable space, a short experience (5–10 minutes unless the director set another
+   length at the concept stage), finished and polished. Never an open world, never "systems first, content later".
+   If a feature isn't visible in the 60-second video, it's cut. When in doubt, cut. Bigger scope is earned by
+   illusion: a world beyond the playable space, scale contrast, a set piece (`docs/ue/worldbuilding.md` "Ambition on a
+   budget").
 2. **Pick the game on evidence, then lock the look, then build.** At jam start, `prompts/concept.md` (concepts
    scored against the judging categories, the cut list, the schedule with freeze points), then
    `prompts/style-lock.md`. No gameplay work starts until `art/style-lock.md`
@@ -57,12 +59,12 @@ director). **The target PC** is the machine the game is built and measured on (R
 ## Working model
 
 - **One main session.** A single Opus 5.5 session on high effort leads all design, code and editor
-  work. No predefined agent teams or role subagents. Claude may spin up a helper agent on its own
-  judgement (research, docs lookups, critics, work outside the editor such as Blender generation, audio and
-  images), but only the main session calls Unreal MCP (tool calls run one at a time on the game thread anyway).
+  work. No predefined agent teams; the one role subagent is the blind critic (`agents/critic.md`, copied into the
+  project by SETUP step 5). Claude may spin up a helper agent on its own judgement (research, docs lookups, work
+  outside the editor such as Blender generation, audio and images), but only the main session calls Unreal MCP (tool calls run one at a time on the game thread anyway).
   Parallel helpers each own their own output files; no two write the same file.
 - **Blind critic for visual and level work.** The builder doesn't grade its own look. After a visual or level change,
-  give a fresh helper agent the screenshots and the references (or the rubric) with labels hidden, using
+  give the `critic` subagent the screenshots and the references (or the rubric) with labels hidden, briefed per
   `prompts/critic.md`; its ranked flaws become the next tasks. The director's calls (`DECISIONS.md`) overrule the critic.
 - **`DECISIONS.md` (in the game project) records the director's explicit calls** ("responsiveness beats foot accuracy",
   "accept this shot"), one line each with the date. Read it at the start of every round. Never silently undo one;
@@ -86,6 +88,10 @@ director). **The target PC** is the machine the game is built and measured on (R
   `DECISIONS.md`), it keeps going round after round without waiting for replies. It stops only for a director's call,
   a change to a frozen decision, spending beyond the agreed budget, an action this file says to ask before, or a step
   only a human can do. Batch those into one message at a round close where possible.
+- **While the director sleeps** (they announce it; `prompts/concept.md` step 5): batch the open questions into one
+  message before the block, then keep running rounds. Unattended means no paid batches beyond the agreed budget, no
+  key injection, no editor restarts or other steps that need an approval; leave the permission mode, MCP and the
+  editor running. Queue anything that needs the director for the wake-up message.
 - **The director can step in at any time.** A steer overrides the plan: finish or roll back the current step, record
   the call in `DECISIONS.md`, re-plan.
 - **Rounds with checkpoints.** Each round: plan (≤5 bullets) → build → capture screenshots/video → report, then start

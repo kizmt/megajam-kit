@@ -133,7 +133,11 @@ The Blank template opens a temporary Open World level (Landscape, World Partitio
 
    ```
    robocopy C:\dev\megajam-kit C:\dev\<ProjectName> CLAUDE.md
+   robocopy C:\dev\megajam-kit\agents C:\dev\<ProjectName>\.claude\agents critic.md
    ```
+
+   The second line installs the blind `critic` subagent (`prompts/critic.md`). Do it **before** the first session
+   starts: Claude Code hot-reloads `.claude\agents\` only if the folder existed when the session started.
 4. With the editor already open: `cd C:\dev\<ProjectName>` → `claude` → approve `unreal-mcp`.
 5. `/mcp` should list only `unreal-mcp` (3 tools: tool search mode).
 6. Test: "What actors are in the current level?" — should list the Basic level's actors.
@@ -280,7 +284,9 @@ scored); download them now, retarget them onto the game's characters during the 
 
 1. Fab (in the browser or the Epic launcher): add the packs from `docs/ue/animation-library.md` "Reference
    inventory" to your library. Any other pack only if its listing says "Allows usage with AI: Yes". Adding them
-   accepts their licences.
+   accepts their licences. **Check that flag yourself for every pack you plan to use** (the session can't load Fab:
+   it answers 403) and note it with the listing URL and the date in `C:\dev\AnimLibrary\SOURCED_ASSETS.md`; the
+   game's `SOURCED_ASSETS.md` copies those lines.
 2. Create a library project `C:\dev\AnimLibrary` (Blank, UE 5.8.4) and add those packs to it from the launcher's
    Library tab ("Add to Project"). Not tracked in any game repo.
 3. Optional: an Adobe ID for Mixamo (rolls, knockdowns, get-ups, extra deaths); a paid melee pack for parries.
