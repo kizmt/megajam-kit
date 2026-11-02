@@ -24,6 +24,18 @@ Python stub or headers before writing an API call from memory.
   montage notifies and skeleton curve metadata, in two prototypes. Always save each edited asset with
   `save_loaded_asset(x, only_if_is_dirty=False)`, then **check the disk**: `git status` (or the file's timestamp)
   must show that `.uasset` modified. Reading the asset back in the same editor proves nothing.
+- **World Partition actors: `modify()` first, then save each actor's own package.** A script moved 29 actors with
+  `set_actor_location`, and `save_dirty_packages` saved none of them (lost on reload). `a.modify()` before the change,
+  then `EditorLoadingAndSavingUtils.save_packages([a.get_package() for a in moved], False)` saved all; check with
+  `git status` on `__ExternalActors__`.
+- **A running `-game` test locks the packages it loaded.** The `-game` process is an editor build and keeps those
+  files open: an editor save of them fails (`MoveFile ... (Error Code 32)`, retried, then `Error saving` and a modal
+  "failed to save" dialog). New files still save. Finish or stop the test before saving assets; do read-only editor
+  work meanwhile.
+- **Never `reload_packages` a dirty asset from a script.** `EditorLoadingAndSavingUtils.reload_packages` raises a
+  modal "Would you like to reload these assets?" window per modified package; the game thread waits on it and every
+  MCP call times out while the editor still shows "Responding". To undo a scripted preview, set the old values back
+  (read them first) or preview on a throwaway duplicate. Recovery: `debugging.md` B (MCP timeouts).
 - **Assert every `load_asset`.** It returns None for a wrong path, and many setters then do nothing silently (a
   material instance with a None parent renders the engine's grey checker with no error; a CDO property set to
   `load_asset(wrong_path)` became None with no error).
@@ -96,6 +108,18 @@ a PhysicsAsset and the animation named `<name>_Anim` (on the given skeleton, and
 non-AnimSequence outputs and rename the animation. Driving the Interchange pipeline settings directly is untried.
 **An FBX with named material slots** imports one material per slot next to the mesh: delete them after assigning
 the real MIs.
+
+**Reimports keep the old asset's settings and collision** (5.8.4, seen on a prototype):
+- **Static meshes with `UCX_` hulls: delete the asset, then import fresh** with a plain automated `AssetImportTask`
+  (no `FbxImportUI` options). Meshes with 3 UCX hulls each came in with 0 hulls through `FbxImportUI` options, and
+  again through a plain task with `replace_existing` over the existing asset; a fresh import after deleting gave 3.
+  Assert `StaticMeshEditorSubsystem.get_convex_collision_count(mesh) > 0` after the import.
+- **Interchange `reimport_asset` returns None, silently, on kit-imported skeletal meshes.** Meshes imported by
+  `import_skeletal.py` (`FbxFactory` + `FbxImportUI`) carry legacy `FbxSkeletalMeshImportData`, which Interchange's
+  reimport doesn't take. To add bones in place, run `import_skeletal.py` with `--arg in_place=1`: it imports over the
+  mesh with its own skeleton and import transform, so the object, its material slots, physics asset and referencers
+  stay. Clips that key the new bone must be re-imported (record what references them first:
+  `find_package_referencers_for_asset`); the others keep the bind pose for it.
 
 Other notes: Epic no longer supports defining a `BlueprintFunctionLibrary` in Python (the types are transient
 and break on save/load). Old `remove_lo_ds`-style names were renamed (`remove_lods`). Prefer engine types
@@ -271,7 +295,8 @@ session must follow.
   DynamicMesh with `copy_mesh_from_static_mesh` (read LOD `MAX_AVAILABLE`) and use `get_triangle_count()`.
 - **Positional order traps: always pass keywords.** `unreal.Rotator(a, b, c)` is **(roll, pitch, yaw)**, unlike C++
   `FRotator(Pitch, Yaw, Roll)`: `Rotator(-10, yaw, 0)` set the pitch to `yaw` and a test's camera turn did nothing.
-  Write `unreal.Rotator(pitch=..., yaw=...)`. `unreal.Color(a, b, c, d)` is (b, g, r, a).
+  Write `unreal.Rotator(pitch=..., yaw=...)`. `unreal.Color(a, b, c, d)` is (b, g, r, a). Find positional calls
+  with the regex `unreal\.Rotator\([-\d\w]`.
 - **Python odds and ends:**
   - `get_all_level_actors()` doesn't return actors spawned with `spawn_actor_from_object(..., transient=True)`, so a
     clean-up by label found none and a re-run doubled every test actor. Find them with
@@ -316,6 +341,31 @@ session must follow.
   although `read_graph_dsl` returns empty for an AnimGraph.
 - **AnimBlueprint parent class:** `get_editor_property("parent_class")` fails; use
   `BlueprintEditorLibrary.get_blueprint_parent_class`, and `reparent_blueprint` to change it.
+- **AnimGraph nodes from MCP (cached poses, extra slots, layered blends):** `BlueprintTools.find_node_types` needs
+  `type_id_filter` and `context_pins`, and listed a new `Use cached pose '<Name>'` only after a recompile;
+  `create_node` with the exact type id (`Animation|CachedPoses|Usecachedpose'<Name>'`) worked anyway. `create_node`
+  needs `pos {x,y}`; `connect_pins` takes `output_pin` / `input_pin`.
+- **AnimGraph nodes from Python:** reach a node by object path,
+  `unreal.find_object(None, "<ABP path>:AnimGraph.AnimGraphNode_Slot_1")`. Nodes inside a state machine: iterate
+  `unreal.ObjectIterator(unreal.AnimGraphNode_BlendSpacePlayer)` and keep paths with the `:AnimGraph.` prefix (the
+  compiler keeps copies under `ExecuteUbergraph_*`). Edit the node's `node` struct (`AnimNode_Slot.slot_name`,
+  `AnimNode_LayeredBoneBlend.layer_setup`, `AnimNode_BlendSpacePlayer.blend_space`) and set it back; struct fields
+  such as `InputBlendPose.branch_filters` need `get_editor_property`, not attribute access. Compiling the ABP registers
+  a new slot name in the skeleton: save the skeleton too. A variant ABP (another gait) is a `duplicate_asset` of the
+  main one with the blend-space player's `blend_space` swapped, then `compile_blueprint`.
+- **A montage's slot:** `SlotAnimationTrack.slot_name` is read-only, but the montage's `slot_anim_tracks` array is
+  writable: replace element 0 with `unreal.SlotAnimationTrack(slot_name=..., anim_track=old.get_editor_property(
+  "anim_track"))`, set the array back, read it back. (`AnimMontageFactory` makes montages in `DefaultSlot`.)
+- **Writing bone tracks, then reading poses back, crashed the editor.** `set_bone_track_keys` (inside
+  `open_bracket`/`close_bracket`) followed at once by `get_anim_pose_at_frame` died with EXCEPTION_ACCESS_VIOLATION in
+  AnimationBlueprintLibrary after ~20 clips in one run. Save the clip (`save_loaded_asset(seq, False)`) before
+  evaluating it again, and batch a few clips (one character) per run. Seen on one rig: a rotation spread over
+  spine_01..03 moved the pelvis-to-head line only ~63% of the angle, so a measured correction needed a gain of ~1.6.
+- **Blend space grid snapping:** samples snap to the grid when **either** axis has `snap_to_grid`
+  (`UBlendSpace::SnapSamplesToClosestGridPoint`). A sample placed off the grid is snapped back on rebuild unless
+  snapping is off on every axis that has it.
+- **World Partition's runtime grid isn't reachable from Python:** `WorldPartition.get_editor_property("runtime_hash")`
+  fails ("Failed to find property"). Read the loading range in World Settings.
 
 ### Recipe: rounded blockout pieces and props from Geometry Script (free, no generation)
 
@@ -323,6 +373,28 @@ session must follow.
 `compute_split_normals` at 50 degrees. Multi-material meshes: `copy_mesh_to_static_mesh` with `replace_materials`.
 **Collision:** the new asset has no simple collision; add and prove it as in section C ("Check collision on every
 generated level mesh"), and give decoration `NoCollision`.
+
+### Recipe: placement and probes by trace (editor world, PIE and `-game`)
+
+- **`SystemLibrary.line_trace_single` returns None on a miss**, not a HitResult with blocking False (the bool
+  out-param is folded into the return). `if hit is None:` before `hit.to_tuple()`. Seen in the editor world, PIE and
+  `-game`.
+- **Assert the hit is the intended actor.** After an editor start, meshes still compiling have no collision yet: a
+  roof trace went through a house and put a prop on the landscape under it; a re-run was right. Wait for
+  compilation (`unreal.AssetCompilingManager`, or a trace onto a known mesh) before tracing.
+- **Ground probes: a 15 cm sphere trace, multi, filtered.** A line trace falls through small gaps (paving joints
+  10-15 cm wide read as holes and steps down to the landscape); `sphere_trace_multi_for_objects` with a 15 cm radius
+  bridges them, as the character's capsule does. Keep a line trace for single solid meshes.
+  - An object-type query for WorldStatic also returns trigger volumes. Keep hits whose component blocks the pawn:
+    `comp.get_collision_response_to_channel(ECC_PAWN) == ECR_BLOCK` (enum values: grep the stub for their class).
+  - A trace that starts inside a mesh returns it as an initial overlap at the start point: skip hits with
+    `bStartPenetrating`. `HitResult.to_tuple()` order: 0 blocking, 1 initial overlap, 4 location, 5 impact point,
+    7 impact normal, 9 actor, 10 component.
+  - Start ground traces a little above the known ground height (2.5 m worked), under any tree canopy; from high up
+    they hit the canopy first.
+- **Score a scripted camera with a ray grid, not one ray.** A camera with a clear ray to its subject still had half
+  its frame filled by a rock. A 16 x 9 grid of rays over the FOV, counting hits short of the subject, picked clear
+  spots (1-5% of rays blocked).
 
 ## Kit issues found while writing this
 

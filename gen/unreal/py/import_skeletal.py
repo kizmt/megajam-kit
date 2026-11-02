@@ -1,8 +1,12 @@
 # Import a rigged FBX as a SkeletalMesh with scale / rotation control (the MCP import_file tool has neither).
 # Run via: node gen/unreal/py.ts gen/unreal/py/import_skeletal.py --arg fbx=C:/.../model.fbx
 #            --arg folder=/Game/Characters/Explorer --arg name=SK_Explorer [--arg scale=100] [--arg yaw=0]
-#            [--arg materials=1] [--arg skeleton=/Game/.../SKEL_X]
+#            [--arg materials=1] [--arg skeleton=/Game/.../SKEL_X] [--arg in_place=1]
 # Replaces existing assets of the same name (refuses if something else references them). Prints size (cm) and bone count.
+# in_place=1: imports over the existing mesh instead (no delete, no referencer check), with its own skeleton and the
+# scale / rotation / translation from its asset_import_data (scale and yaw are ignored). Use it to add bones: the
+# object, material slots, physics asset and referencers stay. (Interchange reimport_asset returns None on meshes this
+# script imported: they carry legacy FbxSkeletalMeshImportData.) Untested as a kit option; the method was proven by hand.
 import unreal
 
 fbx = ARGS["fbx"]
@@ -11,20 +15,31 @@ name = ARGS["name"]
 scale = float(ARGS.get("scale", "1"))
 yaw = float(ARGS.get("yaw", "0"))
 materials = ARGS.get("materials", "1") == "1"
+in_place = ARGS.get("in_place", "0") == "1"
 
 from megajam_tools.refs import referencers_outside
 
 # Refuses (instead of a blocking dialog) if anything else still uses the old mesh, skeleton or physics asset.
 # Checked as one set: the skeleton and physics asset reference the mesh themselves, which mustn't count.
 _eal = unreal.EditorAssetLibrary
-old = [p for p in (f"{folder}/{name}{s}" for s in ("", "_Skeleton", "_PhysicsAsset")) if _eal.does_asset_exist(p)]
-refs = referencers_outside(old)
-if refs:
-    raise RuntimeError("refusing to replace " + ", ".join(old) + ": still referenced (remove or repoint these first, "
-                       "or use a new name):\n  " + "\n  ".join(refs))
-for p in old:
-    if not _eal.delete_asset(p):
-        raise RuntimeError(f"delete failed: {p}")
+existing = None
+if in_place:
+    existing = unreal.load_asset(f"{folder}/{name}")
+    if not isinstance(existing, unreal.SkeletalMesh):
+        raise RuntimeError(f"in_place=1 needs an existing SkeletalMesh at {folder}/{name}")
+    old_data = existing.get_editor_property("asset_import_data")
+    if not isinstance(old_data, unreal.FbxSkeletalMeshImportData):
+        raise RuntimeError(f"in_place=1: {folder}/{name} has no FbxSkeletalMeshImportData "
+                           f"({type(old_data).__name__}); it wasn't imported by this script")
+else:
+    old = [p for p in (f"{folder}/{name}{s}" for s in ("", "_Skeleton", "_PhysicsAsset")) if _eal.does_asset_exist(p)]
+    refs = referencers_outside(old)
+    if refs:
+        raise RuntimeError("refusing to replace " + ", ".join(old) + ": still referenced (remove or repoint these first, "
+                           "or use a new name):\n  " + "\n  ".join(refs))
+    for p in old:
+        if not _eal.delete_asset(p):
+            raise RuntimeError(f"delete failed: {p}")
 
 ui = unreal.FbxImportUI()
 ui.automated_import_should_detect_type = False
@@ -35,12 +50,18 @@ ui.original_import_type = unreal.FBXImportType.FBXIT_SKELETAL_MESH
 ui.import_materials = materials
 ui.import_textures = materials
 ui.import_animations = False
-ui.create_physics_asset = True
+ui.create_physics_asset = not in_place  # in place: keep the mesh's physics asset (a new one would clash by name)
 if ARGS.get("skeleton"):
     ui.skeleton = unreal.load_asset(ARGS["skeleton"])
 data = ui.skeletal_mesh_import_data
-data.import_uniform_scale = scale
-data.import_rotation = unreal.Rotator(0.0, 0.0, yaw)  # (roll, pitch, yaw)
+if in_place:
+    ui.skeleton = existing.skeleton
+    data.import_uniform_scale = old_data.get_editor_property("import_uniform_scale")
+    data.import_rotation = old_data.get_editor_property("import_rotation")
+    data.import_translation = old_data.get_editor_property("import_translation")
+else:
+    data.import_uniform_scale = scale
+    data.import_rotation = unreal.Rotator(roll=0.0, pitch=0.0, yaw=yaw)
 
 task = unreal.AssetImportTask()
 task.filename = fbx
