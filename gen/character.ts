@@ -3,10 +3,12 @@
 //
 //   node gen/character.ts "a young mechanic in overalls and boots" --name Mechanic --concepts 3   (stop: pick a T-pose)
 //   node gen/character.ts --image <concept.jpg> --name Mechanic [--parent /Script/MyGame.PlayerCharacter]
+//   node gen/character.ts "a young mechanic ..." --name Mechanic --turnaround --concepts 2   (four-view sheets)
+//   node gen/character.ts --sheet <turnaround sheet> --name Mechanic                     (Tripo multiview-to-3D)
 //   node gen/character.ts --task <tripo model/texture task id> --name Mechanic [--pbr <textured model file>]
 //   node gen/character.ts --rig <tripo rig.fbx> --pbr <textured model file> --name Mechanic   (no Tripo credits)
 //
-// Steps: T-pose concept -> Tripo model -> Tripo re-texture (v3.5, delight; fixes blotchy textures) ->
+// Steps: T-pose concept (or a four-view sheet cut by gen/views.ts) -> Tripo model -> Tripo re-texture (v3.5, delight; fixes blotchy textures) ->
 //        Tripo rig (--spec unreal) on the textured task -> Blender extract_pbr (colour/normal/roughness/metallic
 //        from the TEXTURED model: the rig output keeps only colour and wires it as the normal map) ->
 //        Blender prep_rig (height, facing, cm export: root bone scale 1, no textures) -> Unreal import ->
@@ -25,6 +27,7 @@ import { applyPbr, type ApplyPbrResult } from './unreal/materials.ts';
 import { McpUnreachableError, callTool, mcpCall } from './unreal/mcp.ts';
 import { runPythonFileOrThrow } from './unreal/python.ts';
 import { stripFootIk } from './unreal/abp.ts';
+import { TURNAROUND_RULES, VIEW_ORDER, parseViews, splitSheet } from './views.ts';
 
 process.env['TRIPO_NO_UPDATE_CHECK'] = '1';
 
@@ -34,6 +37,9 @@ const { values: o, positionals } = parseArgs({
     name: { type: 'string' },
     concepts: { type: 'string' },
     image: { type: 'string' },
+    sheet: { type: 'string' },
+    views: { type: 'string' },
+    turnaround: { type: 'boolean', default: false },
     task: { type: 'string' },
     rig: { type: 'string' },
     pbr: { type: 'string' },
@@ -56,16 +62,20 @@ const { values: o, positionals } = parseArgs({
 const prompt = positionals.join(' ').trim();
 const usage = `usage: node gen/character.ts "<description>" --name Name [--concepts N]
        node gen/character.ts --image <concept> --name Name
+       node gen/character.ts "<description>" --turnaround --name Name [--concepts N]   (four-view sheet, multiview 3D)
+       node gen/character.ts --sheet <turnaround sheet> --name Name | --views front,left,back,right --name Name
        node gen/character.ts --task <tripo task id> [--pbr <textured model.glb|fbx>] --name Name
        node gen/character.ts --rig <tripo rig.fbx> --pbr <textured model.glb|fbx> --name Name
   options: [--no-retexture] [--height 1.8] [--rot=-90] [--faces 30000] [--max-tex 2048] [--tex 0] [--spec unreal|mixamo]
            [--provider gemini|openai] [--style file] [--ref img] [--parent /Script/<Module>.<Class>] [--no-unreal]
   --name is required (asset names: SK_<Name>, MI_<Name>, ABP_Unarmed_<Name>, BP_<Name>).
+  --turnaround: the concept is a 2x2 sheet (front, left, back, right), cut by gen/views.ts and sent to Tripo's
+  multiview-to-3D: Tripo stops guessing the back and sides. --sheet starts from such a sheet, --views from 4 files.
   --task: with --pbr, rigs that task as is; without, re-textures it first (unless --no-retexture).
   --max-tex: in-game texture cap (cooked size); the full-res source is kept. --tex N downsizes the source too.
   --parent makes BP_<Name>: a thin subclass of that C++ Character with mesh, anim class and offset set.
   A negative value needs '=' (--rot=-90): Node's parser rejects '--rot -90' as ambiguous.`;
-if (o.help || !o.name || (!prompt && !o.image && !o.task && !o.rig)) {
+if (o.help || !o.name || (!prompt && !o.image && !o.sheet && !o.views && !o.task && !o.rig)) {
   console.log(usage);
   process.exit(o.help ? 0 : 2);
 }
@@ -89,7 +99,7 @@ interface Manifest {
   prompt: string;
   created: string;
   steps: {
-    concept?: { files: string[]; time?: string; supplied?: boolean };
+    concept?: { files: string[]; time?: string; supplied?: boolean; views?: string[] };
     model?: { task: string; file?: string; credits?: number; time?: string; supplied?: boolean };
     texture?: { task: string; file: string; credits: number; time: string } | { skipped: string };
     rig?: { fbx: string; task?: string; credits?: number; time?: string; supplied?: boolean };
@@ -111,16 +121,22 @@ interface Manifest {
 // Failure modes seen 2026-10-24: an A-pose (arms angled down), a body turned slightly off-camera, and blotchy
 // dark/light patches on the final texture. The pose/camera wording fixed the first two (3/3 clean concepts).
 // The blotches came from Tripo's texturing, not the concept: the v3.5 re-texture step fixes them.
-const TPOSE_WRAPPER = (subject: string): string =>
-  `Character model sheet, front view only: ${subject}. Stylized game character proportions. ` +
+const BODY_RULES =
   `Clean, evenly lit, flat colours with crisp edges between materials: no dirt, grime, stains, weathering, ` +
   `smudges or painted shadows, no dramatic lighting, no ambient occlusion. ` +
   `Strict T-pose: both arms stretched straight out to the sides, perfectly horizontal at shoulder height, ` +
   `exactly 90 degrees from the torso (NOT angled down, not an A-pose), palms facing down, fingers together. ` +
-  `Legs straight, feet shoulder-width apart, flat on the ground. Body and head facing the viewer squarely, ` +
+  `Legs straight, feet shoulder-width apart, flat on the ground. EMPTY HANDS: no props, no weapons, no bag, ` +
+  `lantern or tool, nothing held in or attached to the hands. `;
+const TPOSE_WRAPPER = (subject: string): string =>
+  `Character model sheet, front view only: ${subject}. Stylized game character proportions. ${BODY_RULES}` +
+  `Body and head facing the viewer squarely, ` +
   `zero rotation, perfectly left-right symmetrical, orthographic camera at chest height. Whole body visible head ` +
-  `to toe with margin, plain flat light-grey background, soft even lighting, no shadow, no text, no props, ` +
-  `no weapons, nothing held in the hands.`;
+  `to toe with margin, plain flat light-grey background, soft even lighting, no shadow, no text.`;
+// Four views (Kensei's Tripo multiview tip, 2026-11): the same T-pose rules, one sheet, cut by gen/views.ts.
+const TURNAROUND_WRAPPER = (subject: string): string =>
+  `Character turnaround model sheet: ${subject}. Stylized game character proportions. ${BODY_RULES}` +
+  `Whole body visible head to toe in every view. ${TURNAROUND_RULES('grid')}`;
 
 const name = pascal(o.name);
 const dir = join(generatedDir('characters'), name.toLowerCase());
@@ -140,10 +156,42 @@ try {
   let pbrSource = o.pbr ? resolve(o.pbr) : null;
   let task = o.task ?? null; // the task the rig step will use
 
-  // 1. T-pose concept
+  // 1. T-pose concept (one front view, or a four-view turnaround sheet)
   let image = o.image ? resolve(o.image) : null;
+  let views: string[] | null = o.views ? parseViews(o.views) : null;
+  const sheetToViews = (sheet: string, supplied: boolean, t?: number): void => {
+    const r = splitSheet(sheet);
+    views = VIEW_ORDER.map((v) => r.views[v]);
+    manifest.steps.concept = { files: [r.sheet], views, ...(supplied ? { supplied } : {}), ...(t ? { time: secs(t) } : {}) };
+    console.log(`    views: ${views.join('\n           ')}\n    Check the four views match (same design, left/right the right way round) before paying for the model.`);
+  };
   if (rigFbx || task) {
     step('1', 'skipped (rig or task supplied)');
+  } else if (views) {
+    manifest.steps.concept = { files: views, views, supplied: true };
+  } else if (o.sheet) {
+    step('1', `cutting the turnaround sheet ${o.sheet}`);
+    sheetToViews(resolve(o.sheet), true);
+  } else if (!image && o.turnaround) {
+    const n = o.concepts ? Math.max(1, parseInt(o.concepts, 10) || 1) : 1;
+    step('1', `turnaround sheet x${n} (${o.provider})`);
+    const t = Date.now();
+    const args = [join(KIT, 'gen', 'image.ts'), TURNAROUND_WRAPPER(prompt), '--aspect', '1:1', '--provider', o.provider, '--n', String(n), '--out', dir, '--name', 'sheet'];
+    if (o.provider === 'gemini') args.push('--size', '2K'); // ~1K px per view
+    if (o.style) args.push('--style', o.style);
+    for (const r of o.ref) args.push('--ref', r);
+    const out = await run('node', args, 'image');
+    const files = [...out.matchAll(/\[\d+\] (.+\.(?:png|jpg|webp))/g)].flatMap((m) => (m[1] ? [m[1].trim()] : []));
+    const first = files[0];
+    if (!first) throw new Error(`no turnaround sheet produced:\n${out}`);
+    for (const f of files) console.log(`    ${f}`);
+    if (o.concepts) {
+      manifest.steps.concept = { files, time: secs(t) };
+      save();
+      console.log(`\nStopped after sheets. Pick one whose four views match, in T-pose, then:\n  node gen/character.ts --sheet "<file>" --name ${name}`);
+      process.exit(0);
+    }
+    sheetToViews(first, false, t);
   } else if (!image) {
     const n = o.concepts ? Math.max(1, parseInt(o.concepts, 10) || 1) : 1;
     step('1', `T-pose concept x${n} (${o.provider})`);
@@ -173,18 +221,21 @@ try {
     await requireTripoCredits((task ? 0 : 45) + (retexture ? 20 : 0) + 25, 'This character');
   }
 
-  // 2. Tripo model. --for game-pc ends with a convert task; texture/rig need the original image_to_model task.
+  // 2. Tripo model. --for game-pc ends with a convert task; texture/rig need the original image_to_model (or
+  // multiview_to_model) task.
   if (rigFbx) {
     step('2', 'skipped (--rig supplied)');
   } else if (task) {
     step('2', `skipped, using Tripo task ${task}`);
     manifest.steps.model = { task, supplied: true };
   } else {
-    if (!image) throw new Error('no concept image');
-    step('2', `Tripo image-to-3D (face limit ${o.faces}) ... ~2-3 min`);
+    const inputs: string[] = views ?? (image ? [image] : []);
+    if (!inputs.length) throw new Error('no concept image');
+    step('2', `Tripo ${views ? 'multiview' : 'image'}-to-3D (face limit ${o.faces}) ... ~2-3 min`);
     const t = Date.now();
-    const tj = parseTripo(await run('tripo', ['make', image, '--for', 'game-pc', '-p', `face_limit=${o.faces}`, '-o', tripoOut('model'), '--name', `${name.toLowerCase()}-model`, '--json', '--yes', '--no-open'], 'tripo make'));
-    task = tj.type === 'image_to_model' ? tj.task_id : readTripoTask(tj.output_dir).input?.original_model_id ?? null;
+    // Four paths in front, left, back, right order make `tripo make` a multiview_to_model task.
+    const tj = parseTripo(await run('tripo', ['make', ...inputs, '--for', 'game-pc', '-p', `face_limit=${o.faces}`, '-o', tripoOut('model'), '--name', `${name.toLowerCase()}-model`, '--json', '--yes', '--no-open'], 'tripo make'));
+    task = tj.type === 'image_to_model' || tj.type === 'multiview_to_model' ? tj.task_id : readTripoTask(tj.output_dir).input?.original_model_id ?? null;
     if (!task) throw new Error(`could not find the original model task id in ${join(tj.output_dir, 'task.json')}`);
     pbrSource = tj.model_file; // full PBR maps (4 images); replaced by the re-texture below
     manifest.steps.model = { task, file: tj.model_file, credits: tj.credits_consumed, time: secs(t) };

@@ -3,6 +3,7 @@
 //
 //   node gen/asset.ts "a brass lantern" --name Lantern --max 0.4
 //   node gen/asset.ts "a brass lantern" --name Lantern --concepts 4      (stop after 4 concept images)
+//   node gen/asset.ts "a carved shrine" --name Shrine --turnaround --concepts 2   (four-view sheets for multiview)
 //   node gen/asset.ts --image C:/dev/<Project>/Generated/assets/lantern/concept-<stamp>-2.jpg --name Lantern --max 0.4
 //
 // Steps: concept image -> Tripo image-to-3D (FBX) -> Blender prep (size, pivot, textures) ->
@@ -17,6 +18,7 @@ import { packOrm, parseMarkedJson, parseTripo, requireTripoCredits, run, secs, t
 import { applyPbr, ref, type ApplyPbrResult } from './unreal/materials.ts';
 import { McpUnreachableError, callTool, captureViewport, mcpCall, type Box, type CameraTransform, type ObjectRef } from './unreal/mcp.ts';
 import { runPythonCode } from './unreal/python.ts';
+import { TURNAROUND_RULES, VIEW_ORDER, parseViews, splitSheet } from './views.ts';
 
 process.env['TRIPO_NO_UPDATE_CHECK'] = '1';
 
@@ -25,6 +27,9 @@ const { values: o, positionals } = parseArgs({
   options: {
     name: { type: 'string' },
     image: { type: 'string' },
+    sheet: { type: 'string' },
+    views: { type: 'string' },
+    turnaround: { type: 'boolean', default: false },
     model: { type: 'string' },
     concepts: { type: 'string' },
     provider: { type: 'string', default: 'gemini' },
@@ -45,10 +50,12 @@ const { values: o, positionals } = parseArgs({
 });
 
 const prompt = positionals.join(' ').trim();
-if (o.help || (!prompt && !o.image && !o.model)) {
+if (o.help || (!prompt && !o.image && !o.sheet && !o.views && !o.model)) {
   console.log(`usage: node gen/asset.ts "<prompt>" --name Name [--max 0.8 | --height 1.8]
-       [--concepts N] [--image file] [--model file] [--provider gemini|openai] [--style file] [--ref img]
+       [--concepts N] [--image file] [--turnaround | --sheet file | --views f,l,b,r] [--model file] [--provider gemini|openai] [--style file] [--ref img]
        [--tex 2048] [--faces 30000] [--tris N] [--dest /Game/Props] [--place x,y,z] [--yaw deg] [--hulls 4-8] [--no-unreal]
+  --turnaround  the concept is a 2x2 four-view sheet (front, left, back, right) sent to Tripo's multiview-to-3D:
+             for props whose back or sides matter (seen all round, asymmetric); --sheet/--views start from one
   --hulls N  replace the default collision with N convex hulls (props the player pushes, picks up or
              walks around closely; leave off for background props)
   A value starting with '-' needs '=': --place=-300,0,0  --yaw=-90 (Node's parser rejects '--yaw -90').`);
@@ -65,7 +72,7 @@ interface Manifest {
   prompt: string;
   created: string;
   steps: {
-    concept?: { files: string[]; time?: string; supplied?: boolean };
+    concept?: { files: string[]; time?: string; supplied?: boolean; views?: string[] };
     tripo?: { model: string; supplied?: boolean; credits?: number; task?: string; time?: string };
     prep?: PrepResult & { time: string };
     orm?: OrmResult;
@@ -87,9 +94,13 @@ function parsePrep(out: string): PrepResult {
 
 // ---------- helpers ----------
 
+/** A prop's four-view sheet for Tripo multiview (gen/views.ts cuts it). */
+const TURNAROUND_WRAPPER = (subject: string): string =>
+  `Game asset turnaround sheet for 3D modelling: ${subject}. A single object, no other objects. ${TURNAROUND_RULES('grid')}`;
+
 // --name is used as given; a prompt or file name gives its last two words (a file's extension dropped).
 const fromFile = (f: string): string => basename(f, extname(f));
-const name = pascal(o.name ?? (prompt || fromFile(o.image ?? o.model ?? 'Asset')).split(' ').slice(-2).join(' '));
+const name = pascal(o.name ?? (prompt || fromFile(o.image ?? o.sheet ?? o.model ?? 'Asset')).split(' ').slice(-2).join(' '));
 const dir = join(generatedDir('assets'), name.toLowerCase());
 mkdirSync(dir, { recursive: true });
 const manifest: Manifest = { name, prompt, created: new Date().toISOString(), steps: {} };
@@ -106,13 +117,28 @@ const E = 'EditorToolset.EditorAppToolset';
 try {
   // 1. Concept image(s)
   let image = o.image ? resolve(o.image) : null;
+  let views: string[] | null = o.views ? parseViews(o.views) : null;
+  const sheetToViews = (sheet: string, supplied: boolean, t?: number): void => {
+    const r = splitSheet(sheet);
+    views = VIEW_ORDER.map((v) => r.views[v]);
+    manifest.steps.concept = { files: [r.sheet], views, ...(supplied ? { supplied } : {}), ...(t ? { time: secs(t) } : {}) };
+    console.log(`    views: ${views.join('\n           ')}`);
+  };
   if (o.model) {
     step(1, 'skipped (--model supplied)');
+  } else if (views) {
+    manifest.steps.concept = { files: views, views, supplied: true };
+  } else if (o.sheet) {
+    step(1, `cutting the turnaround sheet ${o.sheet}`);
+    sheetToViews(resolve(o.sheet), true);
   } else if (!image) {
     const n = o.concepts ? parseInt(o.concepts, 10) : 1;
-    step(1, `concept image x${n} (${o.provider})`);
+    const turn = o.turnaround;
+    step(1, `${turn ? 'turnaround sheet' : 'concept image'} x${n} (${o.provider})`);
     const t = Date.now();
-    const args = [join(KIT, 'gen', 'image.ts'), prompt, '--asset', '--provider', o.provider, '--n', String(n), '--out', dir, '--name', 'concept'];
+    const args = turn
+      ? [join(KIT, 'gen', 'image.ts'), TURNAROUND_WRAPPER(prompt), '--aspect', '1:1', ...(o.provider === 'gemini' ? ['--size', '2K'] : []), '--provider', o.provider, '--n', String(n), '--out', dir, '--name', 'sheet']
+      : [join(KIT, 'gen', 'image.ts'), prompt, '--asset', '--provider', o.provider, '--n', String(n), '--out', dir, '--name', 'concept'];
     if (o.style) args.push('--style', o.style);
     for (const r of o.ref) args.push('--ref', r);
     const out = await run('node', args, 'image');
@@ -124,10 +150,11 @@ try {
     if (o.concepts) {
       save();
       const size = o.max ? `--max ${o.max}` : o.height ? `--height ${o.height}` : '--max <m>';
-      console.log(`\nStopped after concepts. Pick one, then:\n  node gen/asset.ts --image "<file>" --name ${name} ${size}`);
+      console.log(`\nStopped after concepts. Pick one, then:\n  node gen/asset.ts --${turn ? 'sheet' : 'image'} "<file>" --name ${name} ${size}`);
       process.exit(0);
     }
-    image = firstImage;
+    if (turn) sheetToViews(firstImage, false, t);
+    else image = firstImage;
   } else {
     manifest.steps.concept = { files: [image], supplied: true };
   }
@@ -140,11 +167,13 @@ try {
     step(2, `skipped, using ${raw}`);
     manifest.steps.tripo = { model: raw, supplied: true };
   } else {
-    if (!image) throw new Error('no concept image');
+    const inputs: string[] = views ?? (image ? [image] : []);
+    if (!inputs.length) throw new Error('no concept image');
     await requireTripoCredits(45, 'This prop');
-    step(2, `Tripo image-to-3D (face limit ${o.faces}) ... ~3-4 min`);
+    step(2, `Tripo ${views ? 'multiview' : 'image'}-to-3D (face limit ${o.faces}) ... ~3-4 min`);
     const tripoDir = join(dir, 'tripo');
-    const tj = parseTripo(await run('tripo', ['make', image, '--for', 'game-pc', '-p', `face_limit=${o.faces}`, '-o', tripoDir, '--name', name.toLowerCase(), '--json', '--yes', '--no-open'], 'tripo'));
+    // Four paths in front, left, back, right order make `tripo make` a multiview_to_model task.
+    const tj = parseTripo(await run('tripo', ['make', ...inputs, '--for', 'game-pc', '-p', `face_limit=${o.faces}`, '-o', tripoDir, '--name', name.toLowerCase(), '--json', '--yes', '--no-open'], 'tripo'));
     raw = tj.model_file; // parseTripo resolves the CLI's cwd-relative paths
     manifest.steps.tripo = { model: raw, credits: tj.credits_consumed, task: tj.source_task_id ?? tj.task_id, time: secs(t) };
     console.log(`    ${raw} (${tj.credits_consumed} credits, ${secs(t)})`);

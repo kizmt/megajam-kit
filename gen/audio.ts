@@ -19,7 +19,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFile
 import { spawnSync } from 'node:child_process';
 import { basename, join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { KIT, env, errorMessage, fail, generatedDir, pascal } from './paths.ts';
+import { KIT, env, errorMessage, fail, findFfmpeg, generatedDir, pascal } from './paths.ts';
 import { McpUnreachableError, callTool } from './unreal/mcp.ts';
 
 type Kind = 'sfx' | 'music' | 'voice';
@@ -316,18 +316,7 @@ async function runPool(count: number, limit: number): Promise<PromiseSettledResu
   return out;
 }
 
-/** ffmpeg converts to 48 kHz 16-bit WAV for Unreal. If PATH predates the winget install, look in winget's package dir. */
-function findFfmpeg(): string | null {
-  const candidates = ['ffmpeg'];
-  const local = env('LOCALAPPDATA');
-  const pkgs = local ? join(local, 'Microsoft', 'WinGet', 'Packages') : '';
-  if (pkgs) try {
-    for (const p of readdirSync(pkgs).filter((d) => d.startsWith('Gyan.FFmpeg'))) {
-      for (const v of readdirSync(join(pkgs, p))) candidates.push(join(pkgs, p, v, 'bin', 'ffmpeg.exe'));
-    }
-  } catch { /* no winget packages dir */ }
-  return candidates.find((c) => spawnSync(c, ['-version'], { stdio: 'ignore' }).status === 0) ?? null;
-}
+// ffmpeg converts to 48 kHz 16-bit WAV for Unreal.
 const FFMPEG = findFfmpeg();
 
 function toWav(file: string): string | null {

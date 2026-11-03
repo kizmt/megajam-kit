@@ -4,6 +4,7 @@
 // doesn't override a variable that is already set). Scripts refuse to run
 // without it rather than writing into the kit. --out on any script still overrides.
 import { existsSync, readFileSync, readdirSync, realpathSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -74,4 +75,20 @@ export function isMain(importMetaUrl: string): boolean {
     return process.platform === 'win32' ? r.toLowerCase() : r;
   };
   return norm(fileURLToPath(importMetaUrl)) === norm(entry);
+}
+
+/** The ffmpeg command, or null. If PATH predates the winget install, look in winget's package dir. */
+let ffmpegCache: string | null | undefined;
+export function findFfmpeg(): string | null {
+  if (ffmpegCache !== undefined) return ffmpegCache;
+  const candidates = ['ffmpeg'];
+  const local = env('LOCALAPPDATA');
+  const pkgs = local ? join(local, 'Microsoft', 'WinGet', 'Packages') : '';
+  if (pkgs) try {
+    for (const p of readdirSync(pkgs).filter((d) => d.startsWith('Gyan.FFmpeg'))) {
+      for (const v of readdirSync(join(pkgs, p))) candidates.push(join(pkgs, p, v, 'bin', 'ffmpeg.exe'));
+    }
+  } catch { /* no winget packages dir */ }
+  ffmpegCache = candidates.find((c) => spawnSync(c, ['-version'], { stdio: 'ignore' }).status === 0) ?? null;
+  return ffmpegCache;
 }
