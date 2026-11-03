@@ -29,6 +29,7 @@ Unreal: `/Game/Props/<Name>/` (SM_, MI_, T_*).
 | `--max 0.8` / `--height 1.8` | Real-world size in metres (longest side / height). Always set one. |
 | `--concepts 4` | Stop after 4 concept images to pick one, then rerun with `--image <file>`. |
 | `--image file` | Start from an existing concept image. |
+| `--turnaround` / `--sheet file` / `--views f,l,b,r` | Four views to Tripo's multiview-to-3D instead of one image (Four views, below). |
 | `--model file` | Reuse an existing Tripo mesh (no credits). For redoing size/material. |
 | `--provider openai` | Concept images from gpt-image-2 instead of Gemini. |
 | `--style file --ref img` | Style prefix text and reference images for a consistent look. |
@@ -55,6 +56,38 @@ isolated subject. In the rehearsal it leaked haze and scenery into 3 of 9 creatu
 concepts (even with a "style only, no fog or scenery" prefix), and half of the clean ones came out in a flatter
 cartoon style. Generate one subject with the key art, get it approved, then send that concept as the first `--ref`
 (a subject on plain grey: the style anchor) and at most one key-art frame after it, for palette only.
+
+## Four views: Tripo multiview-to-3D (tested 2026-11-04 on one character)
+
+With one front image Tripo guesses the back and sides. Given front, left, back and right views it builds the
+hidden side from the drawing (`tripo make f l b r` -> `multiview_to_model`, 2-4 views). Measured: 40 credits + 5
+for the FBX convert (the same 45 as image-to-3D), ~2.5 min, and the task passes the free `tripo anim check`.
+Side-by-side on the rehearsal's fisherman (same design, one sheet from gpt-image-2 at 1024 px with the old concept
+as `--ref`): the single-image model had invented full hair on the back of a bald head and a plain belt; the
+multiview model had the bald crown, the white fringe and the rope knot at the back, all as drawn, and its T-pose
+came through. Use it by default for characters and for props whose back or sides carry design (a pack, a knot, a
+tail, an asymmetric prop, anything seen from behind); the extra cost is only the sheet image.
+
+```powershell
+node gen/character.ts "<description>" --name Hero --turnaround --concepts 2 --ref <approved front concept>
+node gen/character.ts --sheet <picked sheet> --name Hero --parent /Script/<Module>.PlayerCharacter
+node gen/views.ts <sheet.png> [--layout grid|row]       # cut a sheet by hand: <sheet>_front.png ... _right.png
+```
+
+- **The sheet:** a 2x2 grid, top-left front, top-right left side, bottom-left back, bottom-right right side. "Left"
+  is the subject's own left: the character faces the image's left edge. Same scale and camera height in every view,
+  plain light-grey background, empty hands (nothing held or attached: a prop in the hand fuses into the mesh).
+  `TURNAROUND_RULES` in `gen/views.ts` is the prompt text; 1:1 at 2K on Gemini (~1K px per view), 1024 px on
+  gpt-image-2 (~450 px per view: enough in the test).
+- **Check the four views before paying for the model:** same design in all four, left and right sides the right way
+  round (a belt knot or a strap shows it), nothing crossing between cells. A mismatched sheet gives a worse mesh
+  than one good front view.
+- **Keep the approved design:** pass the approved front concept as the first `--ref`, so the sheet redraws that
+  character instead of a new one.
+- **Cutting:** `views.ts` cuts through the emptiest band near each expected split, trims each view to its figure and
+  pads it square on the background colour. It fails on an empty cell (wrong layout).
+- **Alternative:** `tripo generate image-to-multiview <front concept>` makes a four-view sheet from one image (price
+  on Tripo's pricing page; untested here).
 
 ## Characters: concept to playable (tested 2026-10-24: Explorer, Mechanic in a test project)
 
@@ -90,6 +123,8 @@ price is on Tripo's developer pricing page, not in `tripo docs`. Show the direct
 |---|---|
 | `--concepts N` | Stop after N T-pose concepts. Always do this first. |
 | `--image file` | Start from a picked concept. |
+| `--turnaround` | Concepts are 2x2 four-view sheets (with `--concepts N`); rerun with `--sheet <picked sheet>`. |
+| `--sheet file` / `--views f,l,b,r` | Tripo multiview-to-3D from a turnaround sheet, or from four view files (front, left, back, right). |
 | `--task id [--pbr file]` | Start from a Tripo task. With `--pbr`, rig it as is; without, re-texture it first. |
 | `--rig fbx --pbr file` | Rebuild from downloaded files: no credits (e.g. after a pipeline fix, or the editor was closed). |
 | `--no-retexture` | Skip the v3.5 re-texture (saves 20 credits: 70 per new character instead of 90); maps come from the first model. Blotch risk. |
@@ -184,6 +219,7 @@ Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls nee
 | `gen/unreal/py.ts` | Run a Python file (or `-c` code) in the editor via `run_python`; `--arg k=v` -> `ARGS` dict |
 | `gen/unreal/shot.ts` | Viewport screenshot to PNG (`--wait N` for shader compiles) |
 | `gen/character.ts` | Concept -> rigged, PBR-textured, retargeted character (+ BP); see Characters |
+| `gen/views.ts` | Cut a four-view turnaround sheet into front/left/back/right images for Tripo multiview (Four views) |
 | `gen/blender/prep_rig.py` | Rigged character: height, facing, armature-safe cm export, textures stripped |
 | `gen/blender/pack_orm.py` | Pack roughness/metallic/AO PNGs into `T_<Name>_orm.png` for M_PBR_Master (v2+) |
 | `gen/blender/mesh_compare.py` | Compare two rigged FBX meshes (counts, UVs, normals, skin-weight steps), e.g. after a hand-fixed rig |
