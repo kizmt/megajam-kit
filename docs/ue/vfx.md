@@ -365,12 +365,12 @@ UNiagaraFunctionLibrary::SpawnSystemAttached(TrailFX, Mesh, NAME_None, FVector::
   Directional mode. Turn on Two Sided for anything seen from both sides.
 - **Light renderer** = hero accents only: one particle, low count, short life, never on high-count emitters. No
   material. It forces CPU. `bAffectsTranslucency` and `bAllowMegaLights` say "use with caution": **leave
-  MegaLights off** (kit: MegaLights not used, `lighting.md`). Particle lights don't cast shadows.
+  MegaLights off** (kit: MegaLights off by default, `lighting.md` "MegaLights"). Particle lights don't cast shadows.
   `bAlphaScalesBrightness` lets you fade lights with alpha.
 - **Lumen:** emissive sprites don't light the world through Lumen GI, because particles aren't in the Lumen scene
   (unverified for 5.8). For a glow that lights surroundings, use a Light renderer particle or a real light on the
-  actor. Torches and campfires should use an actor PointLight with shadows off, counted against `performance.md`'s
-  "few dynamic shadow-casting lights" budget.
+  actor. Torches and campfires should use an actor PointLight with shadows off; one that casts shadows counts against
+  `performance.md`'s "Dynamic shadow-casting lights" budget.
 - **Additive particles don't appear in Lumen reflections or screen traces**; what reflects is the light's specular, so
   shape it with the light's source radius / length.
 

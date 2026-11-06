@@ -88,7 +88,7 @@ Groups: `sg.ResolutionQuality` (= screen percentage), `sg.ViewDistanceQuality`, 
 |---|---|---|---|
 | 0 Low | Lumen GI off, skylight dimmed (0.8) | Lumen off, SSR off | VSM pool 512, no SMRT, no volumetric fog |
 | 1 Medium | Lumen **Irradiance** final gather (`r.Lumen.FinalGatherMethod=0`), cheaper surface cache | **SSR** (Lumen refl off) | pool 512, volumetric fog off |
-| 2 High | Screen Probe Gather, downsample 32, no mesh-SDF tracing | Lumen, half res (`DownsampleFactor=2`) | pool 2048, volumetric fog on |
+| 2 High | Screen Probe Gather, downsample 32, no mesh-SDF tracing | Lumen, half res (`r.Lumen.Reflections.DownsampleFactor=2`) | pool 2048, volumetric fog on |
 | 3 Epic | Screen Probe Gather, downsample 16, hit lighting allowed | Lumen, full res | pool 4096, sharper directional |
 
 - **Lumen path: target High (2) for GI, Reflections and Shadows** on the 4060: Epic: High = 60 fps budget, Epic =
@@ -182,7 +182,7 @@ Groups: `sg.ResolutionQuality` (= screen percentage), `sg.ViewDistanceQuality`, 
   `r.MegaLights.Allow` is wrong).
 - **Cost knobs and measuring.** Cost follows internal resolution, `r.MegaLights.DownsampleMode` and
   `r.MegaLights.NumSamplesPerPixel`; `r.MegaLights.LightAttenuationFalloff` trims light range. Debug view
-  `r.MegaLights.Visualize 1` (unverified in 5.8.4). Measure GPU time with `r.RDG.AsyncCompute 0`.
+  `r.MegaLights.Visualize 1` (on Epic's 5.8 page). Measure GPU time with `r.RDG.AsyncCompute 0`.
 
 ## Environment (outdoor stack, all in the Basic level; no VolumetricCloud by default)
 
