@@ -168,9 +168,9 @@ Facts behind the table:
 - **Nanite on for every static prop** (pipeline does it). Epic: enable "wherever possible". Without it a generated
   prop draws all its triangles at every distance (they import with one LOD) - the Unity-style "too many LODs/polys"
   trap.
-- Nanite supports **Opaque and Masked** materials only. Translucent (glass, water) needs a non-Nanite mesh/material.
 - Exceptions to "Nanite on": meshes used **as particles** in Niagara (keep small, non-Nanite, no collision/shadows;
-  see `vfx.md`) and translucent/glass meshes (`materials.md`).
+  see `vfx.md`) and translucent meshes such as glass and water (Nanite takes Opaque and Masked materials only:
+  `materials.md` "Domains, blend modes, Nanite").
 - Nanite skeletal meshes: use animation LODs, not geometry LODs; morph targets unsupported.
 - **Nanite on plants: pick the shape preservation per size** (Static Mesh > Nanite Settings,
   `MeshNaniteSettings.shape_preservation`; rehearsal on 5.8.4). With the default, thin foliage vanishes at distance:

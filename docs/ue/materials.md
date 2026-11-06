@@ -82,9 +82,10 @@ Each item: what, nodes (all verified in the 5.8 Python stub / engine content), c
 | 10 | (Optional static switch) `UseTriplanar` | MaterialFunctionCall -> `/Engine/Functions/Engine_MaterialFunctions01/Texturing/WorldAlignedTexture` | 3x samples per texture when on | Level geometry/blockout with bad UVs |
 
 Item 7's packing is done by `gen/blender/pack_orm.py` (`T_<Name>_orm`). Keep
-`bUsedWithNanite/SkeletalMesh/InstancedStaticMeshes` and add any new usage the game needs **before packaging**: `bUsedWithSplineMeshes`, `bUsedWithNiagaraMeshParticles`,
-`bUsedWithGeometryCollections` (Chaos destruction), `bUsedWithMorphTargets` (all exist on UMaterial in 5.8). Missing flag
-in a packaged build = default material.
+`bUsedWithNanite/SkeletalMesh/InstancedStaticMeshes` (the build script sets these three) and add any new usage the game
+needs **before packaging**: `bUsedWithSplineMeshes`, `bUsedWithNiagaraMeshParticles`, `bUsedWithGeometryCollections`
+(Chaos destruction), `bUsedWithMorphTargets` (all exist on UMaterial in 5.8). Missing flag in a packaged build =
+default material.
 
 ## Domains, blend modes, Nanite
 
@@ -124,8 +125,9 @@ in a packaged build = default material.
   +15% cook, forces DBuffer).
 - Under Substrate, translucent blend modes are TranslucentColoredTransmittance / TranslucentGreyTransmittance
   (grey is cheaper). Glass look via Slab: high SSS MFP + IOR 1.514. Extra slabs cost almost linearly: one slab only.
-- The output pin `MP_FRONT_MATERIAL` is the Substrate root; MCP `connect_to_output` with `MP_BaseColor` etc. works for
-  legacy authoring (as materials.ts does today).
+- The output pin `MP_FRONT_MATERIAL` is the Substrate root; connecting the legacy pins works for legacy authoring
+  (MCP `connect_to_output` with `MP_BaseColor` etc., or `MaterialEditingLibrary.connect_material_property` with
+  `MP_BASE_COLOR` etc., as `build_master_material.py` does).
 
 ## Emissive with Lumen (Lumen path; the kit's single note on this)
 
@@ -183,9 +185,10 @@ in a packaged build = default material.
   the job.
 - **Blendable Location decides the resolution (TSR on).** After Tonemapping, Before Bloom, SSR Input and Replacing the
   Tonemapper run at **display resolution (4K for us)**; "Before Translucency" (`BL_SCENE_COLOR_BEFORE_DOF`) and
-  "Before Tonemapping" (`BL_SCENE_COLOR_AFTER_DOF`) always run at the 1080p rendering resolution, in linear HDR. Epic's
-  page calls After Tonemapping the cheapest location: true only without an upscaler. A neighbour-sampling pass
-  (outline, Kuwahara, posterize) costs ~4x the pixels after tonemapping (`performance.md`: post at 4K ~1 ms, measured).
+  "Before Tonemapping" (`BL_SCENE_COLOR_AFTER_DOF`) always run at the internal rendering resolution (1080p-1440p for
+  us), in linear HDR. Epic's page calls After Tonemapping the cheapest location: true only without an upscaler. A
+  neighbour-sampling pass (outline, Kuwahara, posterize) costs up to ~4x the pixels after tonemapping (4K vs 1080p;
+  `performance.md`: post at 4K ~1 ms, measured).
 - **Outlines and anything reading depth go Before Tonemapping**, or they jitter: Epic shows a custom-depth outline
   after the tonemapper "jittering around 1 pixel", stable and anti-aliased once it runs before the temporal upscale.
   The input is then HDR: set the line colour in scene-linear units and check it across the exposure range.
@@ -253,7 +256,8 @@ in a packaged build = default material.
   to verify wiring; `rename_parameter_group`; `layout_expressions`; `delete_unused_expressions`; `recompile`.
 - Gotchas: call `recompile` **once** after a batch of edits (it raises with the compile errors; read them).
   `delete_unused_expressions` doesn't recompile. No tool for usage flags, blend mode or domain: set them with
-  `ObjectTools.set_properties` (`BlendMode`, `MaterialDomain`, `bUsedWith*`), as materials.ts does. Texture sampler
+  `ObjectTools.set_properties` (`BlendMode`, `MaterialDomain`, `bUsedWith*`), or in Python as the kit's build scripts
+  do (`set_editor_property("blend_mode", ...)`, `MaterialEditingLibrary.set_material_usage`). Texture sampler
   type must match compression (Normal/`TC_Normalmap`, Masks/`TC_Masks`, LinearGrayscale/`TC_Grayscale`) or compile fails.
   For `TC_Grayscale` it also follows sRGB: sRGB off takes `SAMPLERTYPE_LINEAR_GRAYSCALE`, sRGB on
   `SAMPLERTYPE_GRAYSCALE` ("Sampler type is Grayscale, should be Linear Grayscale" fails the whole material).
