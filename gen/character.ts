@@ -126,14 +126,14 @@ const BODY_RULES =
   `smudges or painted shadows, no dramatic lighting, no ambient occlusion. ` +
   `Strict T-pose: both arms stretched straight out to the sides, perfectly horizontal at shoulder height, ` +
   `exactly 90 degrees from the torso (NOT angled down, not an A-pose), palms facing down, fingers together. ` +
-  `Legs straight, feet shoulder-width apart, flat on the ground. EMPTY HANDS: no props, no weapons, no bag, ` +
-  `lantern or tool, nothing held in or attached to the hands. `;
+  `Legs straight, feet shoulder-width apart, flat on the ground. EMPTY HANDS: no props, no weapons, no bag ` +
+  `or tool, nothing held in or attached to the hands. `;
 const TPOSE_WRAPPER = (subject: string): string =>
   `Character model sheet, front view only: ${subject}. Stylized game character proportions. ${BODY_RULES}` +
   `Body and head facing the viewer squarely, ` +
   `zero rotation, perfectly left-right symmetrical, orthographic camera at chest height. Whole body visible head ` +
   `to toe with margin, plain flat light-grey background, soft even lighting, no shadow, no text.`;
-// Four views (Kensei's Tripo multiview tip, 2026-11): the same T-pose rules, one sheet, cut by gen/views.ts.
+// Four views (PIPELINE.md "Four views"): the same T-pose rules, one sheet, cut by gen/views.ts.
 const TURNAROUND_WRAPPER = (subject: string): string =>
   `Character turnaround model sheet: ${subject}. Stylized game character proportions. ${BODY_RULES}` +
   `Whole body visible head to toe in every view. ${TURNAROUND_RULES('grid')}`;

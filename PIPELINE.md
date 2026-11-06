@@ -179,7 +179,7 @@ any flagged take before importing it; level-matching a batch: `docs/elevenlabs.m
 | `--timestamps` | Voice: per-character timing in the `.json` sidecar for subtitles. |
 | `--stability 0.45`, `--similarity 0.75` | Voice: `voice_settings` (0-1). Lower stability is more varied; keep one value per character. |
 | `--influence 0.4` | SFX only: how closely the sound follows the prompt (ElevenLabs `prompt_influence`, 0-1). |
-| `--format mp3_44100_128` | ElevenLabs output format (`mp3_*`, `opus_*`, `wav_*`, `pcm_*`); the WAV for Unreal is made by ffmpeg either way. |
+| `--format mp3_44100_128` | ElevenLabs output format (`mp3_*`, `opus_*`, `wav_*`, `pcm_*`; music: `mp3_48000_192` by default, `mp3_*`/`opus_*` only); the WAV for Unreal is made by ffmpeg either way. |
 | `--voice id` | Voice for `voice` lines (`node gen/audio.ts voices` lists ids). |
 | `--vocals` / `--loop` / `--mono` | Music with vocals / looping SFX / one channel (see above). |
 | `--no-unreal` | Files only, no import. |
@@ -216,7 +216,7 @@ Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls nee
 | `tripo` CLI | Image-to-3D, rig, retarget, decimate, convert (`tripo docs --llm`) |
 | `gen/blender/prep.py` | Size, pivot at base, texture budget, single mesh, UE-scaled FBX |
 | `gen/blender/inspect.py` | Stats JSON + preview render |
-| `gen/unreal/mcp.ts` | Call any Unreal MCP tool from scripts; `captureViewport()`. CLI: `toolsets`, `describe <toolset>`, `call <toolset> <tool> [json \| @args.json]` |
+| `gen/unreal/mcp.ts` | Call any Unreal MCP tool from scripts; `captureViewport()`. CLI: `toolsets`, `describe <toolset>`, `call <toolset> <tool> [json \| '@args.json']` |
 | `gen/unreal/py.ts` | Run a Python file (or `-c` code) in the editor via `run_python`; `--arg k=v` -> `ARGS` dict |
 | `gen/unreal/shot.ts` | Viewport screenshot to PNG (`--wait N` for shader compiles) |
 | `gen/character.ts` | Concept -> rigged, PBR-textured, retargeted character (+ BP); see Characters |
@@ -239,10 +239,10 @@ Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls nee
 | `gen/unreal/py/import_skeletal.py` / `check_skeletal.py` / `retarget_setup.py` / `clean_character.py` / `make_character_bp.py` | Skeletal import, root-scale check, IK retarget, safe rebuild, thin BP |
 | `gen/unreal/materials.ts` | `M_PBR_Master` + per-asset material instances (`master [--force]`, `apply <Name> <textureDir> [/Game/Props] [--opengl-normals]`); runs `gen/unreal/py/build_master_material.py` |
 | `gen/vfx/vfx.ts` | VFX building blocks: procedural mask/noise textures (`gen/vfx/textures.ts`), `M_VFX_Master` + per-effect instances (`gen/unreal/py/build_vfx_material.py`, `build_vfx_instance.py`), effect meshes (`gen/blender/vfx_meshes.py`) (`docs/ue/vfx.md` "Kit VFX building blocks") |
-| `scripts/build.ps1` | Full C++ editor build with the editor closed; PASS only with zero warnings (`-AllowWarnings` to relax) |
-| `scripts/package.ps1` | Win64 package to `C:\dev\Builds\<Project>\` + `<ZipName>_<Project>.zip` (`-ZipName` required, `-Config Shipping` optional) |
+| `scripts/build.ps1` | Full C++ editor build with the editor closed; PASS only with zero warnings (`-AllowWarnings` to relax; `-EngineRoot` for an engine outside `C:\Program Files\Epic Games\UE_5.8`) |
+| `scripts/package.ps1` | Win64 package to `C:\dev\Builds\<Project>\` + `<ZipName>_<Project>.zip` (`-ZipName` required, `-Config Shipping` and `-EngineRoot` optional) |
 | `scripts/upload.ps1` | itch.io upload of the zip with butler: dry run unless `-Push` (`-ZipName`, `-Target user/game`, `-Channel windows`) |
-| `scripts/init-repo.ps1` | Project Git + LFS setup and first commit (`SETUP.md` step 6) |
+| `scripts/init-repo.ps1` | Project Git + LFS setup and first commit (`SETUP.md` step 6; `-Message`, `-Trailer` set the commit text) |
 | `unreal/Plugins/MegajamTools` | Project plugin: MCP tools `import_sound`, `import_any`, `run_console_command`, `run_python`, `get_sound_info` |
 
 Shared modules, not run on their own: `gen/paths.ts` (kit and project paths, `.env`, ffmpeg), `gen/proc.ts`

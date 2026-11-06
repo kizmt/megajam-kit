@@ -198,7 +198,7 @@ Verified 2026-10-24 on a test project: 17 files tracked (0.07 MB), `Main.umap` v
 
 Decide the render path **with the style lock**, before gameplay. Switching later costs a look re-tune. Measured
 numbers: `docs/ue/performance.md` "Render paths"; re-measure with `bench.ts` (its built-in comparison runs all
-three) for yours. Rule of thumb: no-Lumen for flat/stylized looks and many moving characters; full Lumen when the
+three paths) for yours. Rule of thumb: no-Lumen for flat/stylized looks and many moving characters; full Lumen when the
 look depends on bounce light (interiors, realism, mood lighting) and the budget allows; **Lumen Lite** when the look
 needs dynamic bounce light but full Lumen doesn't fit the target fps (softer GI, screen-space reflections only).
 

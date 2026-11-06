@@ -403,7 +403,8 @@ generated level mesh"), and give decoration `NoCollision`.
   `-game`.
 - **Assert the hit is the intended actor.** After an editor start, meshes still compiling have no collision yet: a
   roof trace went through a house and put a prop on the landscape under it; a re-run was right. Wait for
-  compilation (`unreal.AssetCompilingManager`, or a trace onto a known mesh) before tracing.
+  compilation before tracing: Python has no compile-wait call (`FAssetCompilingManager` is C++ only, not in the
+  5.8.4 stub), so wait a call after loading, or trace onto a known mesh first and retry until it hits.
 - **Ground probes: a 15 cm sphere trace, multi, filtered.** A line trace falls through small gaps (paving joints
   10-15 cm wide read as holes and steps down to the landscape); `sphere_trace_multi_for_objects` with a 15 cm radius
   bridges them, as the character's capsule does. Keep a line trace for single solid meshes.

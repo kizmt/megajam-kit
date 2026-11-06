@@ -96,7 +96,7 @@ async function gemini(): Promise<GeneratedImage> {
     body: JSON.stringify({
       model,
       input,
-      // Interactions API only returns JPEG for gemini-3-pro-image (PNG = HTTP 400; PIPELINE.md hard-won facts).
+      // Interactions API only returns JPEG for gemini-3-pro-image (PNG = HTTP 400; PIPELINE.md "Tool references").
       response_format: { type: 'image', mime_type: 'image/jpeg', aspect_ratio: opt.aspect, image_size: opt.size.toUpperCase() },
     }),
   });

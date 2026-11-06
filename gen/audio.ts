@@ -38,7 +38,7 @@ const { values: o, positionals } = parseArgs({
     vocals: { type: 'boolean', default: false },
     voice: { type: 'string', default: 'JBFqnCBsd6RMkjVDRZzb' },
     model: { type: 'string' },
-    format: { type: 'string', default: 'mp3_44100_128' },
+    format: { type: 'string' },
     n: { type: 'string', default: '1' },
     plan: { type: 'string' },
     seed: { type: 'string' },
@@ -64,7 +64,7 @@ const USAGE = `usage: node gen/audio.ts sfx|music|voice "<prompt or line>" [--na
        --seed N: voice, or music with --plan (the API refuses a seed with a music prompt; SFX has no seed)
        --timestamps: voice only, saves per-character timing in the .json sidecar (subtitles)
        --stability 0.45 / --similarity 0.75: voice only, voice_settings (0-1; lower stability is more varied)
-       --model id, --format mp3_44100_128|opus_*|wav_*|pcm_*, --influence 0.4 (sfx), --out dir, --no-unreal
+       --model id, --format mp3_44100_128|opus_*|wav_*|pcm_* (music: mp3_48000_192 default, mp3/opus only), --influence 0.4 (sfx), --out dir, --no-unreal
        node gen/audio.ts plan "<music prompt>" [--seconds S] [--name N]   (free; edit the JSON, then: music --plan <file>)
        node gen/audio.ts voices
        node gen/audio.ts design "<voice description>" --name N [--preview "<100-1000 chars in character>"] [--seed N]
@@ -224,6 +224,10 @@ if (kindArg === 'save') {
 
 if (!isKind(kindArg)) fail(USAGE); // narrowed above; keeps the type checker honest
 const kind: Kind = kindArg;
+// Music defaults to the API's own default for music_v2/v2_5 (48 kHz 192 kbps) and has no wav_*; pcm_* music is
+// untested here (it may be stereo, which toWav reads as mono), so only mp3/opus are allowed for music.
+const format = o.format ?? (kind === 'music' ? 'mp3_48000_192' : 'mp3_44100_128');
+if (kind === 'music' && !/^(mp3|opus)_/.test(format)) fail(`--format ${format}: music takes mp3_* or opus_* (ElevenLabs offers no wav_* for music)`);
 
 const planName = o.plan ? basename(o.plan).replace(/^MUS_/, '').replace(/\.plan\.json$|\.json$/, '') : undefined;
 const name = o.name ? assetName(o.name) : pascal(planName ?? text, 4);
@@ -242,18 +246,18 @@ function request(): ApiRequest {
   if (kind === 'sfx') {
     const body: Record<string, unknown> = { text, loop: o.loop, prompt_influence: influence, model_id: o.model ?? 'eleven_text_to_sound_v3' };
     if (secs) body['duration_seconds'] = Math.min(30, Math.max(0.5, secs));
-    return { url: `${API}/v1/sound-generation?output_format=${o.format}`, body };
+    return { url: `${API}/v1/sound-generation?output_format=${format}`, body };
   }
   if (kind === 'music') {
     if (o.plan) {
       // A plan replaces the prompt; force_instrumental and music_length_ms only work with a prompt (put "vocals" in negative_styles).
       const body: Record<string, unknown> = { composition_plan: plan, model_id: o.model ?? 'music_v2_5' };
       if (seed !== undefined) body['seed'] = seed;
-      return { url: `${API}/v1/music?output_format=${o.format}`, body };
+      return { url: `${API}/v1/music?output_format=${format}`, body };
     }
     const body: Record<string, unknown> = { prompt: text, model_id: o.model ?? 'music_v2_5', force_instrumental: !o.vocals };
     if (secs) body['music_length_ms'] = Math.round(Math.min(600, Math.max(3, secs)) * 1000);
-    return { url: `${API}/v1/music?output_format=${o.format}`, body };
+    return { url: `${API}/v1/music?output_format=${format}`, body };
   }
   const body: Record<string, unknown> = { text, model_id: o.model ?? 'eleven_v4' };
   if (seed !== undefined) body['seed'] = seed;
@@ -262,7 +266,7 @@ function request(): ApiRequest {
   if (similarity !== undefined) settings['similarity_boost'] = similarity;
   if (Object.keys(settings).length) body['voice_settings'] = settings;
   const path = o.timestamps ? `${o.voice}/with-timestamps` : o.voice;
-  return { url: `${API}/v1/text-to-speech/${path}?output_format=${o.format}`, body };
+  return { url: `${API}/v1/text-to-speech/${path}?output_format=${format}`, body };
 }
 
 interface Clip { buf: Buffer; body: Record<string, unknown>; alignment?: unknown }
@@ -325,7 +329,7 @@ function toWav(file: string): string | null {
   // A wav_* download is converted too (48 kHz, --mono): ffmpeg can't write over its input, so go through a temp file.
   const target = wav === file ? file.replace(/\.wav$/, '.tmp.wav') : wav;
   // ElevenLabs pcm_<rate> is headerless 16-bit mono: ffmpeg must be told the input format.
-  const pcmRate = /^pcm_(\d+)/.exec(o.format)?.[1];
+  const pcmRate = /^pcm_(\d+)/.exec(format)?.[1];
   const inFmt = pcmRate ? ['-f', 's16le', '-ar', pcmRate, '-ac', '1'] : [];
   const r = spawnSync(FFMPEG, ['-y', '-loglevel', 'error', ...inFmt, '-i', file, '-ar', '48000', '-sample_fmt', 's16', ...(o.mono ? ['-ac', '1'] : []), target]);
   if (r.status !== 0) return null;
@@ -349,7 +353,7 @@ const outDir = o.out ?? generatedDir('audio');
 mkdirSync(outDir, { recursive: true });
 
 const count = Math.max(1, Math.min(6, parseInt(o.n, 10) || 1));
-const ext = o.format.startsWith('mp3') ? 'mp3' : o.format.startsWith('opus') ? 'opus' : o.format.startsWith('wav') ? 'wav' : 'pcm';
+const ext = format.startsWith('mp3') ? 'mp3' : format.startsWith('opus') ? 'opus' : format.startsWith('wav') ? 'wav' : 'pcm';
 await printCredits();
 console.log(`Generating ${count} ${kind} clip(s): ${name}`);
 const t = Date.now();

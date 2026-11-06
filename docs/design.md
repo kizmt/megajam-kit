@@ -77,8 +77,8 @@ space) before the next idea. Uninterrupted difficulty reads as a grind; uninterr
 - **Checkpoints at the start of each beat**; respawn and retry in ≤ 5 s, without replaying solved parts.
 - **The critical path is moderate; the challenge is optional.** Extra difficulty goes in side goals, faster times,
   higher scores or collectibles, so a first-time judge still reaches the end.
-- **Tune one variable at a time** and log what changed in the round's devlog entry; difficulty problems are usually one
-  number (a timing window, an enemy count, a gap width).
+- **Tune one variable at a time** and log what changed in the round's devlog entry; difficulty problems are usually
+  one number (a timing window, an enemy count, a gap width).
 
 ## Progression that fits a jam
 

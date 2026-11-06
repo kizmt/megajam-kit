@@ -145,7 +145,7 @@ director). **The target PC** is the machine the game is built and measured on (R
   mid-game**: SETUP step 7b and `docs/ue/performance.md` "Render paths". Compare candidates on the same frame at
   true 1:1, including something moving. Never SMAA/FXAA below 100% screen percentage (lower detail, not crisper).
 - C++ must compile with **zero UHT warnings** (UHT treats warnings as errors). `.generated.h` is the last
-  include; a delegates-only header needs `UDELEGATE`. See `docs/ue/production.md`.
+  include; a delegates-only header needs `UDELEGATE`. See `docs/ue/cpp.md`.
 - **Name assets per `docs/ue/naming.md`** (Epic prefixes + kit extensions) and keep the folder layout there.
 - **All lights Movable, no light baking** (`docs/ue/worldbuilding.md`); Lumen or not per the render path. PCG work
   follows Epic's agent workflow there (load the PCG skill first, adapt example graphs, plan before executing).

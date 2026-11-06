@@ -3,7 +3,7 @@
 //
 //   node gen/asset.ts "a brass lantern" --name Lantern --max 0.4
 //   node gen/asset.ts "a brass lantern" --name Lantern --concepts 4      (stop after 4 concept images)
-//   node gen/asset.ts "a carved shrine" --name Shrine --turnaround --concepts 2   (four-view sheets for multiview)
+//   node gen/asset.ts "a stone well with a wooden roof" --name Well --turnaround --concepts 2   (four-view sheets for multiview)
 //   node gen/asset.ts --image C:/dev/<Project>/Generated/assets/lantern/concept-<stamp>-2.jpg --name Lantern --max 0.4
 //
 // Steps: concept image -> Tripo image-to-3D (FBX) -> Blender prep (size, pivot, textures) ->
@@ -267,9 +267,9 @@ try {
       await mcpCall(E, 'SetCameraTransform', { transform: view });
       const shot = await captureViewport(join(dir, 'shot.png'), { captureTransform: view });
       // Save only this prop's folder: an empty asset list would save every dirty package, the user's level and work
-      // included. The placed actor lives in the open level, which stays unsaved: say so.
+      // included. only_if_is_dirty=False: a scripted edit can leave a package unmarked (CLAUDE.md, Verification). The placed actor lives in the open level, which stays unsaved: say so.
       const saved = await runPythonCode(
-        'import unreal\nprint(unreal.EditorAssetLibrary.save_directory(ARGS["folder"], only_if_is_dirty=True, recursive=True))',
+        'import unreal\nprint(unreal.EditorAssetLibrary.save_directory(ARGS["folder"], only_if_is_dirty=False, recursive=True))',
         { folder });
       if (!saved.ok || saved.output.trim() !== 'True') throw new Error(`saving ${folder} failed: ${saved.output.slice(-400)}`);
       console.log('    the level now has an unsaved change (the placed actor): save it if you keep it');

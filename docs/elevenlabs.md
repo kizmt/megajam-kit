@@ -29,8 +29,8 @@ ElevenLabs changes models often: if something here fails, check the linked page 
 - **Output format:** the default `mp3_44100_128` is converted to 48 kHz WAV by ffmpeg (hiss-heavy beds: 192 kbps,
   "Checking and matching levels"). WAV and PCM at 44.1 kHz need the Pro plan, MP3 192 kbps needs Creator. On Pro,
   `--format wav_48000` skips the lossy MP3 step (ffmpeg still applies `--mono`; SFX: non-looping only; untested).
-  **Music:** the API's own default for `music_v2`/`music_v2_5` is `mp3_48000_192`, but `audio.ts` always sends
-  `--format` (128 kbps unless set), so pass `--format mp3_48000_192` for music. Music has no `wav_*` formats.
+  **Music:** `audio.ts` defaults music to `mp3_48000_192`, the API's own default for `music_v2`/`music_v2_5`
+  (Creator plan and up). Music has no `wav_*` formats, so `audio.ts` takes only `mp3_*`/`opus_*` for music.
 
 ## Sound effects (SFX v3)
 

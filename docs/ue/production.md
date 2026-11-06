@@ -104,9 +104,9 @@
 - Use the editor subsystems (`EditorActorSubsystem`, `LevelEditorSubsystem`, `EditorAssetSubsystem`...) for
   automation. The Editor Scripting Utilities plugin is Beta and off by default, and its `EditorLevelLibrary` /
   mesh libraries are deprecated in favour of the subsystems (`EditorAssetLibrary` is still fine; `editor-scripting.md`
-  A). `EditorAssetLibrary` itself lives in that plugin (`Plugins/Editor/EditorScriptingUtilities`, 5.8 API
-  reference), and MegajamTools' Python calls it, so keep the plugin enabled although `MegajamTools.uplugin` lists only
-  PythonScriptPlugin, ToolsetRegistry and EditorToolset.
+  A). `EditorAssetLibrary` itself lives in that plugin (`Plugins/Editor/EditorScriptingUtilities`), which
+  ToolsetRegistry depends on (5.8.4 `.uplugin` files), so enabling the MCP plugins enables it; `MegajamTools.uplugin`
+  lists it too, since its Python calls `EditorAssetLibrary`.
 - Python editor scripting and Unreal MCP are Beta/Experimental (`features.md`); every pipeline step is therefore
   verified by reading back state or a screenshot.
 
