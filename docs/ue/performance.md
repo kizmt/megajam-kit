@@ -58,8 +58,8 @@ Facts:
   template level's **VolumetricCloud (~2.5 ms)**. Our models/materials cost under 1 ms.
 - Internal resolution is the expensive crispness lever: 1080p -> 1440p internal costs ~4 ms at 4K output.
 - Desktop screen percentage defaults to "based on display resolution": 4K display -> 1080p internal (50%), 1440p ->
-  ~900p (`r.ScreenPercentage` 0 = `r.ScreenPercentage.Default.Desktop.Mode`, mapped in `BaseEngine.ini`
-  `[Rendering.AutoScreenPercentage]`). **The render-path pick names the internal resolution at 4K**; left unset it is
+  ~870p, interpolated by pixel count (`r.ScreenPercentage` 0 = `r.ScreenPercentage.Default.Desktop.Mode`, mapped
+  in `BaseEngine.ini` `[Rendering.AutoScreenPercentage]`, 5.8.4). **The render-path pick names the internal resolution at 4K**; left unset it is
   50%, which thin foliage shows as grain under TSR. Compare candidates on foliage in motion, not on a still frame.
 - High-DPI: without `bAllowHighDPIInGameMode=True` a 150%-scaled 4K monitor gives the game 2560x1440 and Windows
   stretches it (soft). With it the window is true 3840x2160 (verified with `-ExecCmds="HighResShot 1"` -> 3840x2160 PNG).
