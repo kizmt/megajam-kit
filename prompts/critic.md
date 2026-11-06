@@ -39,9 +39,9 @@ opinion of the result.
 > 1. Score A and B from 1 to 10 against these criteria: [style-lock points or the rubric].
 > 2. List the concrete flaws of the weaker image, most important first, each with where it is in the frame and what
 >    would fix it ("left wall is one flat colour: add a light pool or a trim break", not "make it better").
-> 3. Say what the stronger image does that the weaker one doesn't.
+> 3. Say in one line what the stronger image does that the weaker one doesn't.
 >
-> Be specific and blunt. Ignore UI text and the build stamp. About 120 words per camera, 600 words at most.
+> Be specific and blunt. Ignore UI text, debug text and the build stamp. About 120 words per camera, 600 words at most.
 
 ## After the critic answers
 
