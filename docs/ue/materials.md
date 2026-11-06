@@ -196,7 +196,7 @@ default material.
   **Custom Depth-Stencil Pass = Enabled with Stencil** (plain "Enabled" has no stencil; "Enabled on Demand" can stall:
   avoid). Mesh: **Render CustomDepth Pass** on + **CustomDepth Stencil Value** 1-255 (C++ `SetRenderCustomDepth(true)`,
   `SetCustomDepthStencilValue(N)`). Read `SceneTexture:CustomStencil` in the PP material, one colour per value. The
-  ini cvar is `r.CustomDepth` (3 = with stencil, unverified in 5.8.4: check `RendererSettings.h`).
+  ini cvar is `r.CustomDepth` (3 = enabled with stencil writes; `SceneUtils.cpp`, 5.8.4).
 - **User Scene Textures (5.8) for cheap multi-pass PP.** A PP material writes a named target (Details > **User Scene
   Texture**, e.g. `Blur1`); a later one reads it with a **User Scene Texture** node. **User Texture Divisor** 2,2 with
   **Resolution Relative To Input** = Input halves the pass; order with **Blendable Priority**; writers "aren't
@@ -329,7 +329,7 @@ default material.
 - `<Project>/Config/DefaultEngine.ini`: `r.Substrate=True`, `ProjectGBufferFormat=0`.
 - Python API pages (5.8): `BlendableLocation` enum (which locations run at display vs rendering resolution),
   `ToonProfileStruct`, `MaterialExpressionSubstrateToonBSDF`.
-- Unverified: HueShift instruction count; FunctionCall pin refresh via set_properties; `r.CustomDepth` value 3;
+- Unverified: HueShift instruction count; FunctionCall pin refresh via set_properties;
   whether the Toon shadow fix reached 5.8.4; which property holds a Toon Profile override on an MI.
 
 ## Sources (5.8)
