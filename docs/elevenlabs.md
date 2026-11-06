@@ -29,6 +29,8 @@ ElevenLabs changes models often: if something here fails, check the linked page 
 - **Output format:** the default `mp3_44100_128` is converted to 48 kHz WAV by ffmpeg (hiss-heavy beds: 192 kbps,
   "Checking and matching levels"). WAV and PCM at 44.1 kHz need the Pro plan, MP3 192 kbps needs Creator. On Pro,
   `--format wav_48000` skips the lossy MP3 step (ffmpeg still applies `--mono`; SFX: non-looping only; untested).
+  **Music:** the API's own default for `music_v2`/`music_v2_5` is `mp3_48000_192`, but `audio.ts` always sends
+  `--format` (128 kbps unless set), so pass `--format mp3_48000_192` for music. Music has no `wav_*` formats.
 
 ## Sound effects (SFX v3)
 
@@ -151,7 +153,7 @@ label, ignored in every preview) taught us the first rule below.
 - **A quality level** ("Studio quality") belongs in the structure, but such phrases can reduce accuracy on unusual
   prompts: drop it if the accent won't come through.
 - **Preview text in the character's voice**, a full sentence or a short paragraph (100-1,000 characters): longer
-  previews are more stable and expressive. Each Generate gives 3 previews and costs only the preview text's characters.
+  previews are more stable and expressive.
 - **Then test the saved voice on v4** with real lines: ElevenLabs says Voice Design voices "may not be as performative"
   on v4. If it falls flat, try designing with the `eleven_ttv_v3` model, Remix (changes a copy of a voice's accent,
   age or pacing), or a Library voice with the right age and timbre plus an accent tag.
@@ -177,7 +179,7 @@ From the rehearsal (2026-11-01). A take can come back broken and still count as 
   one fixed it is not known. For such beds pass `--format mp3_44100_192` and look at a spectrogram before import
   (`ffmpeg -i bed.wav -lavfi showspectrumpic=s=1024x512 bed.png`).
 - **Mix beds well under the music:** about -30 LUFS against music at -21. At 2 LU apart the bed read as a fault, not
-  as atmosphere. Beds of one loop that overlap in the level: `docs/ue/audio-ui.md` "Attenuation".
+  as atmosphere. Beds of one loop that overlap in the level: `docs/ue/audio-ui.md` "Attenuation and spatialization".
 - **Three loudness numbers, three jobs; don't mix them up:** -14 LUFS is the uploaded trailer (web platforms,
   `docs/ue/cinematics-video.md`); -30 LUFS beds under -21 LUFS music is the balance measured in the rehearsal; -24
   LUFS integrated is the target for the whole game's output mix, measured in-engine (`docs/design.md` "Audio and
@@ -195,7 +197,7 @@ From the rehearsal (2026-11-01). A take can come back broken and still count as 
 - Sound effects: https://elevenlabs.io/docs/overview/capabilities/sound-effects.md ,
   https://elevenlabs.io/docs/api-reference/text-to-sound-effects/convert.md
 - Music: https://elevenlabs.io/docs/overview/capabilities/music/best-practices.md ,
-  https://elevenlabs.io/docs/api-reference/music/compose.md ,
+  https://elevenlabs.io/docs/api-reference/music/compose.md (music output formats re-read 2026-11-07),
   https://elevenlabs.io/docs/api-reference/music/create-composition-plan.md ,
   https://elevenlabs.io/docs/eleven-api/guides/how-to/music/composition-plans.md ,
   https://elevenlabs.io/docs/eleven-api/guides/how-to/music/inpainting.md , https://elevenlabs.io/music-terms
