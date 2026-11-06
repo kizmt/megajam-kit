@@ -20,7 +20,9 @@ if (-not $uproject) { Write-Host "FAIL: no .uproject found in $projectDir"; exit
 if (Test-Path (Join-Path $projectDir '.git')) { Write-Host "FAIL: $projectDir is already a git repository."; exit 1 }
 
 foreach ($cmd in @('git', 'git lfs')) {
-    $null = & cmd.exe /c "$cmd version" 2>&1
+    # Redirect inside cmd: PowerShell's own 2>&1 turns the stderr of a missing command into a terminating error
+    # under $ErrorActionPreference = 'Stop' (5.1), before the friendly FAIL line below.
+    $null = & cmd.exe /c "$cmd version >nul 2>&1"
     if ($LASTEXITCODE -ne 0) { Write-Host "FAIL: '$cmd' is not installed or not on PATH."; exit 1 }
 }
 
