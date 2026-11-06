@@ -29,8 +29,8 @@ gameplay code, levels or game assets.
 | Sound effects, music, voice | ElevenLabs (`eleven_text_to_sound_v3`, `music_v2_5`, `eleven_v4`) | `gen/audio.ts` |
 | Text-to-motion animation | Uthana (`text-to-motion-3.0`) | manual for now (see `PIPELINE.md`) |
 
-Non-AI tools: Blender (headless, for model clean-up and texture packing), ffmpeg (audio conversion, capture and video editing), Node 24
-(the kit's TypeScript runs directly), Git + Git LFS.
+Non-AI tools: Blender (headless, for model clean-up and texture packing), ffmpeg (audio conversion, capture and
+video editing), Node 24 (the kit's TypeScript runs directly), Git + Git LFS.
 
 ## What's in the kit
 
@@ -51,6 +51,7 @@ Non-AI tools: Blender (headless, for model clean-up and texture packing), ffmpeg
 | `gen/image.ts` | Concept image generation |
 | `gen/asset.ts` | One command from a prompt to a prop placed in the level: concept → 3D model → Blender prep → import (Nanite, collision, material) |
 | `gen/character.ts` | One command from a concept to a playable character: 3D model → re-texture → rig → PBR maps → import → animation retarget → Blueprint |
+| `gen/views.ts` | Cuts a four-view turnaround sheet into front/left/back/right images for Tripo's multiview-to-3D |
 | `gen/audio.ts` | Sound effects, music and voice, converted and imported into the editor |
 | `gen/blender/` | Headless Blender scripts: size/pivot/texture prep, rig prep, PBR map extraction, ORM packing, previews |
 | `gen/vfx/` | VFX building blocks: procedural mask/noise textures, the master VFX material and instances, effect meshes |

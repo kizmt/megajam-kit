@@ -43,8 +43,8 @@ Unreal: `/Game/Props/<Name>/` (SM_, MI_, T_*).
 Measured 2026-10-24: ~3 min per new prop (Tripo ~2.5-3.5 min), 45 Tripo credits ($0.45).
 With `--model`: ~14 s.
 
-Image prices (as of 2026-10; check before quoting): `gemini-3-pro-image` ~$0.134 per 1K/2K image, ~$0.24 per 4K
-(Google list price as quoted by third-party gateways; confirm on Google's pricing page). So a new prop is ~$0.58
+Image prices (check before quoting): `gemini-3-pro-image` $0.134 per 1K/2K image, $0.24 per 4K (Gemini API pricing
+page, standard paid tier, checked 2026-11-07). So a new prop is ~$0.58
 (one concept + 45 Tripo credits). `gpt-image-2` is billed per token (OpenAI pricing page, as of 2026-10; check
 before quoting): $15 per 1M image output tokens, $4 per 1M image input (reference images), $2.50 per 1M text input.
 The per-image cost depends on size and quality: estimate it with the calculator in OpenAI's image generation guide.
@@ -141,8 +141,9 @@ Needs the Third Person content pack in the project (Manny + `ABP_Unarmed`). Reru
 (`clean_character.py`; see "Hard-won facts").
 
 **Foot IK (automatic, step 6b):** the retargeted `ABP_Unarmed_<Name>` keeps Epic's `CR_Mannequin_FootIK` Control Rig
-node, which twists non-Manny feet. `gen/unreal/abp.ts strip-footik <ABP>` deletes it and its NOT / Is Falling inputs,
-wires Slot -> Output Pose, compiles and force-saves (idempotent; character.ts runs it).
+node, which twists non-Manny feet (compile warning "Hierarchy discrepancy"). `gen/unreal/abp.ts strip-footik <ABP>`
+deletes it and its NOT / Is Falling inputs, wires Slot -> Output Pose, compiles and force-saves (idempotent;
+character.ts runs it; BlueprintTools edits AnimGraphs via MCP).
 
 Blend space speeds: `docs/ue/characters.md` "Anim Blueprint driven from C++" (Blend Space).
 
@@ -215,7 +216,7 @@ Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls nee
 | `tripo` CLI | Image-to-3D, rig, retarget, decimate, convert (`tripo docs --llm`) |
 | `gen/blender/prep.py` | Size, pivot at base, texture budget, single mesh, UE-scaled FBX |
 | `gen/blender/inspect.py` | Stats JSON + preview render |
-| `gen/unreal/mcp.ts` | Call any Unreal MCP tool from scripts; `captureViewport()` |
+| `gen/unreal/mcp.ts` | Call any Unreal MCP tool from scripts; `captureViewport()`. CLI: `toolsets`, `describe <toolset>`, `call <toolset> <tool> [json \| @args.json]` |
 | `gen/unreal/py.ts` | Run a Python file (or `-c` code) in the editor via `run_python`; `--arg k=v` -> `ARGS` dict |
 | `gen/unreal/shot.ts` | Viewport screenshot to PNG (`--wait N` for shader compiles) |
 | `gen/character.ts` | Concept -> rigged, PBR-textured, retargeted character (+ BP); see Characters |
@@ -226,7 +227,7 @@ Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls nee
 | `gen/audio.ts` | SFX, music and voice via ElevenLabs, converted and imported; see Audio |
 | `gen/unreal/abp.ts` | `strip-footik <ABP>`: remove the foot-IK Control Rig node from a retargeted `ABP_Unarmed` |
 | `gen/unreal/anim_inventory.ts` | Offline inventory of a project's animation content (no editor), to find a library's source mesh |
-| `gen/unreal/retarget_library.ts` | Retarget a whole animation library folder onto a `character.ts` character (`docs/ue/animation-library.md`) |
+| `gen/unreal/retarget_library.ts` | Retarget a whole animation library folder onto a `character.ts` character (`docs/ue/animation-library.md`); runs `gen/unreal/py/retarget_library.py` |
 | `gen/perf/bench.ts` / `csv_report.ts` | Benchmark render variants on the packaged build / summarise an Unreal CSV profile (`docs/ue/performance.md`) |
 | `gen/test/keytest.ps1` | Real-input key test of a packaged build (ask the director first; aborts if the game loses focus) |
 | `gen/test/autoclip.ps1` | Film the game playing itself through an autoplay hook (no key injection) |
@@ -236,9 +237,17 @@ Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls nee
 | `gen/unreal/py/traverse_survey.py` | Editor survey of the route for invisible walls, lids, ledges and steep spots (`docs/ue/debugging.md` F) |
 | `gen/blender/extract_pbr.py` | Colour/normal/roughness/metallic PNGs from a Tripo textured model (FBX or GLB) |
 | `gen/unreal/py/import_skeletal.py` / `check_skeletal.py` / `retarget_setup.py` / `clean_character.py` / `make_character_bp.py` | Skeletal import, root-scale check, IK retarget, safe rebuild, thin BP |
-| `gen/unreal/materials.ts` | `M_PBR_Master` + per-asset material instances |
-| `gen/vfx/vfx.ts` | VFX building blocks: procedural mask/noise textures, `M_VFX_Master` + per-effect instances, effect meshes (`docs/ue/vfx.md` "Kit VFX building blocks") |
+| `gen/unreal/materials.ts` | `M_PBR_Master` + per-asset material instances (`master [--force]`, `apply <Name> <textureDir> [/Game/Props] [--opengl-normals]`); runs `gen/unreal/py/build_master_material.py` |
+| `gen/vfx/vfx.ts` | VFX building blocks: procedural mask/noise textures (`gen/vfx/textures.ts`), `M_VFX_Master` + per-effect instances (`gen/unreal/py/build_vfx_material.py`, `build_vfx_instance.py`), effect meshes (`gen/blender/vfx_meshes.py`) (`docs/ue/vfx.md` "Kit VFX building blocks") |
+| `scripts/build.ps1` | Full C++ editor build with the editor closed; PASS only with zero warnings (`-AllowWarnings` to relax) |
+| `scripts/package.ps1` | Win64 package to `C:\dev\Builds\<Project>\` + `<ZipName>_<Project>.zip` (`-ZipName` required, `-Config Shipping` optional) |
+| `scripts/upload.ps1` | itch.io upload of the zip with butler: dry run unless `-Push` (`-ZipName`, `-Target user/game`, `-Channel windows`) |
+| `scripts/init-repo.ps1` | Project Git + LFS setup and first commit (`SETUP.md` step 6) |
 | `unreal/Plugins/MegajamTools` | Project plugin: MCP tools `import_sound`, `import_any`, `run_console_command`, `run_python`, `get_sound_info` |
+
+Shared modules, not run on their own: `gen/paths.ts` (kit and project paths, `.env`, ffmpeg), `gen/proc.ts`
+(processes, Tripo output and balance, ORM packing), `gen/unreal/python.ts` (editor Python over MCP),
+`gen/test/game_common.ps1` (project, editor exe and game window for the `gen/test/` scripts).
 
 ## Tool references (check here when a generation step fails)
 
@@ -273,9 +282,6 @@ Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls nee
 - Tripo's rigged FBX is 1 m tall, faces +X in Unreal, bones use Manny names (61 bones, no `ik_foot_*`). Rig/rig-check
   reject `convert_model` tasks (API 2006): pass the `image_to_model` task id. The `tripo` CLI only reads
   `TRIPO_API_KEY` from the environment (asset.ts loads `.env`; manual runs must too).
-- Retargeted `ABP_Unarmed` keeps the `CR_Mannequin_FootIK` Control Rig node: compile warnings "Hierarchy
-  discrepancy" and twisted feet on non-Manny skeletons. `gen/unreal/abp.ts` removes it (BlueprintTools edits
-  AnimGraphs via MCP).
 - Placed SkeletalMeshActors don't evaluate animation in the editor viewport (even with `set_update_animation_in_editor`).
   Verify animation in PIE: start with `LevelEditorSubsystem.editor_request_begin_play()`, screenshot with
   `HighResShot WxH filename=...` on the PIE world, read bone positions with `get_socket_location`.
