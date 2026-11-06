@@ -156,7 +156,8 @@ State enum on the controller: `Idle/Patrol, Chase, Attack, Flee, Dead`. Drive it
   `SetStartLogicAutomatically(false)` and `StartLogic()` in `OnPossess`; `StopLogic("")` on death.
 - Task = `USTRUCT` deriving `FStateTreeTaskCommonBase` + an instance-data `USTRUCT`
   (`using FInstanceDataType = ...; GetInstanceDataType()`), override `EnterState` / `ExitState` / `Tick`.
-  Conditions derive `FStateTreeConditionCommonBase::TestCondition`. Read data via `Context.GetInstanceData(*this)`.
+  Conditions derive `FStateTreeConditionCommonBase` and override `TestCondition`. Read data via
+  `Context.GetInstanceData(*this)`.
 - **Event-driven tasks**: set `bShouldCallTick = false` in the task ctor, return `EStateTreeRunStatus::Running`, and
   finish later from a delegate with `Context.MakeWeakExecutionContext()` -> `WeakContext.FinishTask(
   EStateTreeFinishTaskType::Succeeded)` (exactly what `CombatStateTreeUtility.cpp` does). Thread safety is yours

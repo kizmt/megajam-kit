@@ -134,7 +134,8 @@ project (no pre-jam gameplay code in the kit).
   `DeadZone` (Radial); `Gamepad_Right2D` to `IA_Look` with `DeadZone`, `Scalar` and **`ScaleByDeltaTime`** (mouse
   delta is a distance per frame, a stick is a rate, so without it look speed changes with fps);
   `Gamepad_FaceButton_Bottom` to jump, `Gamepad_FaceButton_Left` to interact, `Gamepad_Special_Right` (Start) to
-  `IA_Pause`. `ResponseCurveExponential` gives finer aim near the centre. Menus: `audio-ui.md` "Gamepad menus".
+  `IA_Pause`. `ResponseCurveExponential` gives finer aim near the centre. Menus: `audio-ui.md` "Gamepad menus and
+  device prompts".
 - **Add the mapping context in the PlayerController**, local players only. This is the template pattern:
 
 ```cpp
@@ -182,8 +183,9 @@ if (auto* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent))
   Player Mappable Key Settings > Name on each remappable IA; add contexts with an `FModifyContextOptions` whose
   `bNotifyUserSettings = true`; remap with `GetUserSettings()->MapPlayerKey(FMapPlayerKeyArgs{MappingName, Slot =
   EPlayerMappableKeySlot::First, NewKey}, FailureReason)`, then `ApplySettings()` and `SaveSettings()`
-  (`ResetKeyProfileToDefault` for Reset; `ProfileIdString`, as `ProfileId` is deprecated). It saves to
-  `Saved/SaveGames/EnhancedInputUserSettings.sav`: delete it when testing defaults.
+  (`ResetKeyProfileIdToDefault`, which takes the profile id string, for Reset; `ProfileIdString` in the args, as
+  `ProfileId` is deprecated). It saves to `Saved/SaveGames/EnhancedInputUserSettings.sav`: delete it when testing
+  defaults.
 - **A held action that sticks after alt-tab:** `UEnhancedInputDeveloperSettings::bSendTriggeredEventsWhenInputIsFlushed`
   controls whether in-progress actions get their end events when the viewport loses focus; leave the default, but
   check it first.

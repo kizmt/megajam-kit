@@ -37,7 +37,7 @@ if (MusicComp) { MusicComp->bIsUISound = false; MusicComp->FadeIn(1.5f, 1.f); }
   `SetVolumeMultiplier`, `SetPitchMultiplier`. Music loops because `bLooping` is set on the SoundWave by our tool.
 - **Stems that must stay in sync go in one MetaSound, not in several audio components.** `MSS_Music` (OneShot
   interface removed): `On Play` starts every `Wave Player (Stereo)` with `Loop` on; each stem's gain is a `Map Range`
-  of a float input `Intensity`, smoothed by `Interp To` (`Interp Time` ~1-2 s, so a jump fades instead of clicking),
+  of a float input `Intensity`, smoothed by `InterpTo` (`Interp Time` ~1-2 s, so a jump fades instead of clicking),
   into a `Stereo Mixer` (or `Crossfade` for a 2-8-way blend). Stems from one ElevenLabs track share one length, so
   they loop together. From C++: `MusicComp->SetFloatParameter(TEXT("Intensity"), X)` on change only.
 
@@ -49,8 +49,9 @@ if (MusicComp) { MusicComp->bIsUISound = false; MusicComp->FadeIn(1.5f, 1.f); }
 - **C++:** `UQuartzSubsystem::Get(World)->CreateNewClock(this, TEXT("Music"), Settings,
   bOverrideSettingsIfClockExists, bUseAudioEngineClockManager)` returns a `UQuartzClockHandle*`
   (`Quartz/QuartzSubsystem.h`); on the handle: `SetBeatsPerMinute`, `StartClock`, `StopClock`,
-  `SubscribeToQuantizationEvent`, `GetBeatProgressPercent` (drive a pulse material). Each takes the world context
-  and the handle itself as a `ClockHandle&` out-param (pass the member). Then
+  `SubscribeToQuantizationEvent`, `GetBeatProgressPercent` (drive a pulse material). All but the last take the world
+  context and the handle itself as a `ClockHandle&` out-param (pass the member); `SetBeatsPerMinute` also takes a
+  boundary and a delegate; `GetBeatProgressPercent(Boundary, PhaseOffset, MsOffset)` takes neither. Then
   `MusicComp->PlayQuantized(this, Clock, Boundary, FOnQuartzCommandEventBP(), StartTime, FadeInDuration,
   FadeVolumeLevel, FadeCurve)` (*verified* in 5.8.4's `AudioComponent.h`; pass all eight). Boundary
   (`Sound/QuartzQuantizationUtilities.h`): `FQuartzQuantizationBoundary(EQuartzCommandQuantization::Bar, 1.f,
@@ -374,8 +375,8 @@ them ("Settings menu" above) and name them in the submission text.
 - [ ] **Screen shake scale (0 / 0.5 / 1) and Reduce flashing:** multiply at the source, the trauma-to-shake scale and
   the flash alpha in the central feedback code (`game-feel.md`); reduce flashing also caps full-screen flashes at
   ~3 per second. No global shake multiplier was found in the 5.8 docs.
-- [ ] **Hold or toggle for held verbs** (sprint, aim, crouch): there is no toggle trigger. Bind `Started` and
-  `Completed`; toggle mode flips on `Started` and ignores `Completed`.
+- [ ] **Hold or toggle for held verbs** (sprint, aim, crouch): there is no toggle trigger (recipe: `gameplay.md`
+  "Enhanced Input").
 - [ ] **Pause works everywhere** and resumes with focus back on the game (`SetFocusToGameViewport()`).
 
 ### UMG MCP toolset (`UMGToolSet`, Experimental) for building WBPs
