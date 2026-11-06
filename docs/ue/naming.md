@@ -45,10 +45,17 @@ Source: https://dev.epicgames.com/documentation/en-us/unreal-engine/recommended-
 Texture descriptors: `T_<Name>_BaseColor`, `_Normal`, `_Roughness`, `_Metallic`, `_ORM` (packed).
 (The pipeline currently writes lowercase descriptors, e.g. `T_Chest_basecolor`; fine, but keep new ones consistent.)
 
+Names the kit scripts create that differ from the table (keep them; the scripts find assets by these names):
+- **Skeleton / Physics Asset of a kit-imported character:** the importer's `SK_<Name>_Skeleton` and
+  `SK_<Name>_PhysicsAsset`, not `SKEL_` / `PHYS_` (`import_skeletal.py` replaces them by these names on a rerun).
+- **Retargeted copies:** the source name plus `_<Name>`: `ABP_Unarmed_<Name>`, `BS_Idle_Walk_Run_<Name>`, and
+  template clips keep Epic's `MM_` prefix (`MM_Idle_<Name>`).
+
 ## Folders
 
 - Generated props: `/Game/Props/<Name>/` (SM_, MI_, T_*)
-- Characters (`gen/character.ts`): `/Game/Characters/<Name>/`
+- Characters (`gen/character.ts`): `/Game/Characters/<Name>/` (SK_, MI_, T_*, BP_; `Rig/` holds `IK_<Name>` and
+  `RTG_Manny_To_<Name>`, `Anims/` the retargeted copies); the shared source rig is `/Game/Characters/Rigs/IK_Manny`
 - Animation library packs (`SETUP.md` 10): their own `/Game/<Pack>/` folder (Migrate keeps it)
 - Audio: `/Game/Audio/{SFX,Music,Voice}/`
 - Kit shared assets: `/Game/Kit/` (master materials, default textures, the `gen/vfx/vfx.ts` set). Game-specific content goes elsewhere.

@@ -40,7 +40,8 @@ and Tripo's API docs (list at the bottom). Anything not checked is marked (unver
 
 - **Format:** prefer **FBX** (`tripo ... --out-format fbx`). `import_file` can't take GLB. Interchange can import GLB
   skins via `import_any`, but that path hasn't been tested with Tripo rigs (unverified).
-- **One Skeleton per character.** First import creates `SKEL_`; later animation-only FBX imports must pass
+- **One Skeleton per character.** First import creates the Skeleton (`SK_<Name>_Skeleton` from
+  `import_skeletal.py`; `naming.md`); later animation-only FBX imports must pass
   `skeleton=<that Skeleton>` or they create a duplicate skeleton and nothing will share.
 - **Scale check (do it every time):** `get_bounds(mesh)`: a human is ~180 cm tall (box_extent.z ~ 90). 1.8 or 18000
   means a unit-scale problem. `gen/blender/prep_rig.py` fixes it (step 3 below; `PIPELINE.md` "Hard-won facts").
@@ -251,8 +252,8 @@ node and renamed stats; Motion Matching inside Choosers (5.7) is Experimental.
 
 ## Recommended path for a generated character
 
-**Automated (2026-10-24):** `gen/character.ts` runs steps 1-9 below in one command (~4 min, 90 Tripo credits) and
-includes step 8 (scripted since 2026-10-25: `gen/unreal/abp.ts`). Usage, options and the failure modes found while
+**Automated (2026-10-24):** `gen/character.ts` runs steps 1-9 below (step 9 with `--parent`) in one command
+(~4 min, 90 Tripo credits) and includes step 8 (scripted since 2026-10-25: `gen/unreal/abp.ts`). Usage, options and the failure modes found while
 building it: `PIPELINE.md` "Characters" and "Hard-won facts". Material differs from step 4 below: PBR maps come from the textured model,
 not the rig (the rig FBX wires its colour image as the normal map). The steps stay here as the explanation.
 
@@ -276,8 +277,9 @@ not the rig (the rig FBX wires its colour image as the normal map). The steps st
 6. `[S]` `RTG_Manny_To_<Name>`: set rigs/meshes, auto-map, auto-align target pose. `[UI][V]` Open it, compare poses,
    play `MM_Idle` and a jog, fix the retarget pose/root scale if arms clip or feet float.
 7. `[S]` `run_batch_retarget` on `ABP_Unarmed`, referenced assets on, suffix `_<Name>` (`retarget_setup.py`).
-   Extra montages (e.g. `AM_ComboAttack`) if the game has them: `retarget_setup.py --arg anims=<ABP>,<montage>,...`,
-   or `gen/unreal/retarget_library.ts` for library clips.
+   Extra montages (e.g. `AM_ComboAttack`) and library clips: `gen/unreal/retarget_library.ts`
+   (`--folder /Game/Variant_Combat/Anims --names AM_ComboAttack`). Not a second `retarget_setup.py` run: it refuses
+   once the character's `Anims` folder has assets, and it doesn't register the clips' curves on the skeleton.
 8. `[S]` In the new ABP, delete the `CR_Mannequin_FootIK` Control Rig node (confirmed needed for Tripo
    `--spec unreal` rigs: without it the feet twist). Wire Slot 'DefaultSlot' → Output Pose. Compile.
    Optional `[S]`: reparent to the C++ `UAnimInstance` parent.
