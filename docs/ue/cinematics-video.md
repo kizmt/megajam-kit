@@ -99,8 +99,8 @@ re-encodes anyway.
 
 ### Submission video checklist
 
-- [ ] Gameplay from the game itself (D3b frames from `-game`, or live capture of the **packaged** build; not PIE), no
-  debug text, no stat overlays, no third-party overlays
+- [ ] Gameplay from the game itself (D3b frames from `-game`, a D3 MRQ render, or live capture of the **packaged**
+  build; not a screen capture of PIE), no debug text, no stat overlays, no third-party overlays
 - [ ] Gameplay visible by **0:05** (title only as overlay on gameplay; card at the end)
 - [ ] Duration **30-60 s** (aim 45-55 s); resolution **>= 1920x1080**; 60 fps; H.264 MP4, yuv420p, AAC
 - [ ] **English only**: on-screen text, UI, VO; no mic audio; no music with lyrics in another language
@@ -153,7 +153,7 @@ Player->Play();
 - **Take Recorder** (plugin `Takes`, off by default): Window > Take Recorder, + Source > From Actor,
   record during Play; takes land in `Cinematics/Takes` as sequences. Re-rendering gameplay with new cameras
   in principle works, but gameplay-spawned/pooled actors, Niagara, UI and C++-driven material changes may not
-  record faithfully (unverified). **Not worth it in 93 h**: capture live instead.
+  record faithfully (unverified). **Not worth it in 93 h**: use D3b or the kit capture scripts (A) instead.
 
 ### What the agent can script via MCP (AnimationAssistantToolset, Experimental, editor-only)
 

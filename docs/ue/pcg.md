@@ -12,6 +12,7 @@ placement only; hero props are placed by hand.
 3. The director selects the assets/actors to use in the editor; don't let the agent search broadly.
 4. Plan / list nodes to change before executing; execute in small steps; supervise.
 5. Use **Dataview** (`GetNodeDataView`) to inspect generated point attributes (the agent can't read them otherwise).
+
 Other skills: `Skill_InstantLevelOperations` (quick batch placement without a graph: try first for simple jobs),
 `Skill_PCGShapeGrammarDefinition` (modules along a spline), `Skill_PCGInstancingOnMeshActor` (surface detail).
 

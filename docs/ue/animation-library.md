@@ -43,8 +43,8 @@ Researched 2026-10-26/28; prices and terms change, so re-check a source before r
 
 - **Clips are full acted performances, not game clips.** A 4 s "hit" was a 1.2 s stagger followed by a long hunch and
   recovery. Trim and retime for gameplay (that hit: first 1.5 s at 1.25x). Bake the retime into the clip rather than
-  using montage `RateScale` (`gameplay.md` "Montages and attached props"). 3.0 has a 4 s minimum, so expect to trim
-  most clips.
+  using montage `RateScale` (`gameplay.md` "Montages and attached props"). The `text-to-motion-3.0` model has a 4 s
+  minimum, so expect to trim most clips.
 - **Root trajectory sits on `root`, not the pelvis** (root yawed about -35° at frame 0). The retargeter and montages
   expect root at the reference pose with the motion on the pelvis, so bake it before retargeting:
   pelvis' = pelvis * root(t) * inverse(root(0)), root = identity. Then `retarget_library.ts` works first time. Moving
