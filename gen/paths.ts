@@ -5,7 +5,7 @@
 // without it rather than writing into the kit. --out on any script still overrides.
 import { existsSync, readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const KIT: string = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -31,7 +31,8 @@ export function errorMessage(e: unknown): string {
 
 /**
  * A JSON command-line argument, or `@file.json` to read it from a file. Windows PowerShell 5.1 strips the double
- * quotes from arguments it passes to node ('{"a":1}' arrives as {a:1}), so prefer a file there.
+ * quotes from arguments it passes to node ('{"a":1}' arrives as {a:1}), so prefer a file there. Quote the file
+ * argument in PowerShell ('@args.json'): a bare @name is its splatting operator and fails to parse.
  */
 export function jsonArg<T>(arg: string): T {
   const text = arg.startsWith('@') ? readFileSync(arg.slice(1), 'utf8') : arg;
@@ -40,7 +41,7 @@ export function jsonArg<T>(arg: string): T {
   } catch {
     fail(arg.startsWith('@') ? `${arg.slice(1)} is not valid JSON`
       : `not valid JSON: ${arg.slice(0, 80)} (Windows PowerShell 5.1 strips the quotes from JSON arguments: ` +
-        'write the JSON to a file and pass @<file>)');
+        "write the JSON to a file and pass '@<file>', quoted)");
   }
 }
 
@@ -55,7 +56,9 @@ export function projectDir(): string {
   const dir = resolve(p);
   if (!existsSync(dir) || !readdirSync(dir).some((f) => f.endsWith('.uproject')))
     fail(`MEGAJAM_PROJECT=${p} is not an Unreal project folder (no .uproject).`);
-  if (dir.toLowerCase().startsWith(KIT.toLowerCase())) fail('MEGAJAM_PROJECT must not be inside the kit.');
+  // Inside = the kit folder itself or below it (a sibling such as C:\dev\megajam-kit-game is fine).
+  const d = dir.toLowerCase(), k = KIT.toLowerCase();
+  if (d === k || d.startsWith(k + sep)) fail('MEGAJAM_PROJECT must not be inside the kit.');
   return dir;
 }
 

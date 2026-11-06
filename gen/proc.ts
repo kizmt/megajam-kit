@@ -12,6 +12,8 @@ const CMD_UNSAFE = /[%"^&|<>\r\n]/;
  * never prompts; any argument with a cmd metacharacter is refused rather than risk expansion or injection
  * (a prompt holding `%GEMINI_API_KEY%` would otherwise put the key into the prompt).
  * Blender always gets `--python-exit-code 1`, so a Python error fails the run and its traceback is reported.
+ * stdin is closed: a child that stops to ask something (a login or confirm prompt) gets end-of-input and fails,
+ * instead of waiting forever on a pipe nobody writes (there is no timeout).
  */
 export function run(cmd: string, args: string[], label: string): Promise<string> {
   if (cmd === 'blender' && !args.includes('--python-exit-code')) {
@@ -23,9 +25,9 @@ export function run(cmd: string, args: string[], label: string): Promise<string>
     if (process.platform === 'win32' && cmd === 'tripo') {
       const bad = args.find((a) => CMD_UNSAFE.test(a));
       if (bad !== undefined) { rej(new Error(`${label}: refusing a tripo argument with a cmd.exe metacharacter: ${bad.slice(0, 80)}`)); return; }
-      p = spawn([cmd, ...args.map((a) => (/[\s()]/.test(a) ? `"${a}"` : a))].join(' '), { shell: true, env: process.env });
+      p = spawn([cmd, ...args.map((a) => (/[\s()]/.test(a) ? `"${a}"` : a))].join(' '), { shell: true, env: process.env, stdio: ['ignore', 'pipe', 'pipe'] });
     } else {
-      p = spawn(cmd, args, { env: process.env });
+      p = spawn(cmd, args, { env: process.env, stdio: ['ignore', 'pipe', 'pipe'] });
     }
     let out = '', err = '';
     p.stdout.on('data', (d: Buffer) => { out += d.toString(); });

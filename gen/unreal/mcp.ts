@@ -76,7 +76,13 @@ async function rpc(method: string, params: unknown, notify = false): Promise<unk
     const data = text.split('\n').filter((l) => l.startsWith('data:')).map((l) => l.slice(5).trim()).filter(Boolean);
     text = data.at(-1) ?? '{}';
   }
-  const msg = JSON.parse(text) as JsonRpcResponse;
+  let msg: JsonRpcResponse;
+  try {
+    msg = JSON.parse(text) as JsonRpcResponse;
+  } catch {
+    // e.g. a 404 "session not found" after an editor restart, or a proxy page: report the status, not a parse error.
+    throw new Error(`Unreal MCP ${method}: HTTP ${res.status}, not a JSON-RPC answer: ${text.slice(0, 300)}`);
+  }
   if (msg.error) throw new Error(`MCP ${method}: ${msg.error.message ?? JSON.stringify(msg.error)}`);
   return msg.result;
 }
@@ -170,7 +176,7 @@ if (isMain(import.meta.url)) {
       const out = await mcpCall(a, b, c ? jsonArg<ToolArgs>(c) : {});
       console.log(typeof out === 'string' ? out : JSON.stringify(out, null, 2));
     } else {
-      console.log('usage: mcp.ts toolsets | describe <toolset> | call <toolset> <tool> [jsonArgs | @args.json]');
+      console.log('usage: mcp.ts toolsets | describe <toolset> | call <toolset> <tool> [jsonArgs | \'@args.json\' (quoted in PowerShell)]');
       process.exit(2);
     }
   } catch (e) {
