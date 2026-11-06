@@ -77,7 +77,7 @@ space) before the next idea. Uninterrupted difficulty reads as a grind; uninterr
 - **Checkpoints at the start of each beat**; respawn and retry in ≤ 5 s, without replaying solved parts.
 - **The critical path is moderate; the challenge is optional.** Extra difficulty goes in side goals, faster times,
   higher scores or collectibles, so a first-time judge still reaches the end.
-- **Tune one variable at a time** and log what changed in `PROGRESS.md`; difficulty problems are usually one
+- **Tune one variable at a time** and log what changed in the round's devlog entry; difficulty problems are usually one
   number (a timing window, an enemy count, a gap width).
 
 ## Progression that fits a jam
@@ -128,7 +128,8 @@ The builder can't play the game for the first time again, so test with fresh eye
    `autoclip.ps1`: that one lets the game play itself) and reads the event log afterwards.
 2. **Fresh-agent review of the run.** A new helper agent gets only the clip's contact sheets, the event log, the
    pitch, goal, controls and beat list, and the watcher's notes (no code, no history) and reports where a first-time
-   player would be confused, stuck or bored: brief in `prompts/playtest.md`. Like the visual critic, the director's calls overrule it.
+   player would be confused, stuck or bored: brief in `prompts/playtest.md`. Like the visual critic, the director's
+   calls overrule it.
 3. **Numbers per run** (from the log): time to first input, time to first goal, deaths and time per beat,
    longest time without progress, total length, whether the end was reached.
 

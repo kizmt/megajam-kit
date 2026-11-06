@@ -142,7 +142,8 @@ The Blank template opens a temporary Open World level (Landscape, World Partitio
    ```
 
    The second line installs the blind `critic` subagent (`agents/critic.md`; its brief is `prompts/critic.md`). Do
-   it **before** the first session starts: Claude Code hot-reloads `.claude\agents\` only if the folder existed when the session started.
+   it **before** the first session starts: Claude Code hot-reloads `.claude\agents\` only if the folder existed when
+   the session started.
 4. With the editor already open: `cd C:\dev\<ProjectName>` → `claude` → approve `unreal-mcp`.
 5. `/mcp` should list only `unreal-mcp` (3 tools: tool search mode).
 6. Test: "What actors are in the current level?" — should list the Basic level's actors.
