@@ -78,8 +78,9 @@
      count left). Log the wait with the build stamp.
 - **Test cold:** run the packaged build with `-clearPSODriverCache` (otherwise "hitches may be masked") and
   `r.PSOPrecache.Validation=1` (lightweight) or `2` (logs each `PSO PRECACHING MISS:` with material and pass), then
-  `stat PSOPrecache`; Insights shows `PSOPrecache: Missed` / `Too Late`. `-corelimit=8` (from Epic's page; not found in the
-  5.8.4 engine source) may limit cores like a typical player CPU. One cold run per packaged milestone. Leave `r.PSOPrecache.KeepInMemoryUntilUsed` off (can add > 1 GB).
+  `stat PSOPrecache`; Insights shows `PSOPrecache: Missed` / `Too Late`. `-corelimit=8` (from Epic's page; not found
+  in the 5.8.4 engine source) may limit cores like a typical player CPU. One cold run per packaged milestone. Leave
+  `r.PSOPrecache.KeepInMemoryUntilUsed` off (can add > 1 GB).
 - **Skip the bundled PSO cache** (`-logPSO` play-throughs, the `ShaderPipelineCacheTools` commandlet, an `.spc` in
   `Build/Windows/PipelineCaches`, a second package, redone after big content changes). With precaching Epic says it
   "may not be necessary anymore". Consider it only if a cold run on day 3 still shows global-shader hitches.
@@ -95,18 +96,17 @@
 ## C++ build tools
 
 - UBT builds; it runs UHT (reflection code generation) first, then the compiler. Never run UHT by hand.
-- **UHT runs with warnings-as-errors**: any UHT warning fails the build. Write reflection macros exactly.
-- A header whose only reflected content is `DECLARE_DYNAMIC_*` delegates is skipped unless one delegate has `UDELEGATE`.
-- Reflection rules (UCLASS/USTRUCT/UENUM/UPROPERTY/UFUNCTION, GENERATED_BODY, `.generated.h` as the last include):
-  `cpp.md` and the Reflection System docs.
+- **UHT runs with warnings-as-errors**: any UHT warning fails the build. The reflection rules that keep it green
+  (`.generated.h` last, `UDELEGATE` for delegate-only headers, ...) and the known engine warnings: `cpp.md`.
 
 ## Editor scripting
 
 - Use the editor subsystems (`EditorActorSubsystem`, `LevelEditorSubsystem`, `EditorAssetSubsystem`...) for
   automation. The Editor Scripting Utilities plugin is Beta and off by default, and its `EditorLevelLibrary` /
   mesh libraries are deprecated in favour of the subsystems (`EditorAssetLibrary` is still fine; `editor-scripting.md`
-  A). MegajamTools does not depend on it (its plugins: PythonScriptPlugin, ToolsetRegistry,
-  EditorToolset).
+  A). `EditorAssetLibrary` itself lives in that plugin (`Plugins/Editor/EditorScriptingUtilities`, 5.8 API
+  reference), and MegajamTools' Python calls it, so keep the plugin enabled although `MegajamTools.uplugin` lists only
+  PythonScriptPlugin, ToolsetRegistry and EditorToolset.
 - Python editor scripting and Unreal MCP are Beta/Experimental (`features.md`); every pipeline step is therefore
   verified by reading back state or a screenshot.
 
@@ -119,15 +119,10 @@
 ## Build stamp (game side)
 
 `scripts/package.ps1` writes `<Build>\<Project>\BuildStamp.txt` (`<Build>` as defined in `debugging.md`), one line:
-`<short commit>[+dirty] <time>`. In the game, read `FPaths::ProjectDir() / "BuildStamp.txt"` once into a static
+`<short commit>[+dirty] <time>`. In the game, read `FPaths::ProjectDir() / TEXT("BuildStamp.txt")` once into a static
 `FString` (fallback `"editor"` when missing, i.e. PIE),
 log it from the game mode's `InitGame`, and draw it small in a HUD corner. When someone reports a bug, the stamp says
 which build they played (a stale unzipped copy fooled a prototype test).
-
-## Known engine warnings (5.8.4)
-
-- `Character.h:798` C4996 in every `ACharacter` subclass, and the "compiler 14.51 is not a preferred version" note:
-  engine noise, listed separately by `scripts/build.ps1` (`cpp.md` "Live Coding vs full rebuild").
 
 ## Unsigned builds and Windows Smart App Control
 
