@@ -146,7 +146,7 @@ Groups: `sg.ResolutionQuality` (= screen percentage), `sg.ViewDistanceQuality`, 
 - Page pool overflow (on-screen warning, checkerboard/missing shadows): too many VSM lights or too much resolution.
   Fewer shadowed lights first; `r.Shadow.Virtual.MaxPhysicalPages` (2048 at High) second.
 - Debug: View Modes > Virtual Shadow Map (Cached Page: green cached, red invalidated);
-  `r.ShaderPrintEnable 1` + `r.Shadow.Virtual.Stats 1`. Turn visualizers off before profiling.
+  `r.ShaderPrint 1` + `r.Shadow.Virtual.Stats 1`. Turn visualizers off before profiling.
 
 ## Lights (all Movable)
 

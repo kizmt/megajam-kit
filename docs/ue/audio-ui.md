@@ -371,7 +371,7 @@ them ("Settings menu" above) and name them in the submission text.
 - [ ] **Colour-blind mode, one call:** `UWidgetBlueprintLibrary::SetColorVisionDeficiencyType(Type, Severity,
   bCorrectDeficiency, bShowCorrectionWithDeficiency)` applies to the game window. Dropdown Off / Deuteranope /
   Protanope / Tritanope with Severity 10 and Correct = true (false only simulates, a QA view; Epic staff on the
-  forum). Don't also set the `r.ColorVisionDeficiency*` cvars (they stack). Never carry meaning by colour alone.
+  forum). Never carry meaning by colour alone.
 - [ ] **Screen shake scale (0 / 0.5 / 1) and Reduce flashing:** multiply at the source, the trauma-to-shake scale and
   the flash alpha in the central feedback code (`game-feel.md`); reduce flashing also caps full-screen flashes at
   ~3 per second. No global shake multiplier was found in the 5.8 docs.

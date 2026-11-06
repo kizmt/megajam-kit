@@ -36,8 +36,8 @@ Nanite settings for plants (Voxelize vs Preserve Area, wind): `performance.md` "
 
 - **`GrassDensity` is instances per 100 m² (10 m × 10 m), not per 10 m²** as the `FGrassVariety` header comment says:
   the engine divides the component area in cm² by 1000 × 1000 (`LandscapeGrass.cpp`). A field set for 3 patches per m²
-  at 18 / 12 / 0.8 came out 10× too sparse; 180 / 120 / 8 gave the carpet. Check the result with `grass.PrintStats` or
-  a capture, not the number.
+  at 18 / 12 / 0.8 came out 10× too sparse; 180 / 120 / 8 gave the carpet. Check the result with a capture, not the
+  number.
 - **A texture that feeds `LandscapeGrassOutput` must be `never_stream`** (or small enough to stay resident). The grass
   map build streams in only the heightmap and weightmaps (`LandscapeGrassMapsBuilder.cpp`), so it read a low, blurred
   mip of a 4096² density map: grass grew across a clearing that the ground colour (same sample) showed bare.

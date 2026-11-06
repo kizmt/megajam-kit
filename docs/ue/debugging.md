@@ -23,7 +23,7 @@ it in this sense.
 | AI/pathing wrong | Gameplay Debugger (`'` key), numpad categories | `show navigation` |
 | New Nanite mesh shows blocky cubes or shards in a capture | Capture again a minute later: Nanite streams coarse pages first (looked exactly like a Voxelize fault) | Shards right after a big scripted spawn that survive a recapture: restart the editor before diagnosing the mesh (seen once, cause unproven) |
 | Packaged build worse than PIE | Packaged smoke test (below) + `-trace` | Grey material = missing usage flag (materials.md) |
-| Packaged build fails on someone else's PC | Their `<Game>.log` (A) and the startup line below | "VCRUNTIME140*.dll was not found": VC++ runtime (`production.md` "Packaging and what gets shipped"). Engine D3D12/SM6 message box: driver update, then `-dx11` only if SM5 is cooked. Out of VRAM on 4-6 GB cards: Low preset. Blocked exe: Smart App Control (`production.md`). No audio: 5.8 uses WASAPI on Windows; `AudioMixerModuleName=AudioMixerXAudio2` in the project's `Config/Windows/WindowsEngine.ini` reverts it |
+| Packaged build fails on someone else's PC | Their `<Game>.log` (A) and the startup line below | "VCRUNTIME140*.dll was not found": VC++ runtime (`production.md` "Packaging and what gets shipped"). Engine D3D12/SM6 message box: driver update, then `-dx11` only if SM5 is cooked. Out of VRAM on 4-6 GB cards: Low preset. Blocked exe: Smart App Control (`production.md`). No audio: 5.8 uses WASAPI on Windows; `[Audio] AudioMixerModuleName=AudioMixerXAudio2` in the project's `Config/Windows/WindowsEngine.ini` reverts it (the engine default is `AudioMixerWasapi`, `BaseWindowsEngine.ini`) |
 
 ## A. Logs
 
