@@ -17,7 +17,7 @@ build green (UHT warnings fail it) and keep UObjects from being garbage-collecte
 - No UPROPERTY/UFUNCTION inside templates or nested classes. A UPROPERTY inside `#if WITH_EDITOR` is a UHT error
   (use `WITH_EDITORONLY_DATA`, and avoid it). A UFUNCTION there compiles but exists only in editor builds, so keep
   gameplay UFUNCTIONs out of it.
-- A header with only `DECLARE_DYNAMIC_*` delegates needs `UDELEGATE` on one of them or UHT skips it (`production.md`).
+- A header with only `DECLARE_DYNAMIC_*` delegates needs `UDELEGATE` on one of them or UHT skips it.
 
 ```cpp
 #pragma once
@@ -26,6 +26,7 @@ build green (UHT warnings fail it) and keep UObjects from being garbage-collecte
 #include "MyPickup.generated.h"   // last include, always
 
 class UMyPickupData;              // forward-declare in headers; include in the .cpp
+class UStaticMeshComponent;
 
 UCLASS()
 class AMyPickup : public AActor
@@ -156,7 +157,8 @@ protected:
 - Live Coding: Ctrl+Alt+F11 in editor or IDE; patches the running editor/PIE. **Scriptable:** run the console
   command `LiveCoding.Compile` (MCP `MegajamTools.run_console_command`), then poll the Output Log for
   `LogLiveCoding: Display: Live coding succeeded` (~7 s for one .cpp on the target PC, verified 2026-10-24). Changes apply
-  from the next PIE session.
+  from the next PIE session. Not through MCP: the 5.8.4 build registers no `LiveCodingToolset` (the `unreal-mcp`
+  skill names one).
 - Full build with the editor closed: `scripts\build.ps1` (24 s for a 4-class module on the target PC). It passes only with
   zero warnings in our files; engine/toolchain warnings are listed separately. Known engine one: 5.8's own
   `GameFramework/Character.h(798)` raises **C4996 GetMovementBase deprecated** for every `ACharacter` subclass;
@@ -172,8 +174,6 @@ protected:
   minutes after a patch (a world subsystem's `.cpp` with a new static cvar, plus a comment-only header edit) crashed
   the editor in world init: `Assertion failed: Ret->IsA(T::StaticClass())` (Class.h). After `scripts\build.ps1` the
   same map loaded cleanly. Not reproduced on purpose, but don't open or reload maps in a Live-Coded session.
-- No `LiveCodingToolset` is registered in the 5.8.4 MCP build (the `unreal-mcp` skill names one): use the
-  `LiveCoding.Compile` console command above.
 - Constructor changes in the `.cpp` do **not** reach existing instances/BP defaults after Live Coding. Full build.
 - Anything odd after a patch (stale values, BP compile errors): close editor, full build, before debugging further.
 - Fix the first compile error first; later ones are usually cascades.
@@ -208,20 +208,17 @@ DEFINE_LOG_CATEGORY(LogMyGame);
 UE_LOG(LogMyGame, Warning, TEXT("Picked up %s worth %d"), *GetName(), Points);
 ```
 
-- Verbosity: `Error` (red, editor treats as failure), `Warning` (yellow), `Display`, `Log` (file only), `Verbose`.
-  Use `Log`/`Verbose` for chatter, `Warning` for "this should not happen but we continue".
 - Per-file category: `DEFINE_LOG_CATEGORY_STATIC(LogMyPickup, Log, All);` in the `.cpp`.
-- Structured alternative: `UE_LOGFMT(LogMyGame, Log, "Score {0}", Score);` needs `#include "Logging/StructuredLog.h"`.
-- Read logs via the Output Log / `LogsToolset.GetLogEntries`, or `<Project>/Saved/Logs/`. Our Development
-  packaged build keeps logging; Shipping does not.
+- Verbosity levels, `[PROOF]` lines, runtime verbosity changes, `UE_LOGFMT` and where the logs live:
+  `debugging.md` A. Use `Log`/`Verbose` for chatter, `Warning` for "this should not happen but we continue".
 
 ## Assertions
 
 - `check(Expr)` / `checkf(Expr, TEXT("..."), ...)`: halts. Active in Development; **compiled out in Shipping,
   expression not evaluated**. Never put side effects inside.
 - `verify(Expr)`: like check but the expression always runs.
-- `ensure(Expr)` / `ensureMsgf`: logs + callstack, execution continues, reports **once per session**
-  (`ensureAlways` every time). Returns the bool: `if (!ensure(Data)) { return; }`.
+- `ensure(Expr)` / `ensureMsgf`: logs + callstack, execution continues, reports **once per call site per session**
+  (`ensureAlways` every time; each first fire hitches). Returns the bool: `if (!ensure(Data)) { return; }`.
 - Our default: `ensure` + early return for "designer forgot to assign a DataAsset/class" (game keeps running,
   error is visible); `check` only for true programmer invariants. Never `check` on asset assignments.
 

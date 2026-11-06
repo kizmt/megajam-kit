@@ -23,7 +23,7 @@ it in this sense.
 | AI/pathing wrong | Gameplay Debugger (`'` key), numpad categories | `show navigation` |
 | New Nanite mesh shows blocky cubes or shards in a capture | Capture again a minute later: Nanite streams coarse pages first (looked exactly like a Voxelize fault) | Shards right after a big scripted spawn that survive a recapture: restart the editor before diagnosing the mesh (seen once, cause unproven) |
 | Packaged build worse than PIE | Packaged smoke test (below) + `-trace` | Grey material = missing usage flag (materials.md) |
-| Packaged build fails on someone else's PC | Their `<Game>.log` (A) and the startup line below | "VCRUNTIME140*.dll was not found": VC++ runtime (`production.md` "Packaging"). Engine D3D12/SM6 message box: driver update, then `-dx11` only if SM5 is cooked. Out of VRAM on 4-6 GB cards: Low preset. Blocked exe: Smart App Control (`production.md`). No audio: 5.8 uses WASAPI on Windows; `AudioMixerModuleName=AudioMixerXAudio2` in the project's `Config/Windows/WindowsEngine.ini` reverts it |
+| Packaged build fails on someone else's PC | Their `<Game>.log` (A) and the startup line below | "VCRUNTIME140*.dll was not found": VC++ runtime (`production.md` "Packaging and what gets shipped"). Engine D3D12/SM6 message box: driver update, then `-dx11` only if SM5 is cooked. Out of VRAM on 4-6 GB cards: Low preset. Blocked exe: Smart App Control (`production.md`). No audio: 5.8 uses WASAPI on Windows; `AudioMixerModuleName=AudioMixerXAudio2` in the project's `Config/Windows/WindowsEngine.ini` reverts it |
 
 ## A. Logs
 
@@ -57,7 +57,8 @@ UE_LOG(LogMyGame, Display, TEXT("Door %s opened by %s"), *GetName(), *GetNameSaf
 - One category per project (`LogMyGame`); grep for it. Prefix proof lines e.g. `[PROOF] ...`.
 - Change at runtime: console `log LogMyGame Verbose` (or MCP `SetVerbosity`). Command line:
   `-LogCmds="LogMyGame Verbose, LogTemp Warning"`. Permanent: `DefaultEngine.ini [Core.Log] LogMyGame=Verbose`.
-- `UE_LOGFMT` (structured, `#include "Logging/StructuredLog.h"`) is fine but `UE_LOG` is enough.
+- `UE_LOGFMT(LogMyGame, Log, "Score {0}", Score)` (structured, `#include "Logging/StructuredLog.h"`) is fine but
+  `UE_LOG` is enough. Declaring the category: `cpp.md` "Logging".
 - `-log` on a packaged exe opens a live log console window; `-ABSLOG=C:\path\run.log` writes to a chosen file.
 
 **Message Log** (Window > Message Log) holds what the Output Log buries: Blueprint compile errors,
@@ -80,11 +81,8 @@ UE_LOG(LogMyGame, Display, TEXT("Door %s opened by %s"), *GetName(), *GetNameSaf
 
 ## B. Crashes
 
-- **`check(x)` / `checkf(x, fmt, ...)`**: crash if false (Development keeps them; Shipping strips them).
-  Use for "impossible" states. **`verify(x)`** keeps evaluating `x` in Shipping.
-- **`ensure(x)` / `ensureMsgf(x, fmt, ...)`**: logs + callstack, **keeps running**, fires once per call site
-  per session; `ensureAlways` fires every time. Prefer ensure in jam code: a crash costs a PIE restart.
-- Null-check `UObject*` with `IsValid(Ptr)`; most jam crashes are null/pending-kill pointers.
+- **`check` / `verify` / `ensure`** and when to use which: `cpp.md` "Assertions". Prefer `ensure` in jam code: a
+  crash costs a PIE restart. Most jam crashes are null or pending-kill pointers: `IsValid(Ptr)` (`cpp.md`).
 - **Editor crash/ensure folder (verified):** `<Project>\Saved\Crashes\UECC-Windows-<GUID>_0000\` with
   `CrashContext.runtime-xml` (`ErrorMessage`, `CrashType` = Crash/Assert/Ensure, `CallStack`),
   `<Project>.log` copy, `UEMinidump.dmp`, `CrashReportClient.ini`. Ensures also create one.
@@ -287,9 +285,9 @@ Select-String $log -Pattern '\[PROOF\]|Log file closed'   # proof lines + clean 
       40 cm on the line and lines offset to each side, the pawn's floor and capsule with the "Pawn" profile; reports
       holes, lids (standing on something invisible), ledges, steep spots and blockers, and whether each blocker's
       collision is drawn there or invisible. Writes `traverse_survey.json`.
-    - `gen\test\game_test.ps1 -Script C:\dev\megajam-kit\gen\test\route_walk.py -Tag ROUTEWALK -TimeoutSec 1500` (`-game`): the
-      pawn runs each line at run speed and logs stalls, stuck spots, falls and pushes off the line, with what blocks
-      ahead. Writes `route_walk.json`.
+    - `gen\test\game_test.ps1 -Map /Game/Maps/<Level> -Script C:\dev\megajam-kit\gen\test\route_walk.py -Tag ROUTEWALK -TimeoutSec 1500`
+      (`-game`; `-Map` defaults to `Main`): the pawn runs each line at run speed and logs stalls, stuck spots, falls
+      and pushes off the line, with what blocks ahead. Writes `route_walk.json`.
     Run both after any change to collision, walls, props or terrain along the route, and before a playtest. For
     stairs, run the pawn up with `add_movement_input` and log `current_floor` each tick. *Tested* 2026-11-02 on the
     rehearsal's level: the survey took ~2 s for 25,000 samples on 3.2 km of lines; the walk ran them in ~10 min at
