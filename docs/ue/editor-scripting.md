@@ -80,7 +80,7 @@ Ways to run Python:
 | `init_unreal.py` in any `Content/Python` folder | Runs at editor startup. Ours registers `MegajamTools` |
 | `UnrealEditor-Cmd.exe P.uproject -run=pythonscript -script="C:\\x.py"` | Headless batch. It loads no level, so call `load_level` yourself |
 | `MegajamTools.run_python(code)` (MCP) | The default for agent scripts: returns status, output and traceback |
-| `unreal.PythonScriptLibrary.execute_python_command_ex(cmd, mode)` | Runs code and returns `(command_result, log_output)` |
+| `unreal.PythonScriptLibrary.execute_python_command_ex(cmd, mode)` | Runs code and returns `(command_result, log_output)`, or None when it failed |
 
 Search paths: `Content/Python` folders of the project, the engine and every enabled plugin, plus Additional
 Paths / `UE_PYTHONPATH`. The interpreter is isolated by default.
@@ -127,7 +127,7 @@ the real MIs.
   `import_skeletal.py` (`FbxFactory` + `FbxImportUI`) carry legacy `FbxSkeletalMeshImportData`, which Interchange's
   reimport doesn't take. To add bones in place, run `import_skeletal.py` with `--arg in_place=1`: it imports over the
   mesh with its own skeleton and import transform, so the object, its material slots, physics asset and referencers
-  stay. Clips that key the new bone must be re-imported (record what references them first:
+  stay (the method was proven by hand; the script option is untested). Clips that key the new bone must be re-imported (record what references them first:
   `find_package_referencers_for_asset`); the others keep the bind pose for it.
 
 Other notes: Epic no longer supports defining a `BlueprintFunctionLibrary` in Python (the types are transient
@@ -138,6 +138,7 @@ and break on save/load). Old `remove_lo_ds`-style names were renamed (`remove_lo
 import unreal
 actors = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
 mesh = unreal.EditorAssetLibrary.load_asset("/Game/Props/Chest/SM_Chest")
+assert mesh, "SM_Chest not found"
 with unreal.ScopedEditorTransaction("Place chests"):
     for i in range(3):
         a = actors.spawn_actor_from_object(mesh, unreal.Vector(i * 200, 0, 0))
@@ -196,9 +197,8 @@ pass an empty/zero value, and add the case to PIPELINE.md.
 
 Tests (Epic's convention): `ToolCallTestCase` in Python, and a Live Coding compile before running
 `AutomationTestToolset` (`DiscoverTests`, then `RunTests`). For the jam, one real call plus a read-back is enough.
-The `unreal-mcp` skill names `LiveCodingToolset.CompileLiveCoding`, but no such toolset was registered in a 5.8.4
-prototype's MCP build: use the console command `LiveCoding.Compile` and wait for "Live coding succeeded" in the log
-(`cpp.md`).
+The `unreal-mcp` skill names `LiveCodingToolset.CompileLiveCoding`, which 5.8.4 doesn't register: compile with the
+`LiveCoding.Compile` console command (`cpp.md` "Live Coding vs full rebuild").
 
 ## C. Build it in the editor instead of generating it?
 
@@ -209,7 +209,7 @@ prototype's MCP build: use the console command `LiveCoding.Compile` and wait for
 | **Editor Utility Widgets** | Beta (5.8 Beta hub) | A button panel for a person (e.g. "rebuild level") | Agent-only work: a toolset tool is faster and testable |
 | **Scriptable Tools** (needs Scriptable Tools Editor Mode plugin, off) | Beta (`features.md`) | Custom click-in-viewport tools for a person | Almost always in a 93 h jam |
 
-Geometry Script from Python (all verified in the stub):
+Geometry Script from Python (verified in the stub except where marked):
 
 ```python
 import unreal as GS
