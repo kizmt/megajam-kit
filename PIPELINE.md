@@ -86,8 +86,8 @@ node gen/views.ts <sheet.png> [--layout grid|row]       # cut a sheet by hand: <
   character instead of a new one.
 - **Cutting:** `views.ts` cuts through the emptiest band near each expected split, trims each view to its figure and
   pads it square on the background colour. It fails on an empty cell (wrong layout).
-- **Alternative:** `tripo generate image-to-multiview <front concept>` makes a four-view sheet from one image (price
-  on Tripo's pricing page; untested here).
+- **Alternative:** `tripo generate image-to-multiview <front concept>` makes a four-view sheet from one image (10
+  credits per Tripo's pricing page, 2026-11-07; untested here).
 
 ## Characters: concept to playable (tested 2026-10-24: Explorer, Mechanic in a test project)
 
@@ -184,7 +184,7 @@ any flagged take before importing it; level-matching a batch: `docs/elevenlabs.m
 | `--vocals` / `--loop` / `--mono` | Music with vocals / looping SFX / one channel (see above). |
 | `--no-unreal` | Files only, no import. |
 | `--out dir` | Output folder instead of `<Project>/Generated/audio` (also where `save` looks for design sidecars). |
-| `--model id` | Override the model. Defaults: SFX `eleven_text_to_sound_v3` (v2 is deprecated and retired 2027-02-01; same parameters), music `music_v2_5`, voice `eleven_v4` (`eleven_multilingual_v2` is the old default). |
+| `--model id` | Override the model. Defaults: SFX `eleven_text_to_sound_v3` (v2 is deprecated and removed 2027-03-01; same parameters), music `music_v2_5`, voice `eleven_v4` (`eleven_multilingual_v2` is the old default). |
 | `--preview`, `--guidance`, `--design-model`, `--loudness`, `--enhance` | `design` only: preview text (100-1000 characters), prompt adherence, `eleven_ttv_v3` or `eleven_multilingual_ttv_v2`, loudness (-1 to 1), let ElevenLabs expand the description (`docs/elevenlabs.md` "Making a narrator or character voice"). |
 | `--description "..."` | `save` only: the design prompt, when no design sidecar lists the chosen preview. |
 
@@ -281,7 +281,8 @@ Shared modules, not run on their own: `gen/paths.ts` (kit and project paths, `.e
   `FBX_SCALE_ALL` / `FBX_SCALE_UNITS` give root scale 1 but import at 1/100 size.
 - Tripo's rigged FBX is 1 m tall, faces +X in Unreal, bones use Manny names (61 bones, no `ik_foot_*`). Rig/rig-check
   reject `convert_model` tasks (API 2006): pass the `image_to_model` task id. The `tripo` CLI only reads
-  `TRIPO_API_KEY` from the environment (asset.ts loads `.env`; manual runs must too).
+  `TRIPO_API_KEY` and `TRIPO_REGION` from the environment (the key doesn't tell it the region; asset.ts loads `.env`;
+  manual runs must load both).
 - Placed SkeletalMeshActors don't evaluate animation in the editor viewport (even with `set_update_animation_in_editor`).
   Verify animation in PIE: start with `LevelEditorSubsystem.editor_request_begin_play()`, screenshot with
   `HighResShot WxH filename=...` on the PIE world, read bone positions with `get_socket_location`.
@@ -300,9 +301,10 @@ Shared modules, not run on their own: `gen/paths.ts` (kit and project paths, `.e
   viewer squarely, zero rotation, symmetrical"): 3/3 clean vs 1/2 without (one A-pose, one turned body) for a short
   prompt. It doesn't hold for long outfit descriptions (0/6 later): build from the A-pose concept, or try the
   Tripo T-pose pass on one image first (Characters).
-- **Tripo runs at most 3 tasks at once per account** (image, model, texture and rig tasks seem to share the pool).
-  Six image-to-image calls started together: three returned, three failed on the limit with no output and no clear
-  error, and a retry of those also returned nothing. Batch in threes, or start the next task when one finishes.
+- **Tripo limits parallel tasks per account and category** (`docs/rate-limits` page: image generation 1, model processing
+  5, animation 10; over the limit HTTP 429, error 2000). Seen: six image-to-image calls started together, three
+  returned, three failed with no output and no clear error, and a retry of those also returned nothing. Start the
+  next task when one finishes; never run more than 3 at once.
 - Editor Python must never delete an asset something else references: `delete_asset` force-deletes, but the
   object lives on in memory, and creating one with the same name then opens a modal **"Overwrite Existing
   Object"** dialog that blocks the game thread (and every MCP call) until someone clicks. Reuse shared assets

@@ -10,13 +10,13 @@ ElevenLabs changes models often: if something here fails, check the linked page 
 
 - **Ship only audio made on a paid plan.** Paid plans include a commercial licence for content made while subscribed,
   usable after the subscription ends. Free-plan output needs "elevenlabs.io" credited and is not for commercial use.
-  Output of Beta services is not for commercial use; SFX v3 is "limited access" (fine for the jam entry; check the
-  terms before a commercial release).
+  Output of Beta services is not for commercial use (check the terms before a commercial release).
 - **Music terms:** paid plans allow commercial use except film, TV, radio and "Studio Games". A jam game is an Indie
   Game (under $500k lifetime revenue, developer under $1M a year), with 60 days to upgrade if it outgrows that. No
   attribution on paid plans. **Prompts may not name artists, songwriters, labels, songs or albums, or quote lyrics**:
   the API refuses them (422 `bad_prompt`, sometimes with a suggested rewrite).
-- **Parallel requests:** music 2 at once on Starter, Creator and Pro; speech and SFX 3 (Starter), 5 (Creator), 10 (Pro).
+- **Parallel requests:** music 2 at once on Starter, Creator and Pro; SFX 4 (Starter), 6 (Creator and Pro); speech
+  (Multilingual v2) 3, 5, 10.
   `audio.ts` runs at most 2 (music) or 3 (others) at once, retries a 429 with back-off, and stops the batch on 402
   (out of credits; prints STOPPED and exits 3): tell the director.
 - **No re-download.** ElevenLabs' history can't return SFX or music, so the local file is the only copy of a paid
@@ -34,8 +34,9 @@ ElevenLabs changes models often: if something here fails, check the linked page 
 
 ## Sound effects (SFX v3)
 
-*Tested* 2026-11-01: SFX v3 works on our account, one-shot and 20 s `--loop`. It is limited access: an account
-without it gets "Unknown model" (the script then suggests `--model eleven_text_to_sound_v2`).
+*Tested* 2026-11-01: SFX v3 works on our account, one-shot and 20 s `--loop`. It started as limited access (the
+models page no longer says so, 2026-11-07): an account without it gets "Unknown model" (the script then suggests
+`--model eleven_text_to_sound_v2`, removed 2027-03-01).
 
 - **Describe the action, the setting and how it is performed**, not a category: `footsteps on gravel approaching
   slowly`, not `footsteps`. Wording matters ("arguing" beat "fighting" in ElevenLabs' test): rephrase before
