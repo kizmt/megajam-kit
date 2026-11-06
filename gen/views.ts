@@ -107,11 +107,16 @@ export function splitSheet(sheet: string, outDir?: string, layout: Layout = 'gri
   const views = {} as ViewsResult['views'];
   cells.forEach(([x0, y0, x1, y1], k) => {
     // Trim to the figure inside the cell (ignore specks: a line needs 2+ foreground pixels), then add a margin.
-    let bx0 = x1, by0 = y1, bx1 = x0, by1 = y0;
+    const rows = new Array<number>(y1 - y0).fill(0), cols = new Array<number>(x1 - x0).fill(0);
     for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) if (fg[y * A + x]) {
-      bx0 = Math.min(bx0, x); bx1 = Math.max(bx1, x + 1); by0 = Math.min(by0, y); by1 = Math.max(by1, y + 1);
+      rows[y - y0] = (rows[y - y0] ?? 0) + 1; cols[x - x0] = (cols[x - x0] ?? 0) + 1;
     }
-    if (bx1 <= bx0 || by1 <= by0) throw new Error(`the ${VIEW_ORDER[k]} cell of ${src} is empty: check the sheet's layout`);
+    const solid = (n: number): boolean => n >= 2;
+    let bx0 = x0 + cols.findIndex(solid), bx1 = x0 + cols.findLastIndex(solid) + 1;
+    let by0 = y0 + rows.findIndex(solid), by1 = y0 + rows.findLastIndex(solid) + 1;
+    if (!cols.some(solid) || !rows.some(solid) || bx1 <= bx0 || by1 <= by0) {
+      throw new Error(`the ${VIEW_ORDER[k]} cell of ${src} is empty: check the sheet's layout`);
+    }
     const m = Math.round(Math.max(bx1 - bx0, by1 - by0) * 0.06) + 2;
     bx0 = Math.max(x0, bx0 - m); by0 = Math.max(y0, by0 - m); bx1 = Math.min(x1, bx1 + m); by1 = Math.min(y1, by1 + m);
     const sx = W / A, sy = H / A;
@@ -148,7 +153,7 @@ if (isMain(import.meta.url)) {
   try {
     const r = splitSheet(sheet, o.out, o.layout);
     for (const v of VIEW_ORDER) console.log(`  ${v.padEnd(5)} ${r.views[v]}`);
-    console.log(`VIEWS_JSON ${JSON.stringify(r)}`);
+    console.log(`VIEWS_JSON=${JSON.stringify(r)}`); // KEY=json, the form parseMarkedJson reads
   } catch (e) {
     fail(e instanceof Error ? e.message : String(e));
   }

@@ -163,7 +163,7 @@ if (isMain(import.meta.url)) {
       if (unreal) console.log(JSON.stringify(await ensureVfxMaster({ force: o.force })));
       await makeMeshes({ unreal, ...(o.out ? { out: join(o.out, 'meshes') } : {}) });
     } else {
-      console.log("usage: vfx.ts textures [--size 512] [--only A,B] [--no-unreal] | master [--force] | instance <Name> '<json>' | meshes [--no-unreal] | flipbook <texture path> | all");
+      console.log("usage: vfx.ts textures [--size 512] [--only A,B] [--no-unreal] | master [--force] | instance <Name> '<json>' (or '@spec.json') | meshes [--no-unreal] | flipbook <texture path> | all   (textures, meshes, all: [--out dir])");
       process.exit(2);
     }
   } catch (e) {

@@ -343,7 +343,7 @@ try {
       if (!(e instanceof McpUnreachableError)) throw e;
       manifest.steps.unreal = { skipped: 'editor not running' };
       console.log('    editor not running: files are ready. Open the editor, then resume (no Tripo credits) with:');
-      console.log(`    node gen/character.ts --rig "${rigFbx}" --pbr "${pbrSource}" --name ${name} --height ${o.height} --rot=${o.rot} --max-tex ${o['max-tex']}${o.parent ? ` --parent ${o.parent}` : ''}`);
+      console.log(`    node gen/character.ts --rig "${rigFbx}" --pbr "${pbrSource}" --name ${name} --height ${o.height} --rot=${o.rot} --max-tex ${o['max-tex']}${o.tex !== '0' ? ` --tex ${o.tex}` : ''}${o.parent ? ` --parent ${o.parent}` : ''}`);
     }
   }
 
