@@ -252,9 +252,9 @@ add an entry to the project's `KIT_NOTES.md` in the same round.
   flag is `"isAiForbidden"` at `https://www.fab.com/i/listings/<listing id>`). Check before importing any pack. Fab
   refuses scripted requests (Cloudflare challenge / HTTP 403), so ask the director to read the flag in a browser (or
   paste the listing JSON), and record it in `SOURCED_ASSETS.md` with the listing URL and the date checked.
-- **The Unreal Engine EULA no longer limits AI use of the engine or MetaHuman** (Epic's 2026-10-29 update, accepted
-  by the director): engine source can be read by the agent, and MetaHuman Creator, Animator and Mesh to MetaHuman
-  output can be used with AI tools. NoAI rules for Fab and Epic content (section 17 above) are unchanged.
+- **The Unreal Engine EULA no longer limits AI use of the engine or MetaHuman** (Epic's 2026-10-29 update deleted
+  the two AI restrictions in EULA section 6e; accepted by the director): engine source can be read by the agent, and
+  MetaHuman Creator, Animator and Mesh to MetaHuman output can be used with AI tools. NoAI rules for Fab and Epic content (section 17 above) are unchanged.
 - Judging (rules 9): Ambition and Innovation, Use of Theme, Fun Factor, Gameplay, Visuals, Level Design and Game
   Progression, Audio (up to 5 points each; ties re-scored with Fun Factor doubled; scoring against the jam page's
   definitions: `docs/design.md` "Mapping to the judging categories"). The amount of AI used doesn't change the score.
