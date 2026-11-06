@@ -6,7 +6,7 @@
 #   {"lines": {"main": [[x, y, z], ...], "side path": [...]},     polylines the player is meant to walk (z = ground)
 #    "capsule": {"radius": 42, "half_height": 96},                 the player's capsule (optional; template defaults)
 #    "step_cm": 45, "jump_cm": 85, "walkable_deg": 44.765,         CMC MaxStepHeight, jump rise, walkable floor angle
-#    "offsets_cm": [0, -120, 120], "sample_cm": 40}                lines offset to each side (+ = left), sample spacing
+#    "offsets_cm": [0, -120, 120], "sample_cm": 40}                lines offset to each side (+ = right), sample spacing
 # For every sample on every offset line:
 #   hole       no floor for the "Pawn" profile within 6 m below
 #   lid        the pawn's floor is over 10 cm above the visible ground (a complex Visibility trace): something
@@ -15,8 +15,9 @@
 #   steep      over ~1 m the floor climbs steeper than the walkable angle
 #   blocked    the capsule, foot at step height, overlaps a blocker (the "Pawn" profile, simple collision, as
 #              CharacterMovement sweeps)
-#   invisible  ... and rays from 75 cm out toward the capsule's axis never touch that blocker's drawn triangles: its
-#              simple collision stands where nothing is visible (a hidden-in-game shape counts as invisible)
+#   invisible  ... and rays from 45 cm outside the capsule toward its axis never touch that blocker's drawn
+#              triangles: its simple collision stands where nothing is visible (a hidden-in-game shape counts as
+#              invisible)
 # Output: traverse_survey.json next to the route file (per line: counts and the first spots; per blocker: counts,
 # spots, actors) and a printed summary (TRAVERSE lines).
 #
@@ -77,7 +78,7 @@ def blocker(x, y, gz):
 
 
 def drawn_there(comp, item, c):
-    """Does any ray from 75 cm out toward the capsule's axis hit this component's real triangles?"""
+    """Does any ray from 45 cm outside the capsule toward its axis hit this component's real triangles?"""
     reach = R + 45.0
     for dz in (-HH + 5.0, -HH * 0.5, 0.0, HH - 10.0):
         for k in range(8):
@@ -105,7 +106,7 @@ def has_triangles(comp):
 
 
 def offset_line(P, off):
-    """The polyline shifted sideways by off cm (+ = left of the direction of travel)."""
+    """The polyline shifted sideways by off cm (+ = right of the direction of travel; Unreal's +Y is right of +X)."""
     Q = []
     for i, p in enumerate(P):
         a, b = P[max(i - 1, 0)], P[min(i + 1, len(P) - 1)]
