@@ -312,3 +312,23 @@ scored); download them now, retarget them onto the game's characters during the 
 3. Optional: an Adobe ID for Mixamo (rolls, knockdowns, get-ups, extra deaths); a paid melee pack for parries.
 4. During the jam, migrate only the folders you need into the game (Migrate keeps each pack's `/Game/<Pack>/` path)
    and run `node gen/unreal/retarget_library.ts` with the arguments in `docs/ue/animation-library.md` "Workflow".
+
+## 11. Autonomous practice run (no director input; `prompts/autonomous.md`)
+
+The director does the human-only steps once, then doesn't type until the final report.
+1. **Project:** steps 1-6 as usual (name it for the test, e.g. `AutoRun1`; the session renames nothing), including
+   the Third Person pack (step 2.5), `MEGAJAM_PROJECT` in the kit's `.env`, `CLAUDE.md` and the critic copied in
+   (step 5.3). Leave the editor open with the MCP server running.
+2. **Run card:** create `C:\dev\<Project>\AUTONOMOUS.md` with the run card table from `prompts/autonomous.md`, filled
+   in (start, length, theme or "roll", team name, a spend cap per paid service).
+3. **Balances:** top up whatever the caps rely on (Gemini prepay, Tripo credits, ElevenLabs). An empty balance
+   doesn't stop the run; the session falls back to free work, which tests less of the kit.
+4. **The PC:** power plan never sleeps (screen off is fine), Windows Update paused for the run's length, GPU-heavy
+   apps closed, nothing else typing into the machine (key-injection tests send keys to the focused window).
+5. **Claude Code:** `cd C:\dev\<Project>; claude --permission-mode auto` (auto is the default on recent versions),
+   `/effort high`, then paste the `/goal` line at the end of `prompts/autonomous.md`. `/goal` keeps starting turns
+   until its condition holds; `/goal` with no argument shows the status, `/goal clear` stops it. A usage limit or a
+   rate limit pauses the goal (code.claude.com/docs/en/goal); it continues when the limit resets only if the session
+   is set to wait for it, so check that before leaving.
+6. **After:** read `devlog/FINAL_REPORT.md`, `QUESTIONS.md` and `KIT_NOTES.md`; kit changes go in through the usual
+   review.

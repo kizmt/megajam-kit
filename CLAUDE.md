@@ -96,6 +96,8 @@ director). **The target PC** is the machine the game is built and measured on (R
   message before the block, then keep running rounds. Unattended means no paid batches beyond the agreed budget, no
   key injection, no editor restarts or other steps that need an approval; leave the permission mode, MCP and the
   editor running. Queue anything that needs the director for the wake-up message.
+- **Autonomous practice runs** (the project has an `AUTONOMOUS.md` run card): `prompts/autonomous.md` replaces
+  every "ask the director" rule in this file for that run, with independent judges and hard limits. Never in the jam.
 - **The director can step in at any time.** A steer overrides the plan: finish or roll back the current step, record
   the call in `DECISIONS.md`, re-plan.
 - **Rounds with checkpoints.** Each round: plan (≤5 bullets) → build → capture screenshots/video → report,
@@ -254,7 +256,8 @@ add an entry to the project's `KIT_NOTES.md` in the same round.
   paste the listing JSON), and record it in `SOURCED_ASSETS.md` with the listing URL and the date checked.
 - **The Unreal Engine EULA no longer limits AI use of the engine or MetaHuman** (Epic's 2026-10-29 update deleted
   the two AI restrictions in EULA section 6e; accepted by the director): engine source can be read by the agent, and
-  MetaHuman Creator, Animator and Mesh to MetaHuman output can be used with AI tools. NoAI rules for Fab and Epic content (section 17 above) are unchanged.
+  MetaHuman Creator, Animator and Mesh to MetaHuman output can be used with AI tools. NoAI rules for Fab and Epic
+  content (section 17 above) are unchanged.
 - Judging (rules 9): Ambition and Innovation, Use of Theme, Fun Factor, Gameplay, Visuals, Level Design and Game
   Progression, Audio (up to 5 points each; ties re-scored with Fun Factor doubled; scoring against the jam page's
   definitions: `docs/design.md` "Mapping to the judging categories"). The amount of AI used doesn't change the score.

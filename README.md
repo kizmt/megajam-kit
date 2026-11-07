@@ -47,6 +47,7 @@ video editing), Node 24 (the kit's TypeScript runs directly), Git + Git LFS.
 | `prompts/style-lock.md` | Procedure for agreeing and writing down the game's visual style |
 | `prompts/playtest.md` | Brief for a fresh agent reviewing a recorded first-time play |
 | `agents/critic.md` | The blind critic subagent (Read only, no CLAUDE.md); SETUP step 5 copies it into the project's `.claude\agents\` |
+| `prompts/autonomous.md` | Practice run with no director: the session decides on evidence, within a spend card |
 | `prompts/critic.md` | Brief for a blind critic agent that scores screenshots against references or a rubric |
 | `gen/image.ts` | Concept image generation |
 | `gen/asset.ts` | One command from a prompt to a prop placed in the level: concept → 3D model → Blender prep → import (Nanite, collision, material) |
