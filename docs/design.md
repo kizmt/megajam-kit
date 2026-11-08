@@ -158,8 +158,8 @@ Audio is a full judging category; plan it with the beats, not at the end (the au
 
 Log a line, with the time since the run started, for: run start (log it when recording starts too), title
 dismissed, first input, first use of the core verb, each beat start, each goal reached, each checkpoint, each fail
-(a death or failed attempt: cause and position), respawn complete, and the end (one log category, `docs/ue/debugging.md` "A. Logs"). The
-playtest and tuning numbers below come from these lines, not from memory.
+(a death or failed attempt: cause and position), respawn complete, and the end (one log category,
+`docs/ue/debugging.md` "A. Logs"). The playtest and tuning numbers below come from these lines, not from memory.
 
 ## Playtesting
 
