@@ -1,7 +1,9 @@
 # Submission: the page, the form, the devlog
 
 What the judges see before they play: the itch.io page, the video and the devlog. This note is what goes on them,
-from the Official Rules (2026-10-22) and the kit's shipping steps. Mechanics live elsewhere: packaging and upload in
+from the Official Rules (PDF, last updated 2026-11-05) and the jam page, and the kit's shipping steps. Read both:
+rule 1 makes "all terms and conditions of any Contest website" binding too, and the jam page alone holds the
+packaging rules (development build, zip name) and the pre-jam declaration. Mechanics live elsewhere: packaging and upload in
 CLAUDE.md "Shipping" and `SETUP.md` 9, the video in `docs/ue/cinematics-video.md`, the last checks on the build in
 `docs/ue/production.md` "Final pass".
 
@@ -14,7 +16,15 @@ CLAUDE.md "Shipping" and `SETUP.md` 9, the video in `docs/ue/cinematics-video.md
 - [ ] A **development build** (jam page, Unreal Engine teams: "Package your game for Windows (development build)"):
       `package.ps1` without `-Config`, never Shipping. Zip named `TeamName_GameName`, under 1 GB, uploaded to our
       own itch.io account, then submitted to the jam.
-- [ ] **Full name and email of every entrant**, one named as the team owner (rule 1(c)).
+- [ ] **Team name, game name, and every entrant's full name and the email linked to their Epic Games account**, one
+      named as the team owner (rule 1(c); the jam page asks for the Epic-account email). Winners are notified at that
+      email around 2027-01-29 and have 72 hours to answer (rule 14).
+- [ ] **Pre-jam work declared** (jam page: "Declare any prompts, scripts, or assets you made before the jam"; rule
+      7(h) lets Epic ask for them and their version history): name this kit (prompts, scripts, docs; the private repo
+      and its push history) and any pre-downloaded sourced packs, on the form and in the page credits.
+- [ ] **Submitted by the director, by hand**: rule 17 says a submission "must be submitted by an Entrant (on behalf of
+      the team) and not by an AI agent or other automated means". The agent prepares everything; the director fills
+      and sends the form.
 - [ ] **Sourced assets noted at submission** (rule 1(d)): the list from `SOURCED_ASSETS.md`, with licences.
 - [ ] **Video:** 30-60 s of recorded gameplay, 1920x1080 or higher, English (rules 1(e), 7(c), 7(i)).
 - [ ] **Uses the theme** visibly (rule 7(g)).
@@ -51,7 +61,8 @@ of the page has to sell the game and get it running.
   D3D12 SM6). Recommend a driver update: it fixes most D3D12 start-up crashes. Say the first launch prepares
   shaders for up to a minute (`docs/ue/production.md` "First launch: PSO warm-up").
 - **Theme:** one or two sentences on how the theme shapes the play, not only the setting.
-- **Credits:** the team; AI tools used (models, agents, services from the kit README); sourced assets with licences.
+- **Credits:** the team; AI tools used (models, agents, services from the kit README); sourced assets with licences;
+  the pre-jam kit (prompts, scripts and docs made before the contest, as the jam page asks to declare).
   AI use is "considered for context only" in judging (rule 9): state it plainly.
 - **Known issues:** anything a judge might hit, with the workaround. Better said than discovered. Only if the SM5
   shader set is cooked (`docs/ue/production.md`): "If it crashes at start, run `<Game>.exe -dx11`". Without it the
@@ -86,7 +97,10 @@ appends `devlog/YYYY-MM-DD.md` (CLAUDE.md "Devlog (Glass Box)"). At content lock
    `docs/ue/production.md` "Final pass").
 3. Upload the zip with `scripts/upload.ps1 -Push` (the director's go-ahead), then download it from the page,
    unzip to a fresh folder and play the first minute.
-4. Fill the submission form: entrants, sourced assets, video link, devlog link. Submit by **D − 3 h**.
+4. The director fills and sends the submission form (rule 17): team and game name, entrants with their Epic-account
+   emails, sourced assets, the pre-jam declaration, video link, devlog link. Submit by **D − 3 h**.
 5. Check the submission from a logged-out browser: the page, the video, the download. Screenshot the confirmation.
 6. Keep the remaining hours for problems. Whether a fixed build may replace the submitted one depends on the jam's
    settings (check the jam page at kickoff); if it is allowed, only before the deadline, and say so in the devlog.
+7. After the jam: keep the submitted build and its commit as they are (jam page FAQ: "Keep the jam version as your
+   submitted build"); later work goes on a branch or a new page.
