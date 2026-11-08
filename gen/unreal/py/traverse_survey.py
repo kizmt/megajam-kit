@@ -1,6 +1,7 @@
 # Where can't the player go, and why? An editor survey of the walkable route for invisible walls, lids, ledges and
 # steep spots, with the pawn's own collision. Run it after any change to the level's collision, walls, props or
-# terrain along the route, and before a playtest (docs/ue/debugging.md F "Traversal checks").
+# terrain along the route, and before a playtest (docs/ue/debugging.md F "Traversal checks"). For a game where a
+# character moves on foot through the level; other games skip it.
 #
 # Input: a route file the game session writes (JSON, world cm), by default <Project>/Generated/traverse/route.json:
 #   {"lines": {"main": [[x, y, z], ...], "side path": [...]},     polylines the player is meant to walk (z = ground)

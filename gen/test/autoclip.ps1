@@ -14,7 +14,7 @@
   viewport for its first seconds.
 .EXAMPLE
   & C:\dev\megajam-kit\gen\test\autoclip.ps1 -Map Main -GameArgs '-Autoplay' -StartPattern 'Autoplay on' -Seconds 20 `
-      -Out C:\dev\MyGame\Generated\clips\fight.mp4
+      -Out C:\dev\MyGame\Generated\clips\autoplay.mp4
 #>
 param([string]$Project = '', [string]$Map = 'Main', [string]$GameArgs = '', [string]$StartPattern = 'Autoplay on',
     [Parameter(Mandatory)][string]$Out, [int]$Seconds = 20, [int]$ReadyTimeoutSec = 180)

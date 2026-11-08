@@ -10,7 +10,7 @@
   aborts, so no keystrokes land in other apps.
 .EXAMPLE
   .\keytest.ps1 -Approved -Exe C:\dev\Builds\MyGame\Windows\MyGame.exe -StartPattern 'MYGAME_GO' `
-      -Sequence '0:down W; 0.3:down LShift; 3:up LShift; 3.5:tap Space; 3.8:tap LCtrl; 8:up W' -Record C:\dev\MyGame\Generated\clips\keytest.mp4
+      -Sequence '0:tap Enter; 1:down Right; 2.5:up Right; 3:tap Space; 4:tap Escape' -Record C:\dev\MyGame\Generated\clips\keytest.mp4
 .NOTES
   Sequence: "<seconds>:<down|up|tap> <key>" separated by ';'. Seconds count from -StartPattern (a log line, regex) or,
   without it, from one second after the window is focused. Keys: A-Z, 0-9, F1-F12, Space, Enter, Escape, Tab,

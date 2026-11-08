@@ -2,8 +2,8 @@
 <#
 .SYNOPSIS
   Runs a scripted test in a standalone -game instance of the editor build and prints its result lines. The test is a
-  Python file in the project (written during the jam) that drives the pawn from a slate post-tick callback
-  (add_movement_input, no OS input, so no key injection), measures, prints lines starting with -Tag, and quits.
+  Python file in the project (written during the jam) that drives the game from a slate post-tick callback
+  (e.g. add_movement_input on a pawn, or the game's test hooks; no OS input, so no key injection), measures, prints lines starting with -Tag, and quits.
 .DESCRIPTION
   Why -game and not PIE: with the editor in the background, PIE runs at 3-8 fps and timing or foot-slide measurements
   are meaningless; -game runs at full speed. In -game, EditorAssetLibrary calls crash (use unreal.load_asset), Python
@@ -16,7 +16,7 @@
   Python errors (more than -MaxPyErrors lines after the test's first log line: startup noise from other plugins
   doesn't count) or whose script raises before printing a -Tag line, instead of letting it run to the timeout.
 .EXAMPLE
-  & C:\dev\megajam-kit\gen\test\game_test.ps1 -Script C:\dev\MyGame\scripts\test_corridor.py -Tag GAMETEST
+  & C:\dev\megajam-kit\gen\test\game_test.ps1 -Script C:\dev\MyGame\scripts\test_reset.py -Tag GAMETEST
 #>
 param([string]$Project = '', [string]$Map = 'Main', [Parameter(Mandatory)][string]$Script, [string]$Tag = 'GAMETEST',
     [string]$GameArgs = '', [int]$TimeoutSec = 600, [int]$ResX = 1920, [int]$ResY = 1080, [int]$MaxPyErrors = 50)

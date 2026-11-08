@@ -1,6 +1,7 @@
 # Can the player walk the whole route? A -game test: the pawn runs every route line with real CharacterMovement and
 # reports where it stalls, gets stuck, falls or is pushed off the line. Pair it with the editor survey
-# (gen/unreal/py/traverse_survey.py): the survey says what could block, the walk says what does.
+# (gen/unreal/py/traverse_survey.py): the survey says what could block, the walk says what does. For a game where a
+# character moves on foot through the level; other games skip it.
 #
 # Input: the same route file as the survey, <Project>/Generated/traverse/route.json ("lines", world cm), plus an
 # optional "walk" block:
