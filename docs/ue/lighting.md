@@ -252,7 +252,7 @@ Groups: `sg.ResolutionQuality` (= screen percentage), `sg.ViewDistanceQuality`, 
   Keep **Blue Correction** on (bright blues/neon/sky go violet without it). Exposure changes go in Exposure
   Compensation, not Gain.
 - Colour grading: `ColorSaturation`, `ColorContrast`, `ColorGamma`, `ColorGain` per Global/Shadows/Midtones/Highlights;
-  `WhiteTemp`; `SceneColorTint`. Push saturation/contrast slightly for a punchy, readable look.
+  `WhiteTemp`; `SceneColorTint`. If the style lock wants a punchy look, push saturation/contrast slightly.
 - **LUT** (PPV > Color Grading > Global > **Color Grading LUT** + **LUT Intensity**; `ColorGradingLUT`,
   `ColorGradingIntensity`). Fastest route to a strong graded look. Neutral LUT = 16x16x16 unwrapped to **256x16**
   (Epic's LUT example zip, `RGBTable16x1.png`). Screenshot the scene with exposure and post final, grade it, apply the

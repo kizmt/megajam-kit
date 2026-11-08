@@ -144,7 +144,8 @@ default material.
   Material), then in the master add `MaterialExpressionMaterialFunctionCall` and set its `material_function`.
 - **MPC (`MPC_Global`)**: up to 1024 scalar + 1024 vector params; a material can reference at most **2** MPCs.
   Updating values is cheap and hits every referencing material. **Changing the number of params recompiles all
-  referencing materials**: add all params up front (Wetness, WorldTint, WindStrength, PulseTime...).
+  referencing materials**: add all the params the game needs up front (e.g. WorldTint, PulseTime, Wetness,
+  WindStrength).
 - C++: `UKismetMaterialLibrary::SetScalarParameterValue(this, MPC, "Wetness", 0.7f)` /
   `SetVectorParameterValue(...)`. Renamed MPC params break Blueprint references (not materials).
 
