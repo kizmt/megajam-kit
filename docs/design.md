@@ -33,8 +33,10 @@ space) before the next idea. Uninterrupted difficulty reads as a grind; uninterr
 
 - Open in a **safe space** where the core verb can't fail badly, with the first goal visible.
 - **Signpost with the look, not with UI:** the style lock's accent colour marks interactive things and the path;
-  light pulls the eye (bright exit, dark dead end); a landmark visible from the start gives direction.
-- Prompts: in world or on HUD, ≤ 5 words, shown when needed, gone once used ("Space: jump" by the first gap).
+  light pulls the eye (bright exit, dark dead end); in a space the player moves through, a landmark visible from the
+  start gives direction.
+- Prompts: in world or on HUD, ≤ 5 words, shown when needed, gone once used ("Space: jump" by the first gap,
+  "Click: place" by the first empty slot).
   Show the real key or button. No text walls, no pause-to-read tutorials.
 - **Gate by ability:** the first obstacle can only be passed with the verb just taught, so learning is proven.
 - Controls on the pause screen too, for players who skipped a prompt.
@@ -110,11 +112,12 @@ the director's layout input is playing the grey box and saying what to change. W
 
 ## Difficulty and fairness
 
-- **Telegraph before it hurts:** every threat shows a readable wind-up (sound, light, animation) before it can
+- **Telegraph before it hurts:** every threat the game has shows a readable wind-up (sound, light, animation) before it can
   damage (`docs/ue/game-feel.md`). An unreadable hit feels unfair, even when it isn't.
 - **A loss must be possible, and cheap.** "Respect the player's time" means a cheap loss, not no loss: lose the
-  attempt, never the run. A core resource with no failure state is decoration. Each concept names its stakes
-  (`prompts/concept.md` step 2).
+  attempt, never the run. A core resource with no failure state is decoration. A concept with no fail state at all
+  (a toy, a story, a puzzle with free undo) names what the player risks instead (time, score, a choice that
+  sticks). Each concept names its stakes (`prompts/concept.md` step 2).
 - **Checkpoints at the start of each beat**; respawn and retry in ≤ 5 s, without replaying solved parts.
 - **The critical path is moderate; the challenge is optional.** Extra difficulty goes in side goals, faster times,
   higher scores or collectibles, so a first-time judge still reaches the end.
@@ -124,8 +127,7 @@ the director's layout input is playing the grey box and saying what to change. W
 ## Progression that fits a jam
 
 Pick one; keep it visible on screen and in the video:
-- **Spatial (the default):** the player moves through distinct areas, each with its new idea; the most readable
-  in a short game.
+- **Spatial:** the player moves through distinct areas, each with its new idea; very readable in a short game.
 - **Ability:** the player gains one ability mid-game that recontextualises earlier spaces (a short loop back pays off).
 - **Score or time:** a run judged by a number, with a reason to replay (best time, rank, collectibles).
 Avoid inventories, skill trees, crafting, levelling and dialogue trees: they cost days and show badly in 60 s.
@@ -155,8 +157,8 @@ Audio is a full judging category; plan it with the beats, not at the end (the au
 ## Instrument the game
 
 Log a line, with the time since the run started, for: run start (log it when recording starts too), title
-dismissed, first input, first use of the core verb, each beat start, each goal reached, each checkpoint, each death
-(cause and position), respawn complete, and the end (one log category, `docs/ue/debugging.md` "A. Logs"). The
+dismissed, first input, first use of the core verb, each beat start, each goal reached, each checkpoint, each fail
+(a death or failed attempt: cause and position), respawn complete, and the end (one log category, `docs/ue/debugging.md` "A. Logs"). The
 playtest and tuning numbers below come from these lines, not from memory.
 
 ## Playtesting
@@ -171,13 +173,13 @@ The builder can't play the game for the first time again, so test with fresh eye
    pitch, goal, controls and beat list, and the watcher's notes (no code, no history) and reports where a first-time
    player would be confused, stuck or bored: brief in `prompts/playtest.md`. Like the visual critic, the director's
    calls overrule it.
-3. **Numbers per run** (from the log): time to first input, time to first goal, deaths and time per beat,
+3. **Numbers per run** (from the log): time to first input, time to first goal, fails and time per beat,
    longest time without progress, total length, whether the end was reached.
 
 Pass/fail checks for each playtest round (report before and after):
 - First input ≤ 5 s after the title; core verb used ≤ 10 s; first goal reached unaided.
-- No stretch over 60 s without progress or a new thing; no more than 3 deaths in any beat.
-- Retry ≤ 5 s after a death; total length within the target; end screen reached.
+- No stretch over 60 s without progress or a new thing; no more than 3 fails in any beat.
+- Retry ≤ 5 s after a fail; total length within the target; end screen reached.
 - Each beat names its one new idea, and the log shows the player passed that idea's gate in 3 attempts or fewer.
 - The set-piece shot named in `design/concept.md` exists in the game and in the video.
 

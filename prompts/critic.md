@@ -17,8 +17,8 @@ opinion of the result.
      recapture it (roll back, capture, restore) or match its exposure on regions that did not change, and say so in
      the brief. In the rehearsal an unmatched pair made a critic call the same pebbles "dark charcoal" that it called
      "pale limestone" once matched, or
-   - a rubric of 3-5 criteria when there is no image (e.g. "the exit reads from the start", "one clear landmark per
-     room", "fight spaces are readable from the gameplay camera", "no flat, evenly lit walls").
+   - a rubric of 3-5 criteria when there is no image (e.g. "the goal reads from the start", "interactive pieces stand
+     out from the background", "hazards read from the gameplay camera", "no flat, evenly lit surfaces").
 3. Copies with neutral names (`A_1.jpg`, `B_1.jpg`...) and a random A/B order per camera, recorded in your own notes.
    The critic must not know which image is the game, which is the reference, or which is newer.
 4. `art/critic-look.md`: `art/style-lock.md` (palette, lighting, materials) **cut down to the look itself**, written
@@ -26,12 +26,12 @@ opinion of the result.
    numbers, dates, version names and anything that describes what was built when ("Round 7 room"), or the critic
    can tell which image is newer.
 5. Write the rubric **before** running the critic, and keep it to what the camera can show. List the deliberate
-   states the camera will show and say how to judge them ("the exit gate is closed until the enemies are dead; judge
-   whether it reads as the exit, not whether it is open"). This says nothing about which image is newer.
+   states the camera will show and say how to judge them ("the exit gate is closed until the beat's goal is done;
+   judge whether it reads as the exit, not whether it is open"). This says nothing about which image is newer.
 
 ## The brief (paste, fill the brackets)
 
-> You are reviewing images from a small 3D game for [genre / mood words]. For each camera there are two images, A
+> You are reviewing images from a small game for [genre / mood words]. For each camera there are two images, A
 > and B. [Either: One is a reference for the intended look. / Or: They are two versions of the same view.] You are
 > not told which is which.
 >

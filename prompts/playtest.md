@@ -26,8 +26,8 @@ history. Its findings become tuning and layout tasks; the director's calls (`DEC
 > For each beat, say whether the player understood its new idea, citing frame times or log lines as evidence.
 > Then list the problems a first-time player meets, most damaging first, each as: time / where, what happened,
 > the likely cause (say if it's a guess), and one concrete fix in the level, the signposting or a tuning number.
-> Flag any stretch over 60 s without progress or a new thing, any beat with more than 3 deaths, any death whose
-> cause was not visible beforehand, and anything that blocks reaching the end.
+> Flag any stretch over 60 s without progress or a new thing, any beat with more than 3 fails (deaths or failed
+> attempts), any fail whose cause was not visible beforehand, and anything that blocks reaching the end.
 > Finish with the three changes that would most improve the next run. Be specific; don't praise.
 
 ## After the reviewer answers
@@ -35,5 +35,5 @@ history. Its findings become tuning and layout tasks; the director's calls (`DEC
 - Check each problem against the evidence (frame, log line). Drop any the evidence doesn't support.
 - Check each fix against `DECISIONS.md`; drop or flag ones that contradict a director's call.
 - Turn the top three into the next round's tasks, each with a pass/fail check from `docs/design.md`
-  "Playtesting" (e.g. "first goal reached unaided", "deaths in beat 2 ≤ 3").
+  "Playtesting" (e.g. "first goal reached unaided", "fails in beat 2 ≤ 3").
 - After the fixes, the next cold run is the test. Report the numbers before and after.
