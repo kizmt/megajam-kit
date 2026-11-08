@@ -2,7 +2,7 @@
 // One command from prompt to a rigged, PBR-textured character with Epic's template animations retargeted onto it.
 //
 //   node gen/character.ts "a young mechanic in overalls and boots" --name Mechanic --concepts 3   (stop: pick a T-pose)
-//   node gen/character.ts --image <concept.jpg> --name Mechanic [--parent /Script/MyGame.PlayerCharacter]
+//   node gen/character.ts --image <concept.jpg> --name Mechanic [--parent /Script/MyGame.GameCharacter]
 //   node gen/character.ts "a young mechanic ..." --name Mechanic --turnaround --concepts 2   (four-view sheets)
 //   node gen/character.ts --sheet <turnaround sheet> --name Mechanic                     (Tripo multiview-to-3D)
 //   node gen/character.ts --task <tripo model/texture task id> --name Mechanic [--pbr <textured model file>]
@@ -129,13 +129,13 @@ const BODY_RULES =
   `Legs straight, feet shoulder-width apart, flat on the ground. EMPTY HANDS: no props, no weapons, no bag ` +
   `or tool, nothing held in or attached to the hands. `;
 const TPOSE_WRAPPER = (subject: string): string =>
-  `Character model sheet, front view only: ${subject}. Stylized game character proportions. ${BODY_RULES}` +
+  `Character model sheet, front view only: ${subject}. Game character proportions. ${BODY_RULES}` +
   `Body and head facing the viewer squarely, ` +
   `zero rotation, perfectly left-right symmetrical, orthographic camera at chest height. Whole body visible head ` +
   `to toe with margin, plain flat light-grey background, soft even lighting, no shadow, no text.`;
 // Four views (PIPELINE.md "Four views"): the same T-pose rules, one sheet, cut by gen/views.ts.
 const TURNAROUND_WRAPPER = (subject: string): string =>
-  `Character turnaround model sheet: ${subject}. Stylized game character proportions. ${BODY_RULES}` +
+  `Character turnaround model sheet: ${subject}. Game character proportions. ${BODY_RULES}` +
   `Whole body visible head to toe in every view. ${TURNAROUND_RULES('grid')}`;
 
 const name = pascal(o.name);

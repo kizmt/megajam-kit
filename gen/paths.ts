@@ -18,7 +18,7 @@ export function fail(msg: string): never {
   process.exit(1);
 }
 
-/** 'heavy wooden chest' -> 'HeavyWoodenChest' (asset names). maxWords keeps names short when built from a prompt. */
+/** 'metal locker door' -> 'MetalLockerDoor' (asset names). maxWords keeps names short when built from a prompt. */
 export function pascal(s: string, maxWords = Infinity): string {
   return s.replace(/[^a-zA-Z0-9]+/g, ' ').trim().split(' ').slice(0, maxWords)
     .map((w) => (w[0]?.toUpperCase() ?? '') + w.slice(1)).join('');

@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 // Audio generation via ElevenLabs: sound effects, music, voice. No dependencies; Node 24+.
 //
-//   node gen/audio.ts sfx   "heavy wooden chest lid creaking open" --seconds 2 --name ChestOpen --mono
+//   node gen/audio.ts sfx   "metal locker door slamming shut" --seconds 2 --name LockerSlam --mono
 //   node gen/audio.ts sfx   "gentle night forest ambience, crickets" --seconds 20 --loop --name ForestAmb
-//   node gen/audio.ts music "calm mysterious exploration theme, harp and low strings" --seconds 90 --name Explore
-//   node gen/audio.ts voice "The old map was right. It's here." --name Line01 [--voice <voice_id>]
+//   node gen/audio.ts music "upbeat synth loop, punchy drums and bass" --seconds 90 --name Theme
+//   node gen/audio.ts voice "Thirty seconds left. Make them count." --name Line01 [--voice <voice_id>]
 //   node gen/audio.ts voices            (list available voice ids)
-//   node gen/audio.ts plan  "dark ambient cue, 72 BPM, D minor" --seconds 60 --name Explore   (free: writes a composition plan JSON)
-//   node gen/audio.ts music --plan <plan.json> --seed 7 --name Explore                       (compose from an edited plan)
+//   node gen/audio.ts plan  "dark ambient cue, 72 BPM, D minor" --seconds 60 --name Theme     (free: writes a composition plan JSON)
+//   node gen/audio.ts music --plan <plan.json> --seed 7 --name Theme                         (compose from an edited plan)
 //
 // Output: <Project>/Generated/audio/<Kind>_<Name>.mp3 (+ .json sidecar, + 48 kHz WAV via ffmpeg).
 // --n 3 makes variants (_1, _2, _3); a --name ending in _<digits> keeps it (Step_4). WAVs are imported into the open

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // Concept image generation for the megajam pipeline (Gemini or OpenAI). No dependencies; Node 24+.
 //
-//   node gen/image.ts "a wooden treasure chest" --asset --n 3
-//   node gen/image.ts "misty forest clearing at dawn" --aspect 16:9 --provider openai
-//   node gen/image.ts "a lantern" --asset --style C:/dev/<Project>/art/style-prefix.txt `
+//   node gen/image.ts "a cracked ceramic teapot" --asset --n 3
+//   node gen/image.ts "rain-soaked city street at night, neon signs" --aspect 16:9 --provider openai
+//   node gen/image.ts "a desk fan" --asset --style C:/dev/<Project>/art/style-prefix.txt `
 //        --ref C:/dev/<Project>/art/reference/key.png
 // (--style/--ref are project files: give absolute paths, since the scripts run from the kit folder.)
 //

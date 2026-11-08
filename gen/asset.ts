@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 // One command from prompt to prop in the open Unreal level.
 //
-//   node gen/asset.ts "a brass lantern" --name Lantern --max 0.4
-//   node gen/asset.ts "a brass lantern" --name Lantern --concepts 4      (stop after 4 concept images)
+//   node gen/asset.ts "a retro desk fan" --name DeskFan --max 0.4
+//   node gen/asset.ts "a retro desk fan" --name DeskFan --concepts 4      (stop after 4 concept images)
 //   node gen/asset.ts "a stone well with a wooden roof" --name Well --turnaround --concepts 2   (four-view sheets for multiview)
-//   node gen/asset.ts --image C:/dev/<Project>/Generated/assets/lantern/concept-<stamp>-2.jpg --name Lantern --max 0.4
+//   node gen/asset.ts --image C:/dev/<Project>/Generated/assets/deskfan/concept-<stamp>-2.jpg --name DeskFan --max 0.4
 //
 // Steps: concept image -> Tripo image-to-3D (FBX) -> Blender prep (size, pivot, textures) ->
 //        Blender preview -> Unreal import + place + screenshot (if the editor is open).

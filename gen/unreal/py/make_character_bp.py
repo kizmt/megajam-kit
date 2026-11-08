@@ -1,8 +1,8 @@
 # Thin Blueprint subclass of a C++ Character for a generated character: mesh, anim class, mesh offset only.
 # Gameplay assignments (input actions, tuning asset) stay with the game's own wiring.
-# Run via: node gen/unreal/py.ts gen/unreal/py/make_character_bp.py --arg name=Explorer
-#            --arg parent=/Script/MyGame.PlayerCharacter [--arg folder=/Game/Characters/Explorer]
-#            [--arg mesh=/Game/Characters/Explorer/SK_Explorer] [--arg abp=/Game/Characters/Explorer/Anims/ABP_Unarmed_Explorer]
+# Run via: node gen/unreal/py.ts gen/unreal/py/make_character_bp.py --arg name=Mechanic
+#            --arg parent=/Script/MyGame.GameCharacter [--arg folder=/Game/Characters/Mechanic]
+#            [--arg mesh=/Game/Characters/Mechanic/SK_Mechanic] [--arg abp=/Game/Characters/Mechanic/Anims/ABP_Unarmed_Mechanic]
 # Prints BP_JSON={...}.
 import json
 import unreal

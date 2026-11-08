@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Retarget a whole animation library folder onto a character built by gen/character.ts (editor open, MCP).
 //   node gen/unreal/anim_inventory.ts --project <library project> --folder <Pack>   # find the --source-mesh first
-//   node gen/unreal/retarget_library.ts --name Hero --folder /Game/<Pack>/Animations `
+//   node gen/unreal/retarget_library.ts --name Mechanic --folder /Game/<Pack>/Animations `
 //        --source-mesh /Game/<Pack>/Mannequins/Meshes/SKM_Manny_Simple --category Interact `
 //        --filter Door --limit 5                                # test run: filter to the clips you will check
 //   options: --mesh <target SK>  --source-rig <IK rig>  --category <subfolder>  --filter attack,dodge  --limit 5
@@ -81,7 +81,7 @@ try {
   if (r.unmapped_target_chains.length) {
     console.log(`WARNING: target chains with no source chain: ${r.unmapped_target_chains.join(', ')}. Check the retargeter's chain mapping before trusting these clips.`);
   }
-  console.log('Check a few clips in PIE from the gameplay camera (arms, feet, weapon hand) before wiring them in.');
+  console.log('Check a few clips in PIE from the gameplay camera (arms, feet, hands) before wiring them in.');
   console.log('Log the library in SOURCED_ASSETS.md (sourced assets are listed on submission and not scored).');
 } catch (e) {
   fail(errorMessage(e));
