@@ -175,6 +175,9 @@ The builder can't play the game for the first time again, so test with fresh eye
    calls overrule it.
 3. **Numbers per run** (from the log): time to first input, time to first goal, fails and time per beat,
    longest time without progress, total length, whether the end was reached.
+4. **Findings about play outrank findings about looks** when planning the next round: in a practice run, a gate the
+   player could pass by mashing one key stayed open for four hours while four look passes ran. The named playtests
+   (concept schedule: D − 50 h and before the feature freeze) are timed so their findings can still change systems.
 
 Pass/fail checks for each playtest round (report before and after):
 - First input ≤ 5 s after the title; core verb used ≤ 10 s; first goal reached unaided.

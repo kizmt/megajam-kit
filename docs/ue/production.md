@@ -141,6 +141,14 @@ which build they played (a stale unzipped copy fooled a prototype test).
 Freeze features first: from here, only fixes. Each check is done on the build that will ship, unzipped to a fresh
 folder, never on PIE.
 
+- **The build that ships is Shipping** (`package.ps1 -Config Shipping`). A Development build starts a trace listener
+  on TCP port 1985 ("LogTrace: Display: Control listening on port 1985"), and Windows Defender asks every player to
+  allow it on first launch: a judge's first sight of the game is a security prompt (seen in a practice run,
+  2026-11-08; the prompt also held the foreground and blocked `keytest.ps1` for hours). Shipping drops the trace
+  listener, the console and most logging, so the session's `-game` tests keep running on the editor build and the
+  daily packages stay Development; package Shipping here, unzip it, play it once. If Shipping misbehaves, ship the
+  Development zip and say on the page that Windows may ask about network access.
+
 - **Full play-through twice**, start to credits, with real input (keyboard and mouse, plus gamepad if the page claims
   it). Restart, quit and every menu path work; Esc always has a way out; the game never soft-locks.
 - **No debug left on screen:** print strings, on-screen debug messages, debug draws, `stat` overlays, cheat keys,

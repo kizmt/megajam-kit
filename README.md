@@ -53,12 +53,13 @@ video editing), Node 24 (the kit's TypeScript runs directly), Git + Git LFS.
 | `gen/asset.ts` | One command from a prompt to a prop placed in the level: concept → 3D model → Blender prep → import (Nanite, collision, material) |
 | `gen/character.ts` | One command from a concept to a playable character: 3D model → re-texture → rig → PBR maps → import → animation retarget → Blueprint |
 | `gen/views.ts` | Cuts a four-view turnaround sheet into front/left/back/right images for Tripo's multiview-to-3D |
+| `gen/balances.ts`, `gen/tripo.ts` | Every paid service's balance in one call; the `tripo` CLI with the kit `.env` loaded |
 | `gen/audio.ts` | Sound effects, music and voice, converted and imported into the editor |
 | `gen/blender/` | Headless Blender scripts: size/pivot/texture prep, rig prep, PBR map extraction, ORM packing, previews |
 | `gen/vfx/` | VFX building blocks: procedural mask/noise textures, the master VFX material and instances, effect meshes |
 | `gen/unreal/` | Editor automation over MCP: master material + material instances, skeletal import checks, retargeting, screenshots, running editor Python |
 | `gen/perf/` | Benchmarking of the packaged build: CSV profile summaries and settings comparisons |
-| `gen/test/` | Real-input key tests (with approval), scripted `-game` tests (including a route walker), and safe recording of the game window |
+| `gen/test/` | `-game` tests: scripted tests, posted-key input, camera-set captures, a shimmer meter, trailer shots, a route walker; foreground key tests (with approval) and safe recording |
 | `scripts/` | PowerShell: C++ build (fails on warnings), packaging + itch.io zip, itch.io upload (butler), project Git/LFS setup |
 | `unreal/Plugins/MegajamTools` | The kit's small editor plugin (Python tools exposed to Unreal MCP) |
 

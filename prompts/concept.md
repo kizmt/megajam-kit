@@ -96,13 +96,17 @@ Write `design/concept.md` (in the planning folder until S):
   - *Must* (not a game without it): the core verb with 3-channel feedback; onboarding, 2-3 twists and an end,
     playable start to finish; one music track and a sound on every action; start and end screens; **by S + 48 h**, a
     reset hook and the test hooks the trailer needs (stage a shot, log events), so the video can be filmed offline
-    (`docs/ue/cinematics-video.md` D3b).
+    (`docs/ue/cinematics-video.md` D3b). **The shot list now** (`design/shots.json`, rendered later by
+    `gen/test/shots.ps1`): the 60-second moment, the set piece and the ending, so those places get built on purpose.
   - *Should* (makes it good): the set piece, a second music cue for the climax, the full juice pass, extra props.
   - *Could* (only when ahead): side goals, a secret, extra polish.
   - **No *Should* work before every *Must* is playable; no *Could* before every *Should*.** Everything starts in
     the lowest tier it can live in.
-- **Risk spike:** the riskiest *Must* item, built first in grey boxes right after the style lock (≤ 2 hours). If it
-  fails, switch to its fallback then, not later.
+- **Risk spike:** the riskiest *Must* item, built first in grey boxes (≤ 2 hours), in parallel with the style lock
+  (the director reviews key art while the session builds). **It passes when the director has played the core verb
+  in grey boxes and calls it fun**, not when it merely works: fun is weighted most (ties re-score Fun Factor
+  doubled), and grey boxes are the cheapest moment to find out. If it isn't fun, change the verb, switch to the
+  fallback, or take the next concept, then, not later.
 
 ## 5. Schedule with freeze points (Claude, 10 min)
 S = contest start, D = submission deadline (S + 93 h). Sleep is announced, not planned: the director says when
@@ -114,13 +118,15 @@ Keep the order and the gaps:
 |---|---|
 | Before S | Concept picked; cut list, schedule, style and audio directions (in words) written (steps 2-6) |
 | S + 3 h | Style lock approved (`prompts/style-lock.md`: key art images start at S) |
-| S + 6 h | Risk spike answered: core verb works in grey boxes, or the fallback is chosen |
+| S + 6 h | Risk spike answered: the director played the core verb in grey boxes and calls it fun, or the fallback (or the next concept) is chosen |
 | S + 18 h | **First playable:** start → core verb → an end, in grey boxes; game repo committed; **packaged and benched** |
-| D − 50 h | All beats playable in rough form, start to end |
-| **D − 32 h** | **Feature freeze:** no new systems or verbs after this. Only content, tuning, polish and fixes |
-| D − 20 h | **Content lock:** levels, assets and audio in. Cold playtest done (`docs/design.md` "Playtesting") |
+| S + 30 h | **Vertical slice:** one beat at final quality (look, audio, juice): it sets the bar for the rest and gives the first trailer shot |
+| D − 50 h | All beats playable in rough form, start to end; **playtest 1** (the director plays the packaged build cold) |
+| **D − 32 h** | **Feature freeze**, after **playtest 2**, so its findings can still change systems. Then only content, tuning, polish and fixes |
+| D − 30 h | Rough video cut from the shot list (`gen/test/shots.ps1`): shows which shots still need building |
+| D − 20 h | **Content lock:** levels, assets and audio in. Final cold playtest done (`docs/design.md` "Playtesting") |
 | D − 14 h | Video captured and cut (`docs/ue/cinematics-video.md`); page text and screenshots drafted |
-| D − 12 h | Final pass on the packaged zip (`docs/ue/production.md` "Final pass": the last half-day) |
+| D − 12 h | Final pass on the **Shipping** zip (`docs/ue/production.md` "Final pass": the last half-day) |
 | **D − 3 h** | **Submitted.** The remaining hours are the buffer for upload or page problems, not for features |
 
 Package and bench from first playable onward, at every round close that added content (CLAUDE.md "Working model").

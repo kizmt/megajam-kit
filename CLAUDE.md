@@ -67,7 +67,8 @@ director). **The target PC** is the machine the game is built and measured on (R
 - **Blind critic for visual and level work.** The builder doesn't grade its own look. After a visual or level change,
   give the `critic` subagent the screenshots and the references (or the rubric) with labels hidden, briefed per
   `prompts/critic.md`; its ranked flaws become the next tasks. The director's calls (`DECISIONS.md`) overrule the
-  critic.
+  critic. Routine checks: one critic, old vs new as a pair. Several critics only for the style lock and the final
+  shots: critics cost Claude usage, the jam's largest spend after time.
 - **`DECISIONS.md` (in the game project) records the director's explicit calls** ("responsiveness beats
   realism", "accept this shot"), one line each with the date. Read it at the start of every round. Never silently
   undo one; to change one, propose it with evidence and ask. It records what the director decided, not what is
@@ -82,7 +83,11 @@ director). **The target PC** is the machine the game is built and measured on (R
 - **Keep context fresh.** `PROGRESS.md` holds state only: a short status, the open problems (rewritten each round,
   never appended to), the schedule (`prompts/concept.md` step 5), the spend and the verb table (Verification). Round
   results go to the devlog. When the session gets long or slow, start a new one from CLAUDE.md + PROGRESS.md +
-  DECISIONS.md rather than pushing on.
+  DECISIONS.md rather than pushing on: every turn re-reads the whole context, so a long session costs more and gets
+  slower. Let a helper read images where it can judge them (the critic reads them, not the main session).
+- **Scripts that build content live in the project's `Tools\`** (tracked; `init-repo.ps1` creates it): the level
+  layout, the look setup, material builders. `Generated\` is ignored, so a script kept there is lost on a rollback
+  while the assets it made come back.
 - **The director and the session are one team.** The director holds the vision and makes the judgement calls:
   whether it is fun, the concept and story, colour and mood, and what lifts it to a quality product. Bring each such
   call with options, evidence (captures, numbers) and a recommendation. The session can also call on the director
@@ -94,8 +99,9 @@ director). **The target PC** is the machine the game is built and measured on (R
   only a human can do. Batch those into one message at a round close where possible.
 - **While the director sleeps** (they announce it; `prompts/concept.md` step 5): batch the open questions into one
   message before the block, then keep running rounds. Unattended means no paid batches beyond the agreed budget, no
-  key injection, no editor restarts or other steps that need an approval; leave the permission mode, MCP and the
-  editor running. Queue anything that needs the director for the wake-up message.
+  foreground key injection (`keytest.ps1`; keys posted to the game window with `postkeys.ps1` are fine), no editor
+  restarts or other steps that need an approval; leave the permission mode, MCP and the editor running. Queue
+  anything that needs the director for the wake-up message.
 - **Autonomous practice runs** (the project has an `AUTONOMOUS.md` run card): `prompts/autonomous.md` replaces
   every "ask the director" rule in this file for that run, with independent judges and hard limits. Never in the jam.
 - **The director can step in at any time.** A steer overrides the plan: finish or roll back the current step, record
@@ -119,7 +125,8 @@ director). **The target PC** is the machine the game is built and measured on (R
 
 - **Paid generations cost real money** (Tripo prop ~45 credits, character ~90, re-texture 20; image, Uthana and
   ElevenLabs calls are billed too; see `PIPELINE.md`). Before a batch, say how many generations and roughly
-  what they cost. The director decides on paid experiments. Read the balance when quoting (`tripo balance --json`).
+  what they cost. The director decides on paid experiments. Read the balances when quoting (`node gen\balances.ts`;
+  the bare `tripo` CLI has no key: use `node gen\tripo.ts ...`).
   `asset.ts` and `character.ts` refuse a run the Tripo balance can't finish; other paid scripts don't check it.
 - **Never re-roll a paid generation to fix a problem you haven't diagnosed.** Find the cause first (inspect
   the files, check `PIPELINE.md` hard-won facts). Rebuild from downloaded files (`--rig/--pbr/--model`, no
@@ -194,8 +201,9 @@ add an entry to the project's `KIT_NOTES.md` in the same round.
 
 ## Verification ("done" means seen)
 
-- After any visual or level change: capture screenshots from the fixed camera set in
-  `art/camera-set.md` and compare against `art/reference/`. Report differences honestly.
+- After any visual or level change: capture the fixed camera set (`art/camera-set.md`) in `-game` with
+  `gen/test/camset.ps1` and compare against `art/reference/`. Report differences honestly. After a look change, also
+  run `gen/test/stability.ps1` (shimmer that stills can't show; bar: area <= 0.02% per camera).
 - After gameplay changes: run it (PIE for a look; `-game` via `gen/test/game_test.ps1` for any motion or timing
   number, since PIE in a background editor runs at 3-8 fps), capture a clip with the kit scripts, and check the
   Output Log for errors and warnings.
@@ -203,12 +211,13 @@ add an entry to the project's `KIT_NOTES.md` in the same round.
 - **Scripted asset edits must reach the disk:** save with `only_if_is_dirty=False` and confirm with `git status` that
   the `.uasset` changed. Unsaved in-memory edits pass PIE checks and then vanish (`docs/ue/editor-scripting.md`).
 - **Test the feel, not the binding**: a player action is done when it reads from the gameplay camera, and the
-  director has played it. Test input with real input, not autoplay hooks. **Ask the director before every
-  key-injection run** and use `gen/test/keytest.ps1` (it aborts if the game loses focus). Details:
-  `docs/ue/gameplay.md`, `docs/ue/debugging.md` F. Keep a verb table in PROGRESS (every player action in
-  `design/concept.md`'s verb table, plus fail, restart and win if the game has them; columns: built, autoplay clip,
-  played by the director with real input). A verb isn't done until the director has played it; flag unplayed ones
-  in every review.
+  director has played it. Test input with real input, not autoplay hooks. `gen/test/postkeys.ps1` posts keys to the
+  game's own window, so no other app can receive them and it needs no foreground: use it for routine input tests.
+  `gen/test/keytest.ps1` presses real foreground keys on a packaged build: **ask the director before every
+  keytest run** (it aborts if the game loses focus). Details: `docs/ue/gameplay.md`, `docs/ue/debugging.md` F.
+  Keep a verb table in PROGRESS (every player action in `design/concept.md`'s verb table, plus fail, restart and win
+  if the game has them; columns: built, autoplay clip, real input (posted keys), played by the director). A verb
+  isn't done until the director has played it; flag unplayed ones in every review.
 - **Juice pass:** once a verb works, give it feedback on 3+ channels (visual, audio, camera/time) before calling it
   done (`docs/ue/game-feel.md`). Fun is judged, and it breaks ties.
 - **Performance numbers come from `gen/perf/bench.ts` on a packaged build**, not editor `stat` (a background editor
@@ -219,8 +228,10 @@ add an entry to the project's `KIT_NOTES.md` in the same round.
 
 ## Shipping
 
-- Package a Win64 development build at least once per day from day 2 (`scripts/package.ps1`). Show its build stamp
-  in a corner and log it at startup (`docs/ue/production.md`).
+- Package a Win64 development build at least once per day from day 2 (`scripts/package.ps1`). **The submitted zip is
+  a Shipping build** (`-Config Shipping`, made and played once at the final pass): a Development build opens a debug
+  port, and Windows shows players a firewall prompt on its first launch (`docs/ue/production.md`). Show the build
+  stamp in a corner and log it at startup (`docs/ue/production.md`).
 - Zip as `TeamName_GameName.zip`, under 1 GB. `package.ps1` names it `<ZipName>_<ProjectName>.zip`: name the
   project after the game and pass `-ZipName <TeamName>` (also to `upload.ps1`).
   Upload **the zip** with `scripts/upload.ps1`, never the build folder (its `Saved/` holds local paths and the

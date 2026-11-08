@@ -213,6 +213,12 @@ Select-String $log -Pattern '\[PROOF\]|Log file closed'   # proof lines + clean 
 
 ## F. Capture and test patterns (from a prototype)
 
+**Kit scripts first** (all in `-game` on the editor build, project from the kit `.env`, results as `PROOF` lines):
+`gen/test/game_test.ps1` (your Python test, measured), `gen/test/postkeys.ps1` (real keys posted to the game window,
+no foreground needed), `gen/test/camset.ps1` (camera-set frames), `gen/test/stability.ps1` (shimmer meter),
+`gen/test/shots.ps1` (video shots), `gen/unreal/py/traverse_survey.py` + `gen/test/route_walk.py` (walked routes).
+`keytest.ps1` and `record_window.ps1` need the foreground: use them with the director at the PC.
+
 - **Scripted PIE captures:** `register_slate_post_tick_callback` + `LevelEditorSubsystem.editor_request_begin_play()`,
   then each tick `UnrealEditorSubsystem.get_game_world()` and `SystemLibrary.execute_console_command(world,
   "HighResShot 1920x1080 filename=<abs path>")` on a timeline; write a result JSON at the end and poll for it. The
@@ -361,7 +367,9 @@ Select-String $log -Pattern '\[PROOF\]|Log file closed'   # proof lines + clean 
   `SetForegroundWindow` from a background script silently fails while the user works in another app. One test typed
   into a chat window. The helper finds the game window by process, brings it forward with `AttachThreadInput`, checks
   `GetForegroundWindow()` before every key down, and releases everything and aborts on any change. It refuses to run
-  without `-Approved`: ask the director before every run.
+  without `-Approved`: ask the director before every run. A system prompt (a Windows Firewall question for a new
+  Development exe) can hold the foreground for good: then use `postkeys.ps1`, which posts the keys to the game's own
+  window (UE's window procedure handles posted key messages like real ones; tested 2026-11-09: walk and jump).
 - **Image comparison pages lie on a scaled desktop.** A "1:1" page at 150% Windows scaling enlarged every crop 1.5x
   with nearest-neighbour, which looked pixelated and was mistaken for the game's quality. Size images to
   `naturalWidth / devicePixelRatio` in a small script and say on the page that it is true 1:1.

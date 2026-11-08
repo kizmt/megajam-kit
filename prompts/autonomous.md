@@ -50,10 +50,10 @@ Never wait for a reply; never end a turn with a question.
 
 **Things a human did, now done by the session:**
 - **Playing the game.** Nobody plays. The verb table's "played by the director" column becomes **"real input"**:
-  the verb works through `gen/test/keytest.ps1` with real key or pad input, on the gameplay camera, with a capture.
-  Key-injection runs need no permission in this run (the PC is unattended); keytest still aborts if focus is lost.
+  the verb works through `gen/test/postkeys.ps1` (real keys posted to the game window, no foreground needed: a
+  Windows prompt can hold the foreground on an unattended PC) with frames from the gameplay camera.
 - **Cold playtest** (`docs/design.md` "Playtesting"): a scripted first-time run in `-game` with real input
-  (`keytest.ps1`, plus `route_walk.py` if the game has a walked route), recorded and reviewed by the playtest
+  (`postkeys.ps1`, plus `route_walk.py` if the game has a walked route), recorded and reviewed by the playtest
   reviewer. Say in the devlog that no human played it.
 - **Editor and game restarts:** allowed whenever a round needs them; no approval round-trip.
 - **Feel calls** ("responsiveness beats accuracy"): decide from numbers (latency, plus the verb's own:
@@ -88,10 +88,12 @@ Never wait for a reply; never end a turn with a question.
 
 ## Order of work
 
-0. **Facts (5 min).** Read `AUTONOMOUS.md`, CLAUDE.md, `docs/ue/README.md`. Read the balances (`tripo balance
-   --json`, ElevenLabs `audio.ts` credit line; image providers have no balance call: count spend from prices).
-   Write `PROGRESS.md` with the run card, the balances and S. If the editor or MCP isn't up, start it (CLAUDE.md
-   "Shell habits").
+0. **Facts (5 min).** Read `AUTONOMOUS.md`, CLAUDE.md, `docs/ue/README.md`. Read the balances (`node
+   gen\balances.ts`; image providers have no balance call: count spend from prices). Check SETUP step 6 is done
+   (`scripts\package.ps1` and `Plugins\MegajamTools` in the project, `megajam_tools` in the MCP toolset list); if not,
+   run its two robocopy lines and restart the editor. Write `PROGRESS.md` with the run card, the balances and S. If
+   the editor or MCP isn't up, start it (CLAUDE.md "Shell habits"). Count spend from this run's own calls (the
+   manifests and logs), not balance differences: other sessions may share the accounts.
 1. **Theme.** If the run card gives none, roll one so the session doesn't pick its own comfort zone:
    `Get-Random -InputObject @(...)` over this list, and record the roll in `DECISIONS.md`:
    "Out of control", "Only one", "Built to scale", "Roles reversed", "It's spreading", "Echoes",
@@ -104,7 +106,8 @@ Never wait for a reply; never end a turn with a question.
    One revision round at most, then lock.
 4. **Build** in rounds, as CLAUDE.md says, against the schedule below. Every round closes as usual (PROGRESS,
    devlog, DECISIONS, package and bench when content was added). No round waits for anything.
-5. **Ship** as `docs/submission.md` says up to the upload: the zip (`package.ps1 -ZipName <team name>`), the
+5. **Ship** as `docs/submission.md` says up to the upload: the zip (`package.ps1 -ZipName <team name> -BuildRoot
+   <Project>\Builds`: nothing is created outside the project; `Builds/` is gitignored; Shipping for the final zip), the
    30-60 s video (`docs/ue/cinematics-video.md`, D3b first), the page text, screenshots and the devlog, all in the
    project. Then the final report.
 

@@ -106,7 +106,7 @@ cm export, no textures) -> import -> `MI_<Name>` of `M_PBR_Master` (textures cap
 kept) -> root-scale gate -> IK rigs + retargeter + batch retarget of `ABP_Unarmed` -> `BP_<Name>` on `--parent`.
 Measured: ~4 min and 90 credits per new character; a rebuild from downloaded files takes ~20 s and no credits.
 
-**Balance first:** `character.ts` and `asset.ts` check `tripo balance --json` before the first paid step and stop if
+**Balance first:** `character.ts` and `asset.ts` check the Tripo balance before the first paid step and stop if
 the run can't finish (90 new, 45 from `--task`, 25 rig only, 45 per prop). Before that check existed, a run spent 45
 credits on the model and then failed the re-texture on "Insufficient credits"; the model survived (resume with
 `--task <id>`). Tripo exit 6 (timed out) or 7 (network) can still bill: resume with `tripo task watch <id> --download`
@@ -223,6 +223,8 @@ Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls nee
 | `gen/unreal/shot.ts` | Viewport screenshot to PNG (`--wait N` for shader compiles) |
 | `gen/character.ts` | Concept -> rigged, PBR-textured, retargeted character (+ BP); see Characters |
 | `gen/views.ts` | Cut a four-view turnaround sheet into front/left/back/right images for Tripo multiview (Four views) |
+| `gen/balances.ts` | Every paid service's balance and key status in one call, no key printed |
+| `gen/tripo.ts` | The `tripo` CLI with the kit `.env` loaded (`node gen\tripo.ts balance --json`, `history`, `task watch`) |
 | `gen/blender/prep_rig.py` | Rigged character: height, facing, armature-safe cm export, textures stripped |
 | `gen/blender/pack_orm.py` | Pack roughness/metallic/AO PNGs into `T_<Name>_orm.png` for M_PBR_Master (v2+) |
 | `gen/blender/mesh_compare.py` | Compare two rigged FBX meshes (counts, UVs, normals, skin-weight steps), e.g. after a hand-fixed rig |
@@ -231,7 +233,11 @@ Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls nee
 | `gen/unreal/anim_inventory.ts` | Offline inventory of a project's animation content (no editor), to find a library's source mesh |
 | `gen/unreal/retarget_library.ts` | Retarget a whole animation library folder onto a `character.ts` character (`docs/ue/animation-library.md`); runs `gen/unreal/py/retarget_library.py` |
 | `gen/perf/bench.ts` / `csv_report.ts` | Benchmark render variants on the packaged build / summarise an Unreal CSV profile (`docs/ue/performance.md`) |
+| `gen/test/postkeys.ps1` | Real keys posted to the game's window in `-game`, with frames: no foreground needed (routine input tests) |
 | `gen/test/keytest.ps1` | Real-input key test of a packaged build (ask the director first; aborts if the game loses focus) |
+| `gen/test/camset.ps1` | Camera-set frames in `-game` (CameraActors tagged `CamSet` + `cam:<Name>`) for critics and before/after |
+| `gen/test/stability.ps1` | Shimmer meter: bursts per camera, flicker numbers and heat maps, on a fixed game clock |
+| `gen/test/shots.ps1` | Trailer shots from a shot list, rendered offline on a fixed clock, one mp4 per shot plus all joined |
 | `gen/test/autoclip.ps1` | Film the game playing itself through an autoplay hook (no key injection) |
 | `gen/test/record_window.ps1` | Record the game window only, while it has focus |
 | `gen/test/game_test.ps1` | Run a scripted test in a standalone `-game` instance and print its result lines |

@@ -269,6 +269,11 @@ to supply the cameras.
 
 ### D3b. Offline frame capture in `-game` (no plugin)
 
+**Kit script: `gen/test/shots.ps1`** with a shot list (`design/shots.json`: camera-set cameras still or moving, or
+the player's camera with console commands that run the game's test hooks). It runs the game on a fixed clock, saves
+every frame, encodes one mp4 per shot and joins them (tested 2026-11-09: three shots, 30 fps, smooth). The notes
+below are how it works and what it costs.
+
 Verified in the rehearsal (5.8.4). A 48 s cut of the director's recorded play was rejected as a trailer (desktop
 capture of the gameplay camera, with its hitches, the HUD, and shots picked from whatever happened). Re-shot this way
 it was accepted: 45 s from six capture runs of 8-34 min each (just under 2 h). Recommended for the trailer when the

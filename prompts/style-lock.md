@@ -42,12 +42,22 @@ Concrete and checkable, never vague adjectives:
 - **Don'ts:** what would break the look.
 
 ## 4. Build the look in-engine *before* the game (Claude, 1–1.5 h)
-Graybox of the main view's space + sky (or the interior's lights) + fog + post-process volume + master material + 3 generated hero props.
+The main view's space (sky, or the interior's lights) + fog + post-process volume + master material + 3 generated
+hero props, **and 3-4 pieces of the game's real shapes in the locked shape language** (the structures, surfaces or
+silhouettes the key art is made of), not only boxes: light can't fix shape, and a look tuned on grey boxes keeps
+being tuned on grey boxes (a practice run spent six light passes while every critic named shapes).
 The Basic level has no post-process volume: build an unbound one here, and on the Lumen path set its
 `LumenMaxRoughnessToTraceReflections` to 0.25 (`SETUP.md` 7b).
-Define 4-6 fixed camera transforms in `art/camera-set.md` (the gameplay view plus key spots), capture those
-shots and compare with the key art. Iterate lighting and post until the director says it matches. This scene becomes
-the template every level is built from.
+Place 4-6 fixed cameras (`art/camera-set.md`: the gameplay view plus key spots; CameraActors tagged `CamSet` and
+`cam:<Name>`), capture them with `gen/test/camset.ps1` and compare with the key art.
+- **At most two passes of light and post only.** After that, or as soon as the critic's flaws are about shape,
+  stop tuning light: the next gains are in shapes, materials and dressing.
+- **Risky effects are proven here or dropped:** anything prone to shimmer or cost (volumetric clouds, water, fine
+  foliage, large translucency) passes `gen/test/stability.ps1` and a bench in this scene before it is locked.
+- **Re-base the references on the game:** once the director accepts the scene, its best camera-set captures join
+  `art/reference/` as the target for later comparisons. AI key art is a mood target the engine can't match pixel
+  for pixel; comparing every later shot only against it sets a bar the game can't reach.
+The director says when it matches. This scene becomes the template every level is built from.
 
 ## Audio direction (words in the theme window, first sounds at S)
 Audio is a full judging category; the look gets locked, so does the sound. Write `design/audio.md`
