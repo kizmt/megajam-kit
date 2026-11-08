@@ -33,7 +33,8 @@ $ErrorActionPreference = 'Stop'
 $proj = Resolve-KitProject $Project
 $ff = Find-Ffmpeg
 if (-not $ff) { throw 'ffmpeg not found (PATH or WinGet Gyan.FFmpeg)' }
-try { $list = @(Get-Content $Shots -Raw -Encoding UTF8 | ConvertFrom-Json) } catch { Write-Host "FAIL: $Shots is not valid JSON: $($_.Exception.Message)"; exit 1 }
+# PowerShell 5.1's ConvertFrom-Json returns a JSON array as one object: unroll it with ForEach-Object.
+try { $list = @((Get-Content $Shots -Raw -Encoding UTF8 | ConvertFrom-Json) | ForEach-Object { $_ }) } catch { Write-Host "FAIL: $Shots is not valid JSON: $($_.Exception.Message)"; exit 1 }
 foreach ($s in $list) {
     if (-not $s.name) { Write-Host 'FAIL: every shot needs a "name"'; exit 1 }
     if ($s.view -ne 'player' -and -not $s.cam) { Write-Host "FAIL: shot '$($s.name)' needs a cam (a CamSet camera name) or view player"; exit 1 }
