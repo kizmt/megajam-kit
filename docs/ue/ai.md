@@ -1,7 +1,8 @@
 # Game AI and navigation (UE 5.8.4)
 
-Enemies, NPCs, companions. Scope: a handful of agents, gameplay in C++, tick off by default. Facts below were checked
-against the 5.8 headers, `BaseEngine.ini`/`BaseGame.ini`, Epic's 5.8 C++ templates and the 5.8 docs (see bottom).
+For games with AI-driven agents: enemies, NPCs, companions, creatures. Scope: a handful of agents, gameplay in C++,
+tick off by default. Facts below were checked against the 5.8 headers, `BaseEngine.ini`/`BaseGame.ini`, Epic's 5.8
+C++ templates and the 5.8 docs (see bottom).
 
 ## Decision: how to drive behaviour
 
@@ -171,7 +172,7 @@ State enum on the controller: `Idle/Patrol, Chase, Attack, Flee, Dead`. Drive it
   Debugger track for StateTree; "Re-Enter State" (off by default); 5.8 adds a definable starting state and flags an
   out-of-date tree: recompile it before PIE when the flag shows.
 
-## Recommended setup for a jam enemy
+## Recommended setup for an enemy (if the game has one)
 
 1. `AEnemyCharacter : ACharacter` - HP, `TakeDamage`, attack montage, `OnDeath` delegate. Ctor: `AIControllerClass`,
    `AutoPossessAI = PlacedInWorldOrSpawned`, `bOrientRotationToMovement = true`, `MaxWalkSpeed` from a data asset.

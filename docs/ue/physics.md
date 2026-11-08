@@ -109,7 +109,7 @@ Mesh->OnComponentHit.AddDynamic(this, &AMyProp::OnHit);   // in BeginPlay (not t
 
 ## Physics handle (pick up / carry)
 
-- `UPhysicsHandleComponent` on the character. Line trace (gameplay.md) -> if `IsSimulatingPhysics()`:
+- `UPhysicsHandleComponent` on the player's pawn. Line trace (gameplay.md) -> if `IsSimulatingPhysics()`:
   `Handle->GrabComponentAtLocationWithRotation(Comp, NAME_None, Hit.ImpactPoint, Comp->GetComponentRotation());`
   Each tick: `Handle->SetTargetLocationAndRotation(CameraLoc + Fwd * HoldDist, CamRot);`. Drop: `ReleaseComponent()`.
   Throw: release, then `AddImpulse(Fwd * Speed, NAME_None, true)`.

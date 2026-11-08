@@ -83,7 +83,7 @@ if (MusicComp) { MusicComp->bIsUISound = false; MusicComp->FadeIn(1.5f, 1.f); }
   `Occlusion Volume Attenuation`; simple collision is "significantly cheaper" than complex. A/B with
   `au.DisableOcclusion 1`.
 - **Listener Focus** (`Focus Volume Attenuation` > 1) lifts sounds in front of the camera and dims those behind: a
-  free clarity win for enemy telegraphs.
+  free clarity win for whatever the player must hear (an enemy telegraph, a speaking NPC, a puzzle cue).
 - **PC spatialisation: keep the default panning** (`SPATIALIZATION_Default`). HRTF needs a spatialization plugin
   and binaural "breaks down" on stereo speakers. Epic recommends Project Settings > Audio > Panning Method = Equal
   Power (no loudness dip between speakers); check the 5.8.4 default.
@@ -98,10 +98,11 @@ if (MusicComp) { MusicComp->bIsUISound = false; MusicComp->FadeIn(1.5f, 1.f); }
   no recommendation.)
 - **Several ambience beds of one loop don't crossfade: they sum in phase.** Beds that all start at BeginPlay stay
   sample-aligned, so where two are at full gain the same loop plays 6 dB louder (seen in the rehearsal with five
-  `AmbientSound` beds of 120 m inner radius; `au.DumpActiveSounds` listed both). A winding route also brings beds that
-  aren't neighbours into range. Lay the beds along the route and choose each one's inner radius and falloff so the
-  summed linear gain stays about 1 along the walk; fit it numerically on the route's polyline (a short script does it
-  in seconds), then check with `au.DumpActiveSounds` at the overlaps.
+  `AmbientSound` beds of 120 m inner radius; `au.DumpActiveSounds` listed both). In a game the player walks through,
+  a winding route also brings beds that aren't neighbours into range: lay the beds along the route and choose each
+  one's inner radius and falloff so the summed linear gain stays about 1 along the walk; fit it numerically on the
+  route's polyline (a short script does it in seconds). Otherwise fit it at the places the listener can be. Then check
+  with `au.DumpActiveSounds` at the overlaps.
 
 ### Concurrency (stop spam) (`USoundConcurrency`, `SCON_`)
 
