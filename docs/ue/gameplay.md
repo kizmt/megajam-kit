@@ -11,10 +11,10 @@ Jam rules forbid shipping a lightly modified template, so take the patterns belo
 |---|---|---|
 | `AGameModeBase` | Rules, win/lose, spawns the other framework actors. One per level load, so it does not persist | **Yes**: one C++ GameMode. Set the default classes in its constructor or in its BP subclass |
 | `APlayerController` | The player's will: adds input mapping contexts, input mode, UI widgets, possesses the pawn | **Yes** |
-| `ACharacter` | Pawn with capsule, skeletal mesh and `UCharacterMovementComponent` (walk, jump, fall, swim, fly) | **Yes**, for any walking player |
-| `APawn` | Base for anything controllable (vehicle, top-down cursor, camera rig) | Only if the player does not walk |
+| `ACharacter` | Pawn with capsule, skeletal mesh and `UCharacterMovementComponent` (walk, jump, fall, swim, fly) | If the player (or an NPC) is a walking body |
+| `APawn` | Base for anything controllable (vehicle, top-down cursor, camera rig, board or puzzle view) | If the player controls something that does not walk |
 | `AGameStateBase` | Game-wide replicated state (score, objectives) | Optional. In single player, the GameMode can hold it |
-| `APlayerState` | Per-player replicated data | **Skip**. Keep health and inventory on the Character or a component |
+| `APlayerState` | Per-player replicated data | **Skip**. Keep per-player data (health, inventory, score) on the pawn or a component |
 | `AHUD` | Legacy canvas drawing | **Skip**. Create UMG widgets from the PlayerController |
 | `UGameInstance` | Lives from launch to quit and survives `OpenLevel` | Only if data must cross level loads, such as settings or a run timer |
 
@@ -25,6 +25,8 @@ Jam rules forbid shipping a lightly modified template, so take the patterns belo
 - Do not hard-code asset paths in C++. The templates leave mesh and anim BP references to the derived Blueprint.
 
 ## Character and CharacterMovementComponent
+
+For a walking player or NPC. A vehicle, cursor, board or fixed-camera game may not need it (`APawn` above).
 
 - The capsule is the root and does all the collision. The mesh is visual only. The template sizes the capsule with
   `GetCapsuleComponent()->InitCapsuleSize(42.f, 96.f)` and offsets the mesh down by the half-height in the BP.
@@ -133,9 +135,9 @@ project (no pre-jam gameplay code in the kit).
 - **Gamepad mappings in the same `IMC_Default`** (judges may play on a pad): `Gamepad_Left2D` to `IA_Move` with
   `DeadZone` (Radial); `Gamepad_Right2D` to `IA_Look` with `DeadZone`, `Scalar` and **`ScaleByDeltaTime`** (mouse
   delta is a distance per frame, a stick is a rate, so without it look speed changes with fps);
-  `Gamepad_FaceButton_Bottom` to jump, `Gamepad_FaceButton_Left` to interact, `Gamepad_Special_Right` (Start) to
-  `IA_Pause`. `ResponseCurveExponential` gives finer aim near the centre. Menus: `audio-ui.md` "Gamepad menus and
-  device prompts".
+  `Gamepad_FaceButton_Bottom` to the main action (jump, confirm, place), `Gamepad_FaceButton_Left` to a second one
+  (interact), `Gamepad_Special_Right` (Start) to `IA_Pause`. `ResponseCurveExponential` gives finer aim near the
+  centre. Menus: `audio-ui.md` "Gamepad menus and device prompts".
 - **Add the mapping context in the PlayerController**, local players only. This is the template pattern:
 
 ```cpp
@@ -345,8 +347,9 @@ public:
 - **Prove a "can't leave here" boundary with a pawn-sized walk, not with the rule that placed it.** A fence placed
   where the ground 6 m out fell 2.5 m still let a capsule walked sideways off the path get down at 13 places, where
   the slope fell steadily (35-50%). The check: `capsule_trace_single_by_profile` (profile Pawn, the player's capsule)
-  stepped 0.5 m at a time off every edge, an unwalkable rise counting as a wall; any route out is a hole. Along the
-  route itself, the kit's traversal survey and route walker find invisible walls and stuck spots (`debugging.md` F).
+  stepped 0.5 m at a time off every edge, an unwalkable rise counting as a wall; any route out is a hole. If the game
+  has a walked route, the kit's traversal survey and route walker find invisible walls and stuck spots along it
+  (`debugging.md` F).
 - **After any scripted level rebuild, run a full autoplay playthrough**: rebuilds can silently break references, and
   on one prototype, characters silently headed back to their start point and nobody noticed for minutes.
 
