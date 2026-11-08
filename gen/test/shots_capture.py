@@ -15,13 +15,14 @@
 # Env: KIT_CAP_DIR, KIT_SHOTS, KIT_SETTLE (default 60), KIT_SHOWUI (1 = include UMG UI in frames).
 import json
 import os
+import re
 
 import unreal
 
 OUT = os.environ.get("KIT_CAP_DIR", "")
-SHOTS = json.load(open(os.environ["KIT_SHOTS"]))
+SHOTS = json.load(open(os.environ["KIT_SHOTS"], encoding="utf-8-sig"))
 SETTLE = int(os.environ.get("KIT_SETTLE", "60"))
-SHOWUI = " showui" if os.environ.get("KIT_SHOWUI", "0") == "1" else ""
+SHOWUI = " -showui" if os.environ.get("KIT_SHOWUI", "0") == "1" else ""
 SL = unreal.SystemLibrary
 st = {"w": None, "pc": None, "gen": None, "handle": None, "done": False, "frame": 0}
 
@@ -48,11 +49,13 @@ def cams_by_name(w):
     return out
 
 
-def place(cam, v, fov):
+def place(cam, v):
     cam.set_actor_location_and_rotation(unreal.Vector(v[0], v[1], v[2]),
                                         unreal.Rotator(roll=0.0, pitch=v[3], yaw=v[4]), False, False)
-    if fov:
-        cam.get_component_by_class(unreal.CameraComponent).set_field_of_view(float(fov))
+
+
+def set_fov(cam, fov):
+    cam.get_component_by_class(unreal.CameraComponent).set_field_of_view(float(fov))
 
 
 def lerp(a, b, t):
@@ -64,6 +67,11 @@ def run():
     w, pc = st["w"], st["pc"]
     cams = cams_by_name(w)
     pawn_view = pc.get_view_target()
+    # Each shot starts from the camera's placed transform and FOV: a moving shot leaves its camera at "to", and a
+    # later shot of the same camera must not inherit that (or the FOV).
+    home = {n: (a.get_actor_location(), a.get_actor_rotation(),
+                a.get_component_by_class(unreal.CameraComponent).get_editor_property("field_of_view"))
+            for n, a in cams.items()}
     log("shots %s cams=%s settle=%d" % ([s["name"] for s in SHOTS], sorted(cams), SETTLE))
     for s in SHOTS:
         name = s["name"]
@@ -77,25 +85,31 @@ def run():
             if cam is None:
                 unreal.log_error("PROOF shot %s: no CamSet camera named %r" % (name, s.get("cam")))
                 continue
+            loc, rot, fov0 = home[s["cam"]]
+            cam.set_actor_location_and_rotation(loc, rot, False, False)
+            set_fov(cam, s.get("fov", fov0))
             if s.get("from"):
-                place(cam, s["from"], s.get("fov"))
+                place(cam, s["from"])
             pc.set_view_target_with_blend(cam, 0.0)
         for c in s.get("exec", []):
             SL.execute_console_command(w, c)
             log("exec %s" % c)
         for _ in range(int(s.get("settle", SETTLE))):
             yield
-        folder = os.path.join(OUT, name)
+        folder = os.path.join(OUT, re.sub(r"[^\w-]", "_", name))
         os.makedirs(folder, exist_ok=True)
         for k in range(frames):
             if cam is not None and s.get("from") and s.get("to"):
-                place(cam, lerp(s["from"], s["to"], k / max(frames - 1, 1)), s.get("fov"))
+                place(cam, lerp(s["from"], s["to"], k / max(frames - 1, 1)))
             path = os.path.join(folder, "f_%05d" % k).replace("\\", "/")
             SL.execute_console_command(w, "shot filename=%s -nosuffix%s" % (path, SHOWUI))
             yield
         for _ in range(3):   # the last request saves on a later frame
             yield
         log("shot done name=%s frames=%d fps=%.1f" % (name, frames, fps))
+    for n, (loc, rot, fov0) in home.items():
+        cams[n].set_actor_location_and_rotation(loc, rot, False, False)
+        set_fov(cams[n], fov0)
 
 
 def finish():

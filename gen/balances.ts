@@ -14,6 +14,7 @@ import { run } from './proc.ts';
 
 type Row = Record<string, unknown> & { service: string; ok: boolean };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- vendor JSON, each field checked where it is used
 async function get(url: string, init?: RequestInit): Promise<{ status: number; body: any }> {
   const r = await fetch(url, { ...init, signal: AbortSignal.timeout(20000) });
   const t = await r.text();
@@ -36,6 +37,9 @@ async function elevenlabs(): Promise<Row> {
   const r = await get('https://api.elevenlabs.io/v1/user/subscription', { headers: { 'xi-api-key': key } });
   if (r.status !== 200) return { service: 'elevenlabs', ok: false, note: `HTTP ${r.status} (the key may lack the user_read permission)` };
   const b = r.body;
+  if (typeof b?.character_limit !== 'number' || typeof b?.character_count !== 'number') {
+    return { service: 'elevenlabs', ok: false, note: 'unexpected subscription response (no character counts)' };
+  }
   return { service: 'elevenlabs', ok: true, tier: b.tier, credits_left: b.character_limit - b.character_count,
     used: b.character_count, limit: b.character_limit,
     resets: b.next_character_count_reset_unix ? new Date(b.next_character_count_reset_unix * 1000).toISOString() : null };

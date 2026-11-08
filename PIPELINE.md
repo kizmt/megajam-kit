@@ -109,8 +109,8 @@ Measured: ~4 min and 90 credits per new character; a rebuild from downloaded fil
 **Balance first:** `character.ts` and `asset.ts` check the Tripo balance before the first paid step and stop if
 the run can't finish (90 new, 45 from `--task`, 25 rig only, 45 per prop). Before that check existed, a run spent 45
 credits on the model and then failed the re-texture on "Insufficient credits"; the model survived (resume with
-`--task <id>`). Tripo exit 6 (timed out) or 7 (network) can still bill: resume with `tripo task watch <id> --download`
-(id from `tripo history --limit 3`), never re-run. `run()` prints these hints.
+`--task <id>`). Tripo exit 6 (timed out) or 7 (network) can still bill: resume with `node gen\tripo.ts task watch <id>
+--download` (id from `node gen\tripo.ts history --limit 3`), never re-run. `run()` prints these hints.
 
 **A-pose concepts?** Concepts can come out A-pose despite the T-pose wording: 6/6 for a long outfit description
 (hood, shoulder cape, long coat); a plainer outfit the same day gave 2/3 T-pose. Tripo's rig takes an A-pose concept,
@@ -133,7 +133,7 @@ price is on Tripo's developer pricing page, not in `tripo docs`. Show the direct
 | `--max-tex 2048` | In-game texture cap (cooked size). Raise to 4096 for a hero/close-up character; no regeneration. |
 | `--tex N` | Source texture budget for `extract_pbr.py` in px (default 0 = full resolution; prefer `--max-tex`). |
 | `--parent /Script/M.C` | Make `BP_<Name>`: thin subclass of the game's C++ Character (mesh, ABP, offset only). |
-| `--height 1.8` `--rot=-90` | Real height in metres; Blender Z rotation (Tripo faces +X in Unreal; -90 makes +Y like Manny). |
+| `--height 1.8` `--rot=-90` | Real height in metres; Blender Z rotation (-90 turns most Tripo rigs to face +Y like Manny). The default is checked from the foot bones and corrected (some rigs need 90); an explicit `--rot` that faces the wrong way stops with the right value. |
 | `--faces 30000` | Tripo face limit for the model. |
 | `--spec unreal` | Tripo rig spec (default `unreal`: Manny bone names). |
 | `--provider openai` `--style file --ref img` | Concept image provider and style inputs, as for props. |

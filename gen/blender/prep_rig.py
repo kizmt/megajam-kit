@@ -60,10 +60,12 @@ def facing():
         turn = -90.0 if side > 0 else 90.0   # toes along +X need -90 to point at -Y (UE +Y); along -X, +90
     else:
         turn = 0.0 if fwd > 0 else 180.0
-    ok = turn == 0.0 and f.x > 0
+    out = {"toe_forward_m": round(fwd, 4), "toe_side_m": round(side, 4), "left_foot_x_m": round(f.x, 4)}
+    if turn == 0.0 and f.x <= 0:
+        # Toes forward but the left foot on the right: a mirrored rig. No rotation fixes that.
+        return {"ok": False, "why": "mirrored (left foot on -X with the toes forward): no --rot fixes it", **out}
     sug = ((rot + turn + 180.0) % 360.0) - 180.0
-    return {"ok": ok, "toe_forward_m": round(fwd, 4), "toe_side_m": round(side, 4), "left_foot_x_m": round(f.x, 4),
-            "suggest_rot": int(round(sug))}
+    return {"ok": turn == 0.0, **out, "suggest_rot": int(round(sug))}
 
 
 mn, mx = bbox(meshes)

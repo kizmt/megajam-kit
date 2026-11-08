@@ -53,8 +53,9 @@ director). **The target PC** is the machine the game is built and measured on (R
    budget").
 2. **Pick the game on evidence, then lock the look, then build.** At jam start, `prompts/concept.md` (concepts
    scored against the judging categories, the cut list, the schedule with freeze points), then
-   `prompts/style-lock.md`. No gameplay work starts until the director approves `art/style-lock.md`. Every visual
-   change is judged by screenshot against `art/reference/`, never by description.
+   `prompts/style-lock.md`. No gameplay work starts until the director approves `art/style-lock.md`, except the
+   grey-box risk spike, which runs alongside the style lock (`prompts/concept.md` step 4). Every visual change is
+   judged by screenshot against `art/reference/`, never by description.
 
 ## Working model
 

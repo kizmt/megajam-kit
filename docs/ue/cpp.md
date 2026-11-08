@@ -125,11 +125,12 @@ protected:
 
 - Installed (launcher) engine = project builds only: Game target in **DebugGame / Development / Shipping**,
   Editor target in **DebugGame / Development**. Debug and Test need an engine source build.
-- **Development** (Editor and Game): what we use everywhere, including the submitted build
-  (`scripts/package.ps1` packages Win64 Development). Keeps logs, `stat` commands and console.
+- **Development** (Editor and Game): what we use everywhere except the submitted zip (`scripts/package.ps1`
+  packages Win64 Development by default). Keeps logs, `stat` commands and console.
 - **DebugGame**: our code unoptimised, engine optimised. Only for stepping through a nasty bug in a debugger.
-- **Shipping**: strips console, stats and profiling; `check()` compiled out. Not the default; `package.ps1 -Config
-  Shipping` builds one only to compare size. Also believed (unverified in 5.8.4): `Saved\` (logs,
+- **Shipping**: strips console, stats and profiling; `check()` compiled out. **The submitted zip** (`package.ps1
+  -Config Shipping` at the final pass): a Development build's trace listener makes Windows show players a firewall
+  prompt (`production.md` "Final pass"). Not for testing. Also believed (unverified in 5.8.4): `Saved\` (logs,
   `GameUserSettings.ini`) moves to `%LOCALAPPDATA%\<Project>\Saved`, so `bench.ts` and the "delete Saved" steps look
   in the wrong place; no log file at all (`bUseLoggingInShipping` needs a unique build environment, which a launcher
   engine refuses); engine on-screen warnings go too.

@@ -79,7 +79,7 @@ appends `devlog/YYYY-MM-DD.md` (CLAUDE.md "Devlog (Glass Box)"). At content lock
 ## Order on the last day
 
 1. D − 14 h: video cut, page and devlog drafted (text and screenshots).
-2. D − 12 h: final pass on the packaged zip (`docs/ue/production.md`).
+2. D − 12 h: final pass on the **Shipping** zip (`package.ps1 -Config Shipping`; `docs/ue/production.md` "Final pass").
 3. Upload the zip with `scripts/upload.ps1 -Push` (the director's go-ahead), then download it from the page,
    unzip to a fresh folder and play the first minute.
 4. Fill the submission form: entrants, sourced assets, video link, devlog link. Submit by **D − 3 h**.

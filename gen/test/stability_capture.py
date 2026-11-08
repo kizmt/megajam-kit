@@ -11,6 +11,7 @@
 # From a practice run's scratch script (2026-11-08); run with a fixed game clock (stability.ps1 -FixedFps).
 import json
 import os
+import re
 
 import unreal
 
@@ -63,6 +64,7 @@ def fmt(x):
 
 
 def shot(w, name):
+    name = re.sub(r"[^\w-]", "_", name)   # variant and camera names: a space or comma would split the command
     path = os.path.join(OUT, name).replace("\\", "/")
     SL.execute_console_command(w, "shot filename=%s -nosuffix" % path)
 

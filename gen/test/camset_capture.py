@@ -7,6 +7,7 @@
 # the mean frame time per camera; a rough number, the bench is gen/perf/bench.ts), KIT_SHOWUI (1 = include UI).
 # From a practice run's scratch script (2026-11-08), used for every critic round there.
 import os
+import re
 
 import unreal
 
@@ -16,7 +17,7 @@ SETTLE = int(os.environ.get("KIT_SETTLE", "120"))
 ONLY = [c for c in os.environ.get("KIT_CAMS", "").split(",") if c]
 EXEC = [c.strip() for c in os.environ.get("KIT_EXEC", "").split(";") if c.strip()]
 MEASURE = os.environ.get("KIT_MEASURE", "0") == "1"
-SHOWUI = " showui" if os.environ.get("KIT_SHOWUI", "0") == "1" else ""
+SHOWUI = " -showui" if os.environ.get("KIT_SHOWUI", "0") == "1" else ""
 SL = unreal.SystemLibrary
 st = {"frame": 0, "cams": None, "i": 0, "since": 0, "handle": None, "done": False, "pc": None, "w": None,
       "acc": 0.0, "n": 0}
@@ -80,7 +81,8 @@ def tick(dt):
         st["n"] += 1
     if st["i"] < len(cams) and st["since"] == SETTLE:
         name = cams[st["i"]][0]
-        path = os.path.join(OUT, "%s_%s" % (PREFIX, name)).replace("\\", "/")
+        safe = re.sub(r"[^\w-]", "_", name)   # a space or comma would split the shot command
+        path = os.path.join(OUT, "%s_%s" % (PREFIX, safe)).replace("\\", "/")
         SL.execute_console_command(w, "shot filename=%s -nosuffix%s" % (path, SHOWUI))
         ms = 1000.0 * st["acc"] / max(st["n"], 1)
         unreal.log("PROOF shot cam=%s frame=%d mean_ms=%.2f fps=%.1f measured=%d" %

@@ -39,8 +39,10 @@ $proj = Resolve-KitProject $Project
 $ff = Find-Ffmpeg
 if (-not $ff) { throw 'ffmpeg not found (PATH or WinGet Gyan.FFmpeg)' }
 if (-not $OutDir) { $OutDir = Join-Path $proj.Dir 'Generated\stab' }
-if (-not (Test-Path $OutDir)) { New-Item -ItemType Directory -Path $OutDir | Out-Null }
 $Prefix = $Prefix -replace '[^\w-]', '_'
+$OutDir = Join-Path $OutDir $Prefix   # one folder per prefix: a run never deletes another run's bursts
+if (-not (Test-Path $OutDir)) { New-Item -ItemType Directory -Path $OutDir | Out-Null }
+try { $null = $Variants | ConvertFrom-Json } catch { Write-Host "FAIL: -Variants is not valid JSON: $($_.Exception.Message)"; exit 1 }
 $log = Join-Path $proj.Dir "Saved\Logs\stab_$Prefix.log"
 
 if (-not $MetricsOnly) {
@@ -58,10 +60,11 @@ if (-not $MetricsOnly) {
 $meta = Join-Path $OutDir "$Prefix`_meta.txt"
 $metaF = "$Prefix`_meta.txt"
 Push-Location $OutDir
+try {
 function Get-Stat([string[]]$inArgs, [string]$vf, [string]$key) {
     Remove-Item $meta -ErrorAction SilentlyContinue
     & $ff -v error @inArgs -vf "$vf,signalstats,metadata=print:file=$metaF" -f null - | Out-Null
-    $line = Select-String -Path $meta -Pattern "lavfi.signalstats.$key=" | Select-Object -Last 1
+    $line = Select-String -Path $meta -Pattern "lavfi.signalstats.$key=" -ErrorAction SilentlyContinue | Select-Object -Last 1
     if ($line) { [double]($line.Line -split '=')[1] } else { [double]::NaN }
 }
 $rows = @()
@@ -87,10 +90,10 @@ foreach ($g in $groups) {
             $fc = "[0]format=gray[a];[1]format=gray[b];[a][b]blend=all_mode=difference"
             Remove-Item $meta -ErrorAction SilentlyContinue
             & $ff -v error @mc -filter_complex "$fc,signalstats,metadata=print:file=$metaF" -f null - | Out-Null
-            $ms += [double](((Select-String -Path $meta -Pattern 'lavfi.signalstats.YAVG=' | Select-Object -Last 1).Line -split '=')[1])
+            $ms += [double](((Select-String -Path $meta -Pattern 'lavfi.signalstats.YAVG=' -ErrorAction SilentlyContinue | Select-Object -Last 1).Line -split '=')[1])
             Remove-Item $meta -ErrorAction SilentlyContinue
             & $ff -v error @mc -filter_complex "$fc,lut=c0='if(gt(val,12),255,0)',signalstats,metadata=print:file=$metaF" -f null - | Out-Null
-            $ma += [double](((Select-String -Path $meta -Pattern 'lavfi.signalstats.YAVG=' | Select-Object -Last 1).Line -split '=')[1]) / 2.55
+            $ma += [double](((Select-String -Path $meta -Pattern 'lavfi.signalstats.YAVG=' -ErrorAction SilentlyContinue | Select-Object -Last 1).Line -split '=')[1]) / 2.55
             if ($k -eq 0) {
                 & $ff -v error -y @mc -filter_complex "$fc,lut=c0='min(val*4,255)',format=yuv444p,pseudocolor=preset=turbo,scale=960:-2" -frames:v 1 -update 1 (Join-Path $OutDir "$stem`_mheat.png") | Out-Null
             }
@@ -104,5 +107,6 @@ foreach ($g in $groups) {
     }
     $rows += ('{0,-34} flicker={1,6:N3} area%={2,6:N2} grain={3,5:N2}{4}' -f $stem.Substring($Prefix.Length + 1), $flicker, $area, $grain, $pan)
 }
-Pop-Location
+} finally { Pop-Location }
 $rows | ForEach-Object { $_ }
+if (-not $rows) { Write-Host 'FAIL: no bursts measured (no CamSet cameras, or the game did not reach the level)'; exit 1 }

@@ -16,7 +16,8 @@
       -Sequence '0.5:tap Enter; 1:down Right; 2.5:up Right; 3:tap Space; 4:tap Escape' -QuitAfter 8
 .NOTES
   Sequence: "<seconds>:<down|up|tap> <key>" separated by ';', seconds from -StartPattern (a log regex; default: the
-  capture script's start line). Keys: A-Z, 0-9, F1-F12, Space, Enter, Escape, Tab, Backspace, LShift, RShift, LCtrl,
+  capture script's start line). -QuitAfter counts from that capture start line, not from -StartPattern: with a later
+  -StartPattern, make -QuitAfter cover the pattern's delay plus the last step. Keys: A-Z, 0-9, F1-F12, Space, Enter, Escape, Tab, Backspace, LShift, RShift, LCtrl,
   RCtrl, LAlt, RAlt, Up, Down, Left, Right. Frames: <Project>\Generated\clips\<Name>\f_*.png; log:
   Saved\Logs\postkeys_<Name>.log. The game window appears on screen while it runs.
 #>
@@ -64,6 +65,8 @@ $steps = @(foreach ($part in ($Sequence -split ';' | Where-Object { $_.Trim() })
     [pscustomobject]@{ At = [double]$Matches[1]; Action = $Matches[2]; Key = [uint32]$vk[$Matches[3]]; Name = $Matches[3] }
 }) | Sort-Object At
 
+$last = ($steps | Measure-Object -Property At -Maximum).Maximum
+if ($last + 1 -gt $QuitAfter) { Write-Host "FAIL: the sequence runs to $last s but the game quits at -QuitAfter $QuitAfter s"; exit 1 }
 $proj = Resolve-KitProject $Project
 $safe = $Name -replace '[^\w-]', '_'
 $log = Join-Path $proj.Dir "Saved\Logs\postkeys_$safe.log"

@@ -113,7 +113,13 @@ try {
     $utf8 = New-Object System.Text.UTF8Encoding($false)
     foreach ($pair in @(@('.gitignore', $gitignore), @('.gitattributes', $gitattributes))) {
         $path = Join-Path $projectDir $pair[0]
-        if (Test-Path $path) { Write-Host "Keeping existing $($pair[0])" }
+        if (Test-Path $path) {
+            Write-Host "Keeping existing $($pair[0])"
+            # Older projects: make sure packaged builds inside the project are never committed.
+            if ($pair[0] -eq '.gitignore' -and -not (Select-String -Path $path -Pattern '^Builds/\s*$' -Quiet)) {
+                [System.IO.File]::AppendAllText($path, "`r`nBuilds/`r`n", $utf8); Write-Host 'Added Builds/ to .gitignore'
+            }
+        }
         else { [System.IO.File]::WriteAllText($path, ($pair[1] -replace "`r?`n", "`r`n"), $utf8); Write-Host "Wrote $($pair[0])" }
     }
 

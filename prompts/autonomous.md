@@ -49,7 +49,8 @@ Never wait for a reply; never end a turn with a question.
 - The judges' answers are evidence, not orders: drop a finding the captures don't support, and say so.
 
 **Things a human did, now done by the session:**
-- **Playing the game.** Nobody plays. The verb table's "played by the director" column becomes **"real input"**:
+- **Playing the game.** Nobody plays. The verb table's "played by the director" column stays empty; the **"real
+  input"** column carries the proof:
   the verb works through `gen/test/postkeys.ps1` (real keys posted to the game window, no foreground needed: a
   Windows prompt can hold the foreground on an unattended PC) with frames from the gameplay camera.
 - **Cold playtest** (`docs/design.md` "Playtesting"): a scripted first-time run in `-game` with real input
@@ -116,7 +117,7 @@ Never wait for a reply; never end a turn with a question.
 | When | Milestone (pass/fail) |
 |---|---|
 | S + 3% | Concept picked, cut list and schedule written; style lock done |
-| S + 6% | Risk spike answered: core verb works in grey boxes, or the fallback is chosen |
+| S + 6% | Risk spike answered: the core verb works and is fun in grey boxes (the panel judges a posted-key clip), or the fallback is chosen |
 | S + 19% | First playable start to end in grey boxes; packaged and benched; panel review 1 |
 | S + 46% | All beats playable in rough form |
 | S + 66% | **Feature freeze**; panel review 2 |

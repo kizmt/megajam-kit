@@ -148,6 +148,10 @@ folder, never on PIE.
   listener, the console and most logging, so the session's `-game` tests keep running on the editor build and the
   daily packages stay Development; package Shipping here, unzip it, play it once. If Shipping misbehaves, ship the
   Development zip and say on the page that Windows may ask about network access.
+- **Which build each check uses:** Shipping writes no log and keeps `Saved\` elsewhere (`cpp.md` "Build
+  configurations"), so the checks that read logs or `Saved\` (the bench, the ensure grep, the cold-launch `Saved\`
+  delete) run on a **Development package of the same commit**; the play-throughs, the first launch (no firewall
+  prompt, intended window mode) and the package checks run on the **Shipping zip**.
 
 - **Full play-through twice**, start to credits, with real input (keyboard and mouse, plus gamepad if the page claims
   it). Restart, quit and every menu path work; Esc always has a way out; the game never soft-locks.

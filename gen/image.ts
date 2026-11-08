@@ -154,9 +154,10 @@ function findImages(node: unknown, found: GeneratedImage[] = []): GeneratedImage
 
 const base = provider === 'gemini' ? gemini : openai;
 /**
- * Retry transient failures (HTTP 429/500/502/503/504, "overloaded", network errors) twice, after 8 s and 20 s.
- * Nothing billable is retried: a refused or failed request makes no image. Other errors (402 empty prepay, 400 bad
- * request, content policy) fail at once; the message suggests the other provider.
+ * Retry failures the provider reports as transient (HTTP 429/500/502/503/504, "overloaded") twice, after ~8 s and
+ * ~20 s with jitter (parallel requests don't all return at once). Those requests made no image, so a retry can't pay
+ * twice. A dropped connection is NOT retried: the image may have been made and billed. Other errors (402 empty
+ * prepay, 400 bad request, content policy) fail at once; the message suggests the other provider.
  */
 async function call(): Promise<GeneratedImage> {
   for (let attempt = 0; ; attempt++) {
@@ -164,14 +165,14 @@ async function call(): Promise<GeneratedImage> {
       return await base();
     } catch (e) {
       const m = errorMessage(e);
-      const transient = /HTTP (429|500|502|503|504)\b|overloaded|UNAVAILABLE|fetch failed|ECONNRESET|ETIMEDOUT/i.test(m);
+      const transient = /HTTP (429|500|502|503|504)\b|overloaded|UNAVAILABLE/i.test(m);
       if (!transient || attempt >= 2) {
         const other = provider === 'gemini' ? 'openai' : 'gemini';
         throw new Error(`${m}${/HTTP 402/.test(m) ? ' (prepay or credit empty: the director tops up)' : ''}` +
           ` -- the other provider: --provider ${other}`);
       }
-      const wait = attempt === 0 ? 8000 : 20000;
-      console.log(`  transient failure (${m.slice(0, 80)}); retrying in ${wait / 1000} s`);
+      const wait = (attempt === 0 ? 8000 : 20000) * (0.75 + Math.random() * 0.5);
+      console.log(`  transient failure (${m.slice(0, 80)}); retrying in ${(wait / 1000).toFixed(0)} s`);
       await new Promise((r) => setTimeout(r, wait));
     }
   }

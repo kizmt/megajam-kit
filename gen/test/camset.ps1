@@ -5,9 +5,10 @@
   resolution and settings, then quits. Use it for every visual before/after and every critic round.
 .DESCRIPTION
   The camera set is CameraActors in the level tagged "CamSet" plus "cam:<Name>" (art/camera-set.md lists them).
-  Frames: <OutDir>\<Prefix>_<Name>.png (default <Project>\Generated\look). -Exec runs console commands first (a look
-  variant: "r.Lumen.Reflections.DownsampleFactor 1;r.Tonemapper.Sharpen 0.5"). -Measure uncaps the frame rate and
-  logs a mean frame time per camera (rough; benches come from gen/perf/bench.ts on a packaged build).
+  Frames: <OutDir>\<Prefix>\<Prefix>_<Name>.png (default OutDir <Project>\Generated\look; one folder per prefix, so
+  a run never deletes another run's frames). -Exec runs console commands first (a look variant:
+  "r.Lumen.Reflections.DownsampleFactor 1;r.Tonemapper.Sharpen 0.5"). -Measure uncaps the frame rate and logs a mean
+  frame time per camera (rough; benches come from gen/perf/bench.ts on a packaged build).
 .EXAMPLE
   & C:\dev\megajam-kit\gen\test\camset.ps1 -Prefix r3_before
   & C:\dev\megajam-kit\gen\test\camset.ps1 -Prefix r3_after -Cams 'Hub,Exit' -Exec 'r.Tonemapper.Sharpen 0.5'
@@ -33,7 +34,8 @@ $ErrorActionPreference = 'Stop'
 $proj = Resolve-KitProject $Project
 if (-not $OutDir) { $OutDir = Join-Path $proj.Dir 'Generated\look' }
 $safe = $Prefix -replace '[^\w-]', '_'
-Get-ChildItem $OutDir -Filter "$safe`_*.png" -ErrorAction SilentlyContinue | Remove-Item -Force
+$OutDir = Join-Path $OutDir $safe
+Get-ChildItem $OutDir -Filter '*.png' -ErrorAction SilentlyContinue | Remove-Item -Force
 $log = Join-Path $proj.Dir "Saved\Logs\camset_$safe.log"
 $p = Start-KitGame $proj $Map (Join-Path $PSScriptRoot 'camset_capture.py') @{
     KIT_CAP_DIR = $OutDir; KIT_PREFIX = $safe; KIT_SETTLE = $Settle; KIT_CAMS = $Cams; KIT_EXEC = $Exec

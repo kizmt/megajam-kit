@@ -33,10 +33,15 @@ $ErrorActionPreference = 'Stop'
 $proj = Resolve-KitProject $Project
 $ff = Find-Ffmpeg
 if (-not $ff) { throw 'ffmpeg not found (PATH or WinGet Gyan.FFmpeg)' }
-$list = Get-Content $Shots -Raw | ConvertFrom-Json
+try { $list = @(Get-Content $Shots -Raw -Encoding UTF8 | ConvertFrom-Json) } catch { Write-Host "FAIL: $Shots is not valid JSON: $($_.Exception.Message)"; exit 1 }
+foreach ($s in $list) {
+    if (-not $s.name) { Write-Host 'FAIL: every shot needs a "name"'; exit 1 }
+    if ($s.view -ne 'player' -and -not $s.cam) { Write-Host "FAIL: shot '$($s.name)' needs a cam (a CamSet camera name) or view player"; exit 1 }
+    $s | Add-Member -NotePropertyName dir -NotePropertyValue ($s.name -replace '[^\w-]', '_') -Force
+}
 if (-not $OutDir) { $OutDir = Join-Path $proj.Dir 'Generated\shots' }
 if (-not (Test-Path $OutDir)) { New-Item -ItemType Directory -Path $OutDir | Out-Null }
-foreach ($s in $list) { $d = Join-Path $OutDir $s.name; if (Test-Path $d) { Get-ChildItem $d -Filter 'f_*.png' | Remove-Item -Force } }
+foreach ($s in $list) { $d = Join-Path $OutDir $s.dir; if (Test-Path $d) { Get-ChildItem $d -Filter 'f_*.png' | Remove-Item -Force } }
 # About 0.3 s of wall time per saved frame plus loading: give it room.
 $frames = ($list | ForEach-Object { [double]$(if ($_.seconds) { $_.seconds } else { 3 }) * $Fps + $Settle } | Measure-Object -Sum).Sum
 $timeout = [int](180 + $frames * 0.6)
@@ -50,10 +55,10 @@ Show-KitLog $log 40
 
 $clips = @()
 foreach ($s in $list) {
-    $d = Join-Path $OutDir $s.name
+    $d = Join-Path $OutDir $s.dir
     $n = @(Get-ChildItem $d -Filter 'f_*.png' -ErrorAction SilentlyContinue).Count
     if ($n -lt 2) { Write-Host "SKIP $($s.name): $n frames"; continue }
-    $mp4 = Join-Path $OutDir "$($s.name).mp4"
+    $mp4 = Join-Path $OutDir "$($s.dir).mp4"
     # Even dimensions for yuv420p; frames are PNG from `shot`.
     & $ff -v error -y -framerate $Fps -i (Join-Path $d 'f_%05d.png') -vf 'scale=trunc(iw/2)*2:trunc(ih/2)*2' `
         -c:v libx264 -preset slow -crf $Crf -pix_fmt yuv420p -movflags +faststart $mp4

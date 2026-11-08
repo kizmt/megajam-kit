@@ -305,6 +305,8 @@ try {
     console.log(`    facing: wrong way with the default --rot=${o.rot}; re-running prep with --rot=${sug}`);
     prep = await prepRig(sug);
     if (prep.facing.ok !== true) throw new Error(`the rig still doesn't face +Y with --rot=${sug}: inspect ${rigFbx} (facing ${JSON.stringify(prep.facing)})`);
+  } else if (prep.facing.ok === false) {
+    throw new Error(`the rig can't be faced forward by rotation: ${prep.facing.why} (${rigFbx})`);
   } else if (prep.facing.ok === null) {
     console.log(`    facing: not checked (${prep.facing.why}); look at the first run frame`);
   }
