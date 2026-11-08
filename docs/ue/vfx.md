@@ -120,7 +120,7 @@ Costs: **S** = a few dozen CPU particles. **M** = hundreds, or large translucent
 big overdraw.
 
 **Judge every effect in a `-game` clip at gameplay distance**, not the Niagara preview: preview-sized sparks vanish
-at third-person distance.
+at the gameplay camera's distance.
 
 | Effect | Start from | Key params / setup | Sim | Pool | Cost |
 |---|---|---|---|---|---|
@@ -135,7 +135,7 @@ at third-person distance.
 | Magic trail / ribbon | `LocationBasedRibbon` | NiagaraComponent on projectile, World space, ribbon width/color over life | CPU | ManualRelease or actor component | S |
 | Beam / laser | `StaticBeam` / `DynamicBeam` | Beam end via `User.` Position param | CPU | Component | S |
 | Fireflies / motes | `HangingParticulates` in a big box | 50-300 particles, emissive additive, curl noise. Maybe 2-3 with a Light renderer (separate emitter) | GPU if >~100 | Placed in level | S-M |
-| Rain / snow | `RecycleParticlesInView` (or `Fountain` from above) attached to the player | GPU, fixed bounds around camera. Rain = velocity-aligned stretched sprites. Snow = slow drift + noise | GPU | Component on pawn | M |
+| Rain / snow | `RecycleParticlesInView` (or `Fountain` from above) attached to the camera or player pawn | GPU, fixed bounds around camera. Rain = velocity-aligned stretched sprites. Snow = slow drift + noise | GPU | Component on the camera's owner | M |
 | Confetti / win | `ConfettiBurst` | Mesh or sprite tumble, gravity, drag | CPU | AutoRelease | S |
 | Debris chunks | `UpwardMeshBurst` | Low-poly particle mesh, collision only if needed | CPU | AutoRelease | S-M |
 

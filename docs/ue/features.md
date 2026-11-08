@@ -30,7 +30,7 @@ the risk is.
 | UMG Viewmodel | Beta | Cleaner data-driven UI | untested |
 | Scriptable Tools (Editor Utility Widgets are also Beta per the 5.8 Beta hub; editor-only, low risk) | Beta (`ScriptableToolsEditorMode.uplugin`) | Custom click-in-viewport editor tools if we need them | untested; rarely worth it in a jam (`editor-scripting.md` C) |
 | PCG with GPU Processing | Beta | Faster PCG | **not for us**: runtime-only instances, no collision/navigation (`pcg.md` Performance) |
-| Gameplay Camera System | Experimental | Better third-person/cinematic cameras | untested |
+| Gameplay Camera System | Experimental | Better gameplay cameras (follow, top-down, cinematic) | untested |
 | Day Sequence | Experimental | Time-of-day changes | untested |
 | Texture Graph | Experimental | Procedural textures in-engine | untested |
 | PCG Editor Mode | Experimental | Faster PCG authoring | untested |

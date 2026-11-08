@@ -96,8 +96,9 @@ PCs. `bench.ts`'s built-in comparison includes it (`lumenlite-1080p`): measure i
 
 Facts behind the table:
 - **Grain under moving characters is Lumen GI noise, not shadows or resolution.** Same VSM settings with GI off gave
-  smooth contact shadows at 1260p and 1440p, still and in motion. When choosing a path, capture a running character's
-  feet at true 1:1 (a still plus a 1 s clip), not only a static frame.
+  smooth contact shadows at 1260p and 1440p, still and in motion. When choosing a path, capture what moves on
+  screen (a running character's feet, if the game has one) at true 1:1 (a still plus a 1 s clip), not only a static
+  frame.
 - **Non-temporal AA below 100% (SMAA/FXAA + screen percentage) is a lower-detail path, not a cheap crisp one.** In
   5.8.4 the automatic negative texture mip bias (`SceneVisibility.cpp`, only with `TemporalUpscale`) and the Nanite
   view LOD bias apply only with temporal upscaling, and VSM penumbra noise is left unresolved.
@@ -218,8 +219,9 @@ Facts behind the table:
 - **Pool** frequently spawned things (projectiles, pickups, VFX) instead of spawn/destroy; spread big spawns across
   frames.
   Size the pool for the peak count and log a warning when it runs dry, so an undersized pool shows up in the log.
-- **Stagger enemy thinking:** decisions (target choice, path requests, line-of-sight traces) on a timer every
-  0.1-0.3 s with a random first delay per enemy, so they don't all think on the same frame. Movement and animation
+- **Stagger AI thinking** (enemies, NPCs, units, if the game has them): decisions (target choice, path requests,
+  line-of-sight traces) on a timer every 0.1-0.3 s with a random first delay per agent, so they don't all think on
+  the same frame. Movement and animation
   still update every frame.
 - Heavy work in one Blueprint event runs in one frame and hitches. Keep logic in C++ (our convention anyway).
 - UI runs on the game thread: avoid per-frame bindings in widgets; update on change.
