@@ -11,9 +11,9 @@ generated crates and shelves with a baked timber texture (5 meshes + texture set
 
 ## 1. Kit design
 
-- **Grid:** 100 cm snap, 400 cm module. Floors 400x400; walls 400 W x 300 H x 20 D; half walls 200 W; doorways
-  ~120x220 to 200x300; pillars 50x50x300. Stairs rise exactly floor to floor (300 cm = 15 steps of 20 cm rise x 30 cm
-  tread). Every tiling dimension is a whole or half module.
+- **Grid** (human-scale defaults; rescale if the game's scale differs): 100 cm snap, 400 cm module. Floors 400x400;
+  walls 400 W x 300 H x 20 D; half walls 200 W; doorways ~120x220 to 200x300; pillars 50x50x300. Stairs rise exactly
+  floor to floor (300 cm = 15 steps of 20 cm rise x 30 cm tread). Every tiling dimension is a whole or half module.
 - **Pivot at a corner** (bottom-back-left of the footprint at the origin), the same for every piece, transforms
   applied before export. Centred pivots cause half-module offsets (Epic's FBX static mesh pipeline: pivot at 0,0,0,
   ideally at a corner).
@@ -21,7 +21,7 @@ generated crates and shelves with a baked timber texture (5 meshes + texture set
 - **Walls 20 cm thick or more** (never under 10): Lumen leaks light through thin geometry. Keep walls, floors and
   ceilings **separate meshes**: merged buildings get poor distance fields and surface-cache coverage. A "building" is
   an assembly of kit pieces (Level Instance or Packed Level Actor), not one mesh.
-- **Ornament grows outward** from the gameplay plane, never into walkable space.
+- **Ornament grows outward** from the gameplay plane, never into playable space.
 
 ## 2. Generating with bmesh (no operators, no booleans)
 

@@ -218,8 +218,9 @@ for the director to review a batch of generated props side by side.
 2. **Props along a path spline** (start from `TPL_Sampler_Spline` / `Basics_SpawnAssetsAlongSpline_as_a_Tool`):
    Get Spline Data (tag `PCG_Path`) -> Spline Sampler (OnSpline, Distance, DistanceIncrement 300-600,
    bProjectOntoSurface on) -> Transform Points (side offset +-200 Y, random yaw) -> Self Pruning -> Spawner.
-3. **Fill an area but keep the walkway clear:** recipe 1 into **Difference** (second input = Spline Sampler OnSpline
-   of the path with widened bounds, Mode Discrete) -> Spawner. Or Distance to the path points -> Density Filter.
+3. **Fill an area but keep a path clear** (walkway, road, lane): recipe 1 into **Difference** (second input =
+   Spline Sampler OnSpline of the path with widened bounds, Mode Discrete) -> Spawner. Or Distance to the path
+   points -> Density Filter.
 4. **Clusters around anchors:** sparse points (recipe 1, very low density) -> Copy Points with a small radial
    point set -> Transform Points -> Self Pruning -> Spawner (`Basics_SpawnAssetsAroundOtherPoints`).
 5. **Quick one-off batch without a graph:** `Skill_InstantLevelOperations` / `RunPCGInstantGraph` with

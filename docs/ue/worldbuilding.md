@@ -109,11 +109,11 @@ Ambition and Innovation is judged, but the jam is four days and rule 1 (small sc
 the player *sees and does*, not from how many square metres exist. Cheapest first:
 
 - **A world beyond the playable space.** Keep play in one space and show a big world past its edges: a view through a
-  window or over a wall, distant silhouettes (low-poly meshes or cards, no collision, no shadows), layered height fog
-  for depth, a strong sky. Large backdrop meshes can break Lumen's sky occlusion: see `lighting.md` (keep backdrops
-  reasonably sized, or out of Lumen).
-- **Scale contrast.** A small player next to one huge structure (a statue, a gate, a machine) reads as epic for the
-  cost of one asset. Verticality (looking up or down a shaft) does the same.
+  window or over a wall, out of a porthole or down into a void, distant silhouettes (low-poly meshes or cards, no
+  collision, no shadows), layered height fog for depth, a strong sky or backdrop. Large backdrop meshes can break
+  Lumen's sky occlusion: see `lighting.md` (keep backdrops reasonably sized, or out of Lumen).
+- **Scale contrast.** Something small (the player, a unit, a vehicle) next to one huge structure (a statue, a gate,
+  a machine) reads as epic for the cost of one asset. Verticality (looking up or down a shaft) does the same.
 - **One set piece.** A single scripted moment (a collapse, a reveal, a boss entrance) with Sequencer
   (`cinematics-video.md`) does more for ambition than a larger map. It also gives the trailer its best shot.
 - **Density by instancing.** PCG and instanced meshes fill space cheaply (`pcg.md`); generated kit pieces
@@ -176,12 +176,12 @@ Only for a game that truly needs an open space (see "Ambition on a budget").
 - **Unloaded cells look broken, not missing:** captures show the editor's coarse HLOD stand-ins (props as shards,
   buildings as blobs). It looks like a Nanite or streaming-pool problem and is not (raising
   `r.Nanite.Streaming.StreamingPoolSize` changed nothing). Load the actors.
-- **Always-loaded actors:** the light stack, the water zone and ocean, and landmarks seen from far need
+- **Always-loaded actors:** the light stack, the water zone and ocean, and anything that must read from far away need
   `actor.set_editor_property("is_spatially_loaded", False)`, or they stream out.
 - **Far views:** the default runtime grid streams cells only within 256 m, and a landscape HLOD is a coarse 256 px
-  bake, so a walk built on far reveals (a town seen from a crest) loses them. Setting `is_spatially_loaded = False`
-  on every `LandscapeStreamingProxy` keeps the landscape loaded; statics can stay streamed with HLODs. Measure the
-  memory cost. Runtime grid ranges are not editable from Python in 5.8.4.
+  bake, so a level built on far reveals (in the rehearsal, a town seen from a crest) loses them. Setting
+  `is_spatially_loaded = False` on every `LandscapeStreamingProxy` keeps the landscape loaded; statics can stay
+  streamed with HLODs. Measure the memory cost. Runtime grid ranges are not editable from Python in 5.8.4.
 - **Copying actors between levels:** select them, console `EDIT COPY` (the clipboard gets T3D; check it with
   PowerShell `Get-Clipboard`), open the target map, `EDIT PASTE`. To copy a whole level, see `editor-scripting.md`
   (Levels row).
