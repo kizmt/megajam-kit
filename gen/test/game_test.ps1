@@ -3,7 +3,8 @@
 .SYNOPSIS
   Runs a scripted test in a standalone -game instance of the editor build and prints its result lines. The test is a
   Python file in the project (written during the jam) that drives the game from a slate post-tick callback
-  (e.g. add_movement_input on a pawn, or the game's test hooks; no OS input, so no key injection), measures, prints lines starting with -Tag, and quits.
+  (e.g. add_movement_input on a pawn, or the game's test hooks; no OS input, so no key injection), measures, prints
+  lines starting with -Tag, and quits.
 .DESCRIPTION
   Why -game and not PIE: with the editor in the background, PIE runs at 3-8 fps and timing or foot-slide measurements
   are meaningless; -game runs at full speed. In -game, EditorAssetLibrary calls crash (use unreal.load_asset), Python

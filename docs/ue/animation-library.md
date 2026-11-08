@@ -2,7 +2,8 @@
 
 Epic's Third Person template gives a generated character idle, walk/jog, jump and a few unarmed attacks
 (`characters.md`). Anything beyond that (interactions, ladders, emotes, sprint, strafe, or for combat: weapon combos,
-blocks, parries, dodges, hit reactions, knockdowns, deaths) needs a source. This note says where to get it, what the jam rules say, and how it plugs in.
+blocks, parries, dodges, hit reactions, knockdowns, deaths) needs a source. This note says where
+to get it, what the jam rules say, and how it plugs in.
 Researched 2026-10-26/28; prices and terms change, so re-check a source before relying on it.
 
 ## Jam rules and licences that decide the strategy

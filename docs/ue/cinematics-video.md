@@ -202,7 +202,8 @@ Run `describe_toolset` first; schemas are strict.
 ## D. Trailer recipes (verified on a prototype, 5.8.4)
 
 Routes D2-D3 work best when the game has an **autoplay mode** (the player's side driven by AI or a script, switched
-on by a cvar) so it can play itself during a capture or render; worth adding early if the genre allows it. D1 and D4 apply to any game.
+on by a cvar) so it can play itself during a capture or render; worth adding early if the genre allows it. D1 and D4
+apply to any game.
 
 ### D1. Game audio: record the engine's own mix
 
@@ -286,8 +287,8 @@ game has test hooks that can stage its moments.
   set its pose every frame from a Slate post-tick. A pose set at tick N draws at N+1: lead a moving target by its
   velocity / 60.
 - **Action:** a JSON shot list (start pose, the game actions on cue, the camera, the windows to keep) drives the game
-  through its own test hooks (in the rehearsal: move input, abilities, the set piece). Log the game's events per frame (action,
-  time dilation, enemy states) so the edit can put sound on them.
+  through its own test hooks (in the rehearsal: move input, abilities, the set piece). Log the game's events per
+  frame (action, time dilation, enemy states) so the edit can put sound on them.
 - **What cost re-shoots:**
   - The game keeps running between shots, so one shot's events spill into the next (enemies following, a respawn's
     teleport and fade). Clear hostile actors near the pawn for shots that aren't fights, end any fall before moving
