@@ -80,8 +80,8 @@ Nanite settings for plants (Voxelize vs Preserve Area, wind): `performance.md` "
 
 ## Quixel Megascans: available, supporting art only (Fab library, audited 2026-11-09)
 
-The director's Fab account holds 22,611 free Megascans listings (Fab Standard License, any engine): 11,032
-materials, 8,800 3D models, 2,228 decals and 519 brushes allow AI use. Know they are there; don't default to them.
+The director's Fab account holds 22,611 free Megascans listings (Fab Standard License, any engine), all marked
+"Allows usage with AI: Yes" (audit 2026-11-09). Know they are there; don't default to them.
 
 - **Never the first choice over generated or made art.** Megascans are sourced assets, and the rules' 15(c) says
   sourced assets "will not be reviewed or scored" (CLAUDE.md "Jam compliance"). A level carried by scans gives the
@@ -91,9 +91,8 @@ materials, 8,800 3D models, 2,228 decals and 519 brushes allow AI use. Know they
   look) is the entry's own.
 - **Only if the style lock says so.** They are photoreal scans: they suit a realistic or semi-real look and clash
   with a stylised one. `prompts/style-lock.md` step 3 records yes or no; a stylised lock means none.
-- **Only assets marked "Allows usage with AI: Yes".** All script-added listings were audited for `isAiForbidden`:
-  16 are No (13 3D models, 2 decals, 1 material). Their listing ids are in `docs/megascans-noai.csv`; check every
-  chosen listing against it. A listing not covered by the audit (added later) needs the director to read the flag
+- **AI use is cleared for these listings only.** Every Megascans listing in the library allows AI use (audit
+  2026-11-09). Anything added to the library later, and any other Fab pack, needs the director to read the flag
   (CLAUDE.md "Only use a sourced asset whose licence allows AI use").
 - **The director adds them; the session picks.** Fab refuses scripted requests, so the session lists exactly what it
   wants (listing title and URL, format, quality: 2K textures unless a close-up needs more) and the director adds
