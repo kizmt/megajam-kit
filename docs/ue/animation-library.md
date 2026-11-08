@@ -1,8 +1,8 @@
 # Animation library: making characters feel alive (UE 5.8.4)
 
 Epic's Third Person template gives a generated character idle, walk/jog, jump and a few unarmed attacks
-(`characters.md`). Anything beyond that (weapon combos, blocks, parries, dodges, hit reactions, knockdowns, deaths,
-sprint, strafe) needs a source. This note says where to get it, what the jam rules say, and how it plugs in.
+(`characters.md`). Anything beyond that (interactions, ladders, emotes, sprint, strafe, or for combat: weapon combos,
+blocks, parries, dodges, hit reactions, knockdowns, deaths) needs a source. This note says where to get it, what the jam rules say, and how it plugs in.
 Researched 2026-10-26/28; prices and terms change, so re-check a source before relying on it.
 
 ## Jam rules and licences that decide the strategy
@@ -65,7 +65,7 @@ Researched 2026-10-26/28; prices and terms change, so re-check a source before r
    dependency closure read from the library project's asset registry; check for path clashes first. Clips can
    hard-reference assets outside the pack folder (e.g. curve compression settings under `/Game/Misc`): those must
    come along and be committed. Then retarget onto the character:
-   `node gen/unreal/retarget_library.ts --name <Hero> --folder /Game/<Pack>/<clip folder> --source-mesh <mesh from the
+   `node gen/unreal/retarget_library.ts --name <Name> --folder /Game/<Pack>/<clip folder> --source-mesh <mesh from the
    inventory> --category <Sword|Locomotion|...>`. Only clips on the game's own Manny need no `--source-mesh`: Fab
    packs usually ship their own copy of the mannequin skeleton, so point at that pack's mesh.
 3. **Test run first, then the rest:** `--names` for exact clips (`--filter` is a substring match and catches variants)

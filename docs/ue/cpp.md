@@ -163,8 +163,8 @@ protected:
   zero warnings in our files; engine/toolchain warnings are listed separately. Known engine one: 5.8's own
   `GameFramework/Character.h(798)` raises **C4996 GetMovementBase deprecated** for every `ACharacter` subclass;
   not ours, can't be fixed, ignore it. Also "Visual Studio compiler 14.51 is not a preferred version" (harmless).
-- Flat module with subfolders (`Source/<Module>/Player/...`): add `PublicIncludePaths.Add(ModuleDirectory);` to
-  Build.cs so `#include "Player/PlayerCharacter.h"` resolves (Epic's templates list their folders the same way).
+- Flat module with subfolders (`Source/<Module>/Core/...`): add `PublicIncludePaths.Add(ModuleDirectory);` to
+  Build.cs so `#include "Core/MyGameMode.h"` resolves (Epic's templates list their folders the same way).
 - **Kit rule (stricter than Epic's docs): Live Coding for function bodies only.** New or changed UPROPERTY,
   UFUNCTION, UCLASS/USTRUCT/UENUM, class members, Build.cs, new files = close editor, full build, reopen.
   (5.8 docs say Object Reinstancing, on by default, can take new functions/variables; it is the source of

@@ -278,9 +278,10 @@ Select-String $log -Pattern '\[PROOF\]|Log file closed'   # proof lines + clean 
   - **Runtime A/B without a rebuild:** `PrimitiveComponent.set_evaluate_world_position_offset(False)` toggles WPO per
     component; `unreal.MaterialLibrary.create_dynamic_material_instance(world, mi)` (not `KismetMaterialLibrary`)
     gives a runtime MID to scale parameters per variant.
-  - **Traversal checks (invisible walls, lids, ledges):** write the route the player should be able to walk to
-    `<Project>\Generated\traverse\route.json` (`{"lines": {"main": [[x, y, z], ...]}, "capsule": {"radius": R,
-    "half_height": H}}`, world cm, z on the ground; format and options in the scripts' headers), then:
+  - **Traversal checks** (a game where a character moves on foot through the level: invisible walls, lids, ledges):
+    write the paths the player should be able to walk to `<Project>\Generated\traverse\route.json` (`{"lines":
+    {"main": [[x, y, z], ...]}, "capsule": {"radius": R, "half_height": H}}`, world cm, z on the ground; format and
+    options in the scripts' headers), then:
     - `node gen\unreal\py.ts gen\unreal\py\traverse_survey.py` (editor, level open, streamed actors loaded): every
       40 cm on the line and lines offset to each side, the pawn's floor and capsule with the "Pawn" profile; reports
       holes, lids (standing on something invisible), ledges, steep spots and blockers, and whether each blocker's

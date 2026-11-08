@@ -201,8 +201,8 @@ Run `describe_toolset` first; schemas are strict.
 
 ## D. Trailer recipes (verified on a prototype, 5.8.4)
 
-Routes D2-D3 work best when the game has an **autoplay mode** (the player driven by AI, switched on by a cvar) so it
-can play itself during a capture or render; worth adding early if the genre allows it. D1 and D4 apply to any game.
+Routes D2-D3 work best when the game has an **autoplay mode** (the player's side driven by AI or a script, switched
+on by a cvar) so it can play itself during a capture or render; worth adding early if the genre allows it. D1 and D4 apply to any game.
 
 ### D1. Game audio: record the engine's own mix
 
@@ -285,24 +285,24 @@ game has test hooks that can stage its moments.
 - **Camera:** Python can't spawn actors in `-game`, so borrow a CameraActor placed in the level (`debugging.md` F) and
   set its pose every frame from a Slate post-tick. A pose set at tick N draws at N+1: lead a moving target by its
   velocity / 60.
-- **Action:** a JSON shot list (start pose, the game actions on cue, the camera, the windows to keep) drives the pawn
-  through the game's own test hooks (move input, abilities, the set piece). Log the game's events per frame (action,
+- **Action:** a JSON shot list (start pose, the game actions on cue, the camera, the windows to keep) drives the game
+  through its own test hooks (in the rehearsal: move input, abilities, the set piece). Log the game's events per frame (action,
   time dilation, enemy states) so the edit can put sound on them.
 - **What cost re-shoots:**
   - The game keeps running between shots, so one shot's events spill into the next (enemies following, a respawn's
     teleport and fade). Clear hostile actors near the pawn for shots that aren't fights, end any fall before moving
-    the pawn (`debugging.md` F), and stage on the route the player actually walks.
+    the pawn (`debugging.md` F), and stage where the player actually goes.
   - Check a staging point's ground against its subject's: a trace down from a point offset from a group found the
     foot of a cliff, 30 m below the group.
   - A stateful event replays exactly (fixed step, seeded enemies) only from a fresh start: a second take of a fight
     later in the same run met enemies already roused, and a second take of a breakable found it broken. Take each
     stateful shot first in its own run, or give the game a reset hook.
   - Look at each shot's first frames while the batch is still running: the frames land on disk as they go.
-- **Framing:** aim at the hero, not at the action. A follow camera leaning 45% toward an attacker striking from 3-4 m
-  up lost the hero out of the frame; slow height smoothing (0.06 a frame) lost the hero on a slope; a front camera on a
-  downhill road filmed the hillside. Dark enemies read in silhouette against the sky: a level camera at the hero's
-  height, 4.5 m back, read where a camera 2.3 m up behind the hero gave blobs (blind critic readability 2/5). Stage
-  fights at the hero's height.
+- **Framing** (a game with a followed character): aim at that character, not at the action. In the rehearsal a
+  follow camera leaning 45% toward an attacker striking from 3-4 m up lost the hero out of the frame; slow height
+  smoothing (0.06 a frame) lost the hero on a slope; a front camera on a downhill road filmed the hillside. Dark
+  enemies read in silhouette against the sky: a level camera at the hero's height, 4.5 m back, read where a camera
+  2.3 m up behind the hero gave blobs (blind critic readability 2/5). Stage fights at the hero's height.
 - **Can't do:** the game's audio (`-nosound`; build the mix in the edit from the log's event times, D4) or spawning
   actors from Python. It films the editor build's `-game`, not the packaged build.
 

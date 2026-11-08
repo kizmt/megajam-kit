@@ -24,7 +24,7 @@ If a note and the engine disagree, the engine wins. In a game session, add an en
 | When you are about to... | Read |
 |---|---|
 | Write or build C++, change Build.cs, fix a compile/link error, package | [cpp.md](cpp.md) |
-| Make the player, camera, input, interaction, damage, spawning, save, level changes | [gameplay.md](gameplay.md) |
+| Make the player's pawn or character, camera, input, interaction, damage, spawning, save, level changes | [gameplay.md](gameplay.md) |
 | Bring in a character, rig, retarget, animate | [characters.md](characters.md) |
 | Let players customise characters, vehicles or objects, or make varied NPCs from shared parts (Mutable) | [mutable.md](mutable.md) |
 | Give a character combat or rich animation (sources, jam rules, library retarget, combat pattern) | [animation-library.md](animation-library.md) |

@@ -1,12 +1,14 @@
 # Characters and animation (UE 5.8.4)
 
-The riskiest part of the pipeline. Generated character (Tripo rig) + Epic's stock animations, retargeted with IK Rig.
+The riskiest part of the pipeline, when the game has characters. Generated character (Tripo rig) + Epic's stock
+animations, retargeted with IK Rig.
 Everything here was checked against engine headers, the Python stub and template content on the target PC, plus Epic's 5.8 docs
 and Tripo's API docs (list at the bottom). Anything not checked is marked (unverified).
 
 ## Decisions
 
-- **1-3 characters max.** Player + 1-2 NPC types. Each one costs a rig, an IK Rig, a retargeter and an ABP copy.
+- **1-3 characters max** (e.g. a player character + 1-2 NPC types, or NPCs only). Each one costs a rig, an IK Rig,
+  a retargeter and an ABP copy.
 - **`ACharacter` in C++** (see `gameplay.md`). The Anim Blueprint does the anim graph only. Gameplay state (attacking,
   stunned, dead) is decided in C++ and reaches animation as **montages** or as variables on a C++ `UAnimInstance` parent.
 - **Default animation source: Epic's template set, retargeted.** Retarget `ABP_Unarmed` (with its blend space and
@@ -104,7 +106,7 @@ and Tripo's API docs (list at the bottom). Anything not checked is marked (unver
 Script outline (API names from `<Project>\Intermediate\PythonStub\unreal.py`; end-to-end run unverified):
 
 ```python
-at = unreal.AssetToolsHelpers.get_asset_tools(); F = "/Game/Characters/Hero"
+at = unreal.AssetToolsHelpers.get_asset_tools(); F = "/Game/Characters/MyChar"
 def ikrig(name, mesh):
     rig = at.create_asset(name, F, unreal.IKRigDefinition, unreal.IKRigDefinitionFactory())
     c = unreal.IKRigController.get_controller(rig); c.set_skeletal_mesh(mesh)
@@ -112,18 +114,18 @@ def ikrig(name, mesh):
     return rig
 ik_src_mesh = unreal.load_asset("/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple")
 ik_src = ikrig("IK_Manny", ik_src_mesh)
-ik_tgt = ikrig("IK_Hero", hero_mesh)
-rtg = at.create_asset("RTG_Manny_To_Hero", F, unreal.IKRetargeter, unreal.IKRetargetFactory())
+ik_tgt = ikrig("IK_MyChar", char_mesh)
+rtg = at.create_asset("RTG_Manny_To_MyChar", F, unreal.IKRetargeter, unreal.IKRetargetFactory())
 r = unreal.IKRetargeterController.get_controller(rtg); S, T = unreal.RetargetSourceOrTarget.SOURCE, unreal.RetargetSourceOrTarget.TARGET
 r.set_ik_rig(S, ik_src); r.set_ik_rig(T, ik_tgt)
-r.set_preview_mesh(S, ik_src_mesh); r.set_preview_mesh(T, hero_mesh)
+r.set_preview_mesh(S, ik_src_mesh); r.set_preview_mesh(T, char_mesh)
 r.add_default_ops()                       # if the op stack is empty (unverified whether set_ik_rig fills it)
 r.auto_map_chains(unreal.AutoMapChainType.FUZZY, True)
 r.auto_align_all_bones(T)                 # T-pose target vs A-pose Manny
 i = unreal.IKRetargetBatchOperationInputs()
 i.assets_to_retarget = [unreal.EditorAssetLibrary.find_asset_data(p) for p in ABP_AND_MONTAGE_PATHS]
-i.source_mesh, i.target_mesh, i.ik_retarget_asset = ik_src_mesh, hero_mesh, rtg
-i.target_path, i.suffix, i.include_referenced_assets = F + "/Anims", "_Hero", True
+i.source_mesh, i.target_mesh, i.ik_retarget_asset = ik_src_mesh, char_mesh, rtg
+i.target_path, i.suffix, i.include_referenced_assets = F + "/Anims", "_MyChar", True
 new_assets = unreal.IKRetargetBatchOperation.run_batch_retarget(i)
 ```
 
@@ -157,7 +159,7 @@ project lacks it, add the Third Person feature pack via Content Drawer > Add):
   which keeps them on the fast path:
 
 ```cpp
-UCLASS() class UHeroAnimInstance : public UAnimInstance {
+UCLASS() class UMyCharAnimInstance : public UAnimInstance {
   GENERATED_BODY()
 public:
   UPROPERTY(BlueprintReadOnly, Category="Anim") float GroundSpeed = 0.f;
@@ -230,13 +232,14 @@ protected:
 - **Don't enable Nanite on characters.** Epic's 5.8 Nanite page lists skeletal support with "No geometry LODs. Nanite
   Skeletal Mesh uses animation LODs" and no morph targets. With 1-3 characters there's no win and only risk (maturity
   status in 5.8 unverified).
-- Tripo meshes import with **one LOD**. Fine for player + a few NPCs. For crowds, generate LODs in the Skeletal Mesh
+- Tripo meshes import with **one LOD**. Fine for a few characters. For crowds, generate LODs in the Skeletal Mesh
   Editor (UI) or cap faces at generation.
 - NPCs: set `bEnableUpdateRateOptimizations = true` (URO) and
   `VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered` on the mesh component.
   An off-screen NPC then keeps its last rendered pose: tests that read its bones need it on screen
   (`debugging.md` F).
-  Keep the player on the default. Epic recommends the **Animation Budget Allocator** plugin over URO for many characters.
+  Keep a player-controlled character on the default. Epic recommends the **Animation Budget Allocator** plugin over
+  URO for many characters.
 - Keep AnimGraph inputs as member variables (fast path); compute in C++ `NativeUpdateAnimation` or
   `NativeThreadSafeUpdateAnimation`.
 - Measure with `stat anim` / `stat unit` (see `performance.md`).
@@ -285,8 +288,8 @@ not the rig (the rig FBX wires its colour image as the normal map). The steps st
    Optional `[S]`: reparent to the C++ `UAnimInstance` parent.
 9. `[S]` BP subclass of the C++ Character: mesh = `SK_<Name>`, Anim Class = new ABP, mesh offset (Z = -capsule
    half-height, yaw -90 typical).
-10. `[V]` PIE: idle, walk, run, jump, land, attack montage. Screenshot each. Check foot sliding (blend space speeds vs
-    `MaxWalkSpeed`) and montage slot.
+10. `[V]` PIE: idle, walk, run, jump, land, and each montage the game uses. Screenshot each. Check foot sliding
+    (blend space speeds vs `MaxWalkSpeed`) and montage slot.
 11. Extras: Tripo presets (`--animate-in-place`) onto the same skeleton, wrapped as montages for emotes.
 
 Budget: steps 2-10 are ~1-2 h for the first character (estimate), mostly in step 6 visual fixes. Later characters reuse
