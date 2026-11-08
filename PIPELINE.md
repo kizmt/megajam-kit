@@ -69,8 +69,8 @@ came through. Use it by default for characters and for props whose back or sides
 tail, an asymmetric prop, anything seen from behind); the extra cost is only the sheet image.
 
 ```powershell
-node gen/character.ts "<description>" --name Hero --turnaround --concepts 2 --ref <approved front concept>
-node gen/character.ts --sheet <picked sheet> --name Hero --parent /Script/<Module>.PlayerCharacter
+node gen/character.ts "<description>" --name <Name> --turnaround --concepts 2 --ref <approved front concept>
+node gen/character.ts --sheet <picked sheet> --name <Name> --parent /Script/<Module>.<CharacterClass>
 node gen/views.ts <sheet.png> [--layout grid|row]       # cut a sheet by hand: <sheet>_front.png ... _right.png
 ```
 
@@ -95,7 +95,7 @@ node gen/views.ts <sheet.png> [--layout grid|row]       # cut a sheet by hand: <
 # 1. Three T-pose concepts, then STOP for the director to pick (art direction; also catches A-poses)
 node gen/character.ts "a young mechanic in blue work overalls, brown work boots" --name Mechanic --concepts 3
 # 2. Everything else (no manual steps)
-node gen/character.ts --image <picked concept> --name Mechanic --parent /Script/<Module>.PlayerCharacter
+node gen/character.ts --image <picked concept> --name Mechanic --parent /Script/<Module>.<CharacterClass>
 ```
 
 Steps: Tripo model (45 cr) -> v3.5 re-texture (20 cr) -> rig `--spec unreal` on the textured task (25 cr) ->
@@ -153,7 +153,7 @@ Blend space speeds: `docs/ue/characters.md` "Anim Blueprint driven from C++" (Bl
 node gen/audio.ts sfx "heavy wooden chest lid creaking open" --seconds 2.5 --name ChestOpen
 node gen/audio.ts sfx "night forest ambience, crickets" --seconds 20 --loop --name ForestAmb
 node gen/audio.ts music "tense driving synth pulse, 128 BPM, low bass" --seconds 90 --name Pressure
-node gen/audio.ts voice "Ten seconds left." --name Line01      # needs TTS permission on the key
+node gen/audio.ts voice "Nice work. One more to go." --name Line01      # needs TTS permission on the key
 node gen/audio.ts plan "slow ambient folk cue, 72 BPM, D dorian" --seconds 60 --name Calm   # free plan JSON
 node gen/audio.ts music --plan <Generated\audio\MUS_Calm.plan.json> --seed 1 --name Calm
 node gen/audio.ts design "<voice description>" --name Narrator --preview "<in-character text>"  # 3 previews
