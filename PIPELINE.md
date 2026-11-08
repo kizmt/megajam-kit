@@ -15,7 +15,7 @@ Nothing generated is ever written into the kit.
 
 ```powershell
 node gen/asset.ts "an old brass ship lantern" --name Lantern --height 0.45
-node gen/asset.ts "a weathered treasure chest" --name Chest --max 0.8 --place 300,0,0 --yaw 270
+node gen/asset.ts "a scuffed metal crate with yellow hazard stripes" --name Crate --max 0.8 --place 300,0,0 --yaw 270
 ```
 
 Steps: concept image (Gemini) -> Tripo image-to-3D -> Blender prep -> Blender preview ->
@@ -152,10 +152,10 @@ Blend space speeds: `docs/ue/characters.md` "Anim Blueprint driven from C++" (Bl
 ```powershell
 node gen/audio.ts sfx "heavy wooden chest lid creaking open" --seconds 2.5 --name ChestOpen
 node gen/audio.ts sfx "night forest ambience, crickets" --seconds 20 --loop --name ForestAmb
-node gen/audio.ts music "calm mysterious exploration theme, harp, low strings" --seconds 90 --name Explore
-node gen/audio.ts voice "The map was right." --name Line01      # needs TTS permission on the key
-node gen/audio.ts plan "slow ambient folk cue, 72 BPM, D dorian" --seconds 60 --name Explore   # free plan JSON
-node gen/audio.ts music --plan <Generated\audio\MUS_Explore.plan.json> --seed 1 --name Explore
+node gen/audio.ts music "tense driving synth pulse, 128 BPM, low bass" --seconds 90 --name Pressure
+node gen/audio.ts voice "Ten seconds left." --name Line01      # needs TTS permission on the key
+node gen/audio.ts plan "slow ambient folk cue, 72 BPM, D dorian" --seconds 60 --name Calm   # free plan JSON
+node gen/audio.ts music --plan <Generated\audio\MUS_Calm.plan.json> --seed 1 --name Calm
 node gen/audio.ts design "<voice description>" --name Narrator --preview "<in-character text>"  # 3 previews
 node gen/audio.ts save <generated_voice_id> --name Narrator                                    # keep the pick
 ```

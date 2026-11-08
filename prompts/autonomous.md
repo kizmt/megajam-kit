@@ -52,12 +52,13 @@ Never wait for a reply; never end a turn with a question.
 - **Playing the game.** Nobody plays. The verb table's "played by the director" column becomes **"real input"**:
   the verb works through `gen/test/keytest.ps1` with real key or pad input, on the gameplay camera, with a capture.
   Key-injection runs need no permission in this run (the PC is unattended); keytest still aborts if focus is lost.
-- **Cold playtest** (`docs/design.md` "Playtesting"): a scripted first-time route in `-game` with real input
-  (`keytest.ps1`, plus `route_walk.py` for traversal), recorded and reviewed by the playtest reviewer. Say in the
-  devlog that no human played it.
+- **Cold playtest** (`docs/design.md` "Playtesting"): a scripted first-time run in `-game` with real input
+  (`keytest.ps1`, plus `route_walk.py` if the game has a walked route), recorded and reviewed by the playtest
+  reviewer. Say in the devlog that no human played it.
 - **Editor and game restarts:** allowed whenever a round needs them; no approval round-trip.
-- **Feel calls** ("responsiveness beats accuracy"): decide from numbers (latency, frames to apex, slip) and the
-  references in `docs/ue/game-feel.md`, and record them.
+- **Feel calls** ("responsiveness beats accuracy"): decide from numbers (latency, plus the verb's own:
+  frames to apex, foot slip, turn rate, snap distance...) and the references in `docs/ue/game-feel.md`, and record
+  them.
 
 **Hard limits that stay, because nobody is there to undo them:**
 - **Spend:** only what the run card allows, per service, counted from the balances read at the start (write the

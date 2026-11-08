@@ -41,7 +41,7 @@ of the page has to sell the game and get it running.
 - **3-5 screenshots** at 1920x1080 from the packaged build: the first view, two beats, the set piece, the end. No
   debug text (the build stamp is fine in a corner, or crop it).
 - **How to play:** the controls (keyboard/mouse, gamepad only if tested), the goal in one sentence, the play time
-  (e.g. "8-12 minutes").
+  (e.g. "about 8 minutes").
 - **How to run it:** download, unzip, run `<Game>.exe`; the unsigned-build note (`SETUP.md` 9 step 5). The
   hardware it was tested on (the target PC) and the lowest settings preset for weaker PCs. Requirements (Epic's 5.8
   spec page): Windows 10 22H2 or Windows 11, 64-bit; a DirectX 12 GPU with current drivers (Nanite and Lumen need

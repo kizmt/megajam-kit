@@ -63,7 +63,8 @@ The theme window runs before the project exists (`prompts/concept.md`). Check it
    Project Settings copy, as Epic's own comment says). On the next restart the editor writes the Python API stub
    `Intermediate\PythonStub\unreal.py`, which Claude greps before writing editor Python.
 5. Content Drawer → **Add** → **Add Feature or Content Pack** → **Third Person** → Add to Project. The character
-   pipeline needs its Manny skeleton and `ABP_Unarmed` (`PIPELINE.md`, characters).
+   pipeline needs its Manny skeleton and `ABP_Unarmed` (`PIPELINE.md`, characters), and its `LevelPrototyping`
+   meshes are grey-box blocks. It adds content only: the game needn't have a character or a third-person camera.
 6. Optional, only if the jam idea uses procedural levels: also enable **PCG Primitives** (Experimental;
    pulls in PCG Geometry Script Interop). See `docs/ue/pcg.md`. Restart again.
 7. Renderer check (no clicks needed; the Blank C++ template already has these). Open
@@ -300,7 +301,7 @@ Do this before jam day so the first real upload isn't on the final night.
 ## 10. Animation library (once per machine, before the jam; you do the Fab steps)
 
 Sources and reasons: `docs/ue/animation-library.md`. These are **sourced assets** (allowed, listed on submission, not
-scored); download them now, retarget them onto the game's characters during the jam.
+scored); download them now, retarget them onto the game's characters during the jam if it has any.
 
 1. Fab (in the browser or the Epic launcher): add the packs from `docs/ue/animation-library.md` "Reference
    inventory" to your library. Any other pack only if its listing says "Allows usage with AI: Yes". Adding them
@@ -309,7 +310,8 @@ scored); download them now, retarget them onto the game's characters during the 
    game's `SOURCED_ASSETS.md` copies those lines.
 2. Create a library project `C:\dev\AnimLibrary` (Blank, UE 5.8.4) and add those packs to it from the launcher's
    Library tab ("Add to Project"). Not tracked in any game repo.
-3. Optional: an Adobe ID for Mixamo (rolls, knockdowns, get-ups, extra deaths); a paid melee pack for parries.
+3. Optional, for a game with combat or stunts: an Adobe ID for Mixamo (rolls, knockdowns, get-ups, extra deaths);
+   a paid melee pack for parries.
 4. During the jam, migrate only the folders you need into the game (Migrate keeps each pack's `/Game/<Pack>/` path)
    and run `node gen/unreal/retarget_library.ts` with the arguments in `docs/ue/animation-library.md` "Workflow".
 
