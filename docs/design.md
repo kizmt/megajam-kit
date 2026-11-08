@@ -55,8 +55,9 @@ space) before the next idea. Uninterrupted difficulty reads as a grind; uninterr
   then use it together with an earlier idea.
 - **Space tells difficulty before numbers do.** Narrow, dark, cluttered = tense; wide, lit, open = safe. Change
   the space first, the tuning numbers second.
-- **Grey-box first.** Lay out every beat in grey boxes (`docs/ue/worldbuilding.md` "Blockout and level
-  organisation") and play it before any art goes in. Art follows the layout, never the other way round.
+- **Grey-box first.** Lay out every beat in grey boxes (the director can block it out: "Director blockout" below;
+  `docs/ue/worldbuilding.md` "Blockout and level organisation") and play it before any art goes in. Art follows
+  the layout, never the other way round.
 - **Scale and metrics:** decide the player's jump height, run speed and reach early, write them in the verb table,
   and build every gap, ledge and corridor from those numbers.
 - **Boundaries are proven, not assumed.** Every edge the player must not cross gets a pawn-sized walk test
@@ -66,6 +67,44 @@ space) before the next idea. Uninterrupted difficulty reads as a grind; uninterr
   with no way over. After laying a route, list every point where it crosses water or a drop deeper than a step
   (the route's line against the water outlines, then a trace down at each crossing for what carries the player), and
   give each one a crossing (bridge, stepping stones, ford) before playtesting.
+
+## Director blockout: the director shapes the space, the session builds it
+
+A person lays out a level's shape in minutes; an agent placing every block through scripts is slow and comes out
+boxy. So each beat's layout can be blocked out by the director in the editor, and the session takes it from there.
+Use it after the risk spike (the core verb works in grey boxes) and for every new area. Ask for it like any other
+human step (CLAUDE.md "Working model"): one message with the brief below.
+
+**1. The session prepares (≤ 15 min), in `design/blockout.md`:**
+- **The brief per beat:** its one new idea, what the player does there, the landmark they see, where they enter and
+  leave, a rough size (e.g. "30 x 20 m, two levels"), and a top-down sketch (ASCII or a quick image).
+- **The metrics table**, measured in this project, not guessed: capsule height and radius, step height, jump height,
+  the longest gap a running jump clears, walk and run speed, steepest walkable slope; plus the rules of thumb that
+  follow (paths ≥ 3 m wide, a jump gap ≤ 80% of the measured maximum, ceilings ≥ 2x capsule height).
+- **The level to block in:** a level or folder named for the beat, a PlayerStart at the entry, the player able to
+  walk it in PIE, and three flat colours (walkable, wall or blocked, hazard or goal) as materials the director can
+  drop on blocks.
+
+**2. The director blocks it out (20-45 min a beat).** Nothing needs to look good or be exact.
+- **Blocks:** drag meshes from `/Game/LevelPrototyping/Meshes` in the Content Browser (`SM_Cube`, `SM_ChamferCube`,
+  `SM_Ramp`, `SM_Cylinder`, `SM_QuarterCylinder`), or Quick Add (the **+** button on the toolbar) > Shapes.
+- **Keys:** W move, E rotate, R scale; hold Alt while dragging to duplicate; End drops the selection to the floor;
+  F focuses on it; G hides the editor icons; Ctrl+S saves. Turn grid snapping on in the viewport toolbar (50 cm for
+  moving, 15° for rotating) so pieces meet cleanly.
+- **Order:** the landmark first, then the main path from entry to exit, then the beat's challenge, then side spaces.
+- **Walk it:** Alt+P plays in the viewport. Can you see where to go? Do the jumps feel fair? Adjust, walk again.
+- **Then tell the session, in a few lines per beat:** where it starts, what the landmark is, the moment that matters
+  ("the drop after the bridge is the twist"), and anything you're unsure about. Save first.
+
+**3. The session takes over (≤ 1 round):**
+- **Record it:** read every block's mesh and transform and write them to `design/blockout_<beat>.json` (tracked), so
+  the layout survives any rebuild; commit.
+- **Check it against the metrics and the craft rules above:** `traverse_survey.py` and `route_walk.py` on the route
+  (`docs/ue/debugging.md` F "Traversal checks"), a top-down capture plus the route frames for the critic with this
+  section's rubric (readable path, landmark, gates, no dead ends). Report what fails.
+- **Fix without changing intent:** widen a path, shorten an impossible gap, add a missing floor. A change to the
+  layout's idea (moving the landmark, cutting a route) is the director's call: propose it.
+- **Build on it:** art replaces blocks keeping their footprint and sightlines (art follows the layout).
 
 ## Difficulty and fairness
 
