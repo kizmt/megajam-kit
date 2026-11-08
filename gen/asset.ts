@@ -42,6 +42,7 @@ const { values: o, positionals } = parseArgs({
     tris: { type: 'string' },
     dest: { type: 'string', default: '/Game/Props' },
     place: { type: 'string', default: '300,0,0' },
+    'no-place': { type: 'boolean', default: false },
     yaw: { type: 'string', default: '0' },
     hulls: { type: 'string' },
     'no-unreal': { type: 'boolean', default: false },
@@ -53,7 +54,7 @@ const prompt = positionals.join(' ').trim();
 if (o.help || (!prompt && !o.image && !o.sheet && !o.views && !o.model)) {
   console.log(`usage: node gen/asset.ts "<prompt>" --name Name [--max 0.8 | --height 1.8]
        [--concepts N] [--image file] [--turnaround | --sheet file | --views f,l,b,r] [--model file] [--provider gemini|openai] [--style file] [--ref img]
-       [--tex 2048] [--faces 30000] [--tris N] [--dest /Game/Props] [--place x,y,z] [--yaw deg] [--hulls 4-8] [--no-unreal]
+       [--tex 2048] [--faces 30000] [--tris N] [--dest /Game/Props] [--place x,y,z | --no-place] [--yaw deg] [--hulls 4-8] [--no-unreal]
   --turnaround  the concept is a 2x2 four-view sheet (front, left, back, right) sent to Tripo's multiview-to-3D:
              for props whose back or sides matter (seen all round, asymmetric); --sheet/--views start from one
   --hulls N  replace the default collision with N convex hulls (props the player pushes, picks up or
@@ -80,7 +81,7 @@ interface Manifest {
     material?: ApplyPbrResult;
     nanite?: boolean;
     collision?: { hulls: number; ok: boolean };
-    unreal?: { asset: string; actor: string; size_cm: number[]; shot: string; time: string } | { skipped: string };
+    unreal?: { asset: string; actor: string; size_cm: number[]; shot: string; time: string } | { asset: string; placed: false; time: string } | { skipped: string };
   };
   total?: string;
   error?: string;
@@ -251,31 +252,43 @@ try {
         manifest.steps.collision = { hulls: hull_count, ok: okHulls };
         console.log(`    collision: ${hull_count} convex hulls ${okHulls ? 'OK' : 'FAILED'}`);
       }
-      const [x = 0, y = 0, z = 0] = o.place.split(',').map(Number);
-      const actor = await callTool<ObjectRef>(SC, 'add_to_scene_from_asset', {
-        asset_path: assetPath, name,
-        xform: { location: { x, y, z }, rotation: { pitch: 0, yaw: Number(o.yaw), roll: 0 } }, snap_to_ground: false,
-      });
-      const b = await callTool<Box>(A, 'get_actor_bounds', { actor });
-      const c = { x: (b.min.x + b.max.x) / 2, y: (b.min.y + b.max.y) / 2, z: (b.min.z + b.max.z) / 2 };
-      const r = Math.max(b.max.x - b.min.x, b.max.y - b.min.y, b.max.z - b.min.z);
-      const d = Math.max(r * 2.2, 120);
-      const cam = { x: c.x - d * 0.62, y: c.y - d * 0.62, z: c.z + d * 0.45 };
-      const yaw = (Math.atan2(c.y - cam.y, c.x - cam.x) * 180) / Math.PI;
-      const pitch = (Math.atan2(c.z - cam.z, Math.hypot(c.x - cam.x, c.y - cam.y)) * 180) / Math.PI;
-      const view: CameraTransform = { location: cam, rotation: { pitch, yaw, roll: 0 } };
-      await mcpCall(E, 'SetCameraTransform', { transform: view });
-      const shot = await captureViewport(join(dir, 'shot.png'), { captureTransform: view });
-      // Save only this prop's folder: an empty asset list would save every dirty package, the user's level and work
-      // included. only_if_is_dirty=False: a scripted edit can leave a package unmarked (CLAUDE.md, Verification). The placed actor lives in the open level, which stays unsaved: say so.
-      const saved = await runPythonCode(
-        'import unreal\nprint(unreal.EditorAssetLibrary.save_directory(ARGS["folder"], only_if_is_dirty=False, recursive=True))',
-        { folder });
-      if (!saved.ok || saved.output.trim() !== 'True') throw new Error(`saving ${folder} failed: ${saved.output.slice(-400)}`);
-      console.log('    the level now has an unsaved change (the placed actor): save it if you keep it');
-      const sizeCm = [b.max.x - b.min.x, b.max.y - b.min.y, b.max.z - b.min.z].map(Math.round);
-      manifest.steps.unreal = { asset: assetPath, actor: actor.refPath, size_cm: sizeCm, shot, time: secs(t) };
-      console.log(`    placed at ${o.place}, ${sizeCm.join(' x ')} cm, screenshot ${shot}`);
+      const saveFolder = async (): Promise<void> => {
+        // Save only this prop's folder: an empty asset list would save every dirty package, the user's level and
+        // work included. only_if_is_dirty=False: a scripted edit can leave a package unmarked (CLAUDE.md,
+        // Verification).
+        const saved = await runPythonCode(
+          'import unreal\nprint(unreal.EditorAssetLibrary.save_directory(ARGS["folder"], only_if_is_dirty=False, recursive=True))',
+          { folder });
+        if (!saved.ok || saved.output.trim() !== 'True') throw new Error(`saving ${folder} failed: ${saved.output.slice(-400)}`);
+      };
+      if (o['no-place']) {
+        // Import only: no actor in the open level (a level rebuilt and saved by a script would keep a stray actor).
+        await saveFolder();
+        manifest.steps.unreal = { asset: assetPath, placed: false, time: secs(t) };
+        console.log(`    imported ${assetPath} (not placed: --no-place)`);
+      } else {
+        const [x = 0, y = 0, z = 0] = o.place.split(',').map(Number);
+        const actor = await callTool<ObjectRef>(SC, 'add_to_scene_from_asset', {
+          asset_path: assetPath, name,
+          xform: { location: { x, y, z }, rotation: { pitch: 0, yaw: Number(o.yaw), roll: 0 } }, snap_to_ground: false,
+        });
+        const b = await callTool<Box>(A, 'get_actor_bounds', { actor });
+        const c = { x: (b.min.x + b.max.x) / 2, y: (b.min.y + b.max.y) / 2, z: (b.min.z + b.max.z) / 2 };
+        const r = Math.max(b.max.x - b.min.x, b.max.y - b.min.y, b.max.z - b.min.z);
+        const d = Math.max(r * 2.2, 120);
+        const cam = { x: c.x - d * 0.62, y: c.y - d * 0.62, z: c.z + d * 0.45 };
+        const yaw = (Math.atan2(c.y - cam.y, c.x - cam.x) * 180) / Math.PI;
+        const pitch = (Math.atan2(c.z - cam.z, Math.hypot(c.x - cam.x, c.y - cam.y)) * 180) / Math.PI;
+        const view: CameraTransform = { location: cam, rotation: { pitch, yaw, roll: 0 } };
+        await mcpCall(E, 'SetCameraTransform', { transform: view });
+        const shot = await captureViewport(join(dir, 'shot.png'), { captureTransform: view });
+        // The placed actor lives in the open level, which stays unsaved: say so.
+        await saveFolder();
+        console.log('    the level now has an unsaved change (the placed actor): save it if you keep it');
+        const sizeCm = [b.max.x - b.min.x, b.max.y - b.min.y, b.max.z - b.min.z].map(Math.round);
+        manifest.steps.unreal = { asset: assetPath, actor: actor.refPath, size_cm: sizeCm, shot, time: secs(t) };
+        console.log(`    placed at ${o.place}, ${sizeCm.join(' x ')} cm, screenshot ${shot}`);
+      }
     } catch (e) {
       if (!(e instanceof McpUnreachableError)) throw e;
       manifest.steps.unreal = { skipped: 'editor not running' };

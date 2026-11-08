@@ -2,7 +2,9 @@
 <#
 .SYNOPSIS
   Sets up Git + Git LFS for the Unreal project in the parent folder of this script.
-  Writes .gitignore and .gitattributes (if missing), runs git init, enables LFS, makes the first commit.
+  Writes .gitignore and .gitattributes (if missing), creates Tools\ (tracked: the project's own build scripts, e.g.
+  the ones that build the level or the look; their outputs go in Generated\), runs git init, enables LFS, makes the
+  first commit.
 .EXAMPLE
   .\scripts\init-repo.ps1
 #>
@@ -58,6 +60,9 @@ Build/*/**
 #     what gets committed. Keep chosen concept images for the devlog in devlog/ instead. ---
 Generated/
 
+# --- Packaged builds when package.ps1 -BuildRoot points inside the project ---
+Builds/
+
 # --- Machine-local ---
 __pycache__/
 .claude/settings.local.json
@@ -110,6 +115,16 @@ try {
         $path = Join-Path $projectDir $pair[0]
         if (Test-Path $path) { Write-Host "Keeping existing $($pair[0])" }
         else { [System.IO.File]::WriteAllText($path, ($pair[1] -replace "`r?`n", "`r`n"), $utf8); Write-Host "Wrote $($pair[0])" }
+    }
+
+    # Tools\: scripts written during the jam that build content (level layout, look, materials). Tracked, so a
+    # rollback restores the script with the assets it made (Generated\ is ignored).
+    $tools = Join-Path $projectDir 'Tools'
+    if (-not (Test-Path $tools)) {
+        New-Item -ItemType Directory -Path $tools | Out-Null
+        [System.IO.File]::WriteAllText((Join-Path $tools 'README.md'), ("# Tools`r`n`r`nThe project's own build scripts " +
+            "(level layout, look setup, materials). Re-runnable; outputs go in Generated\ or the assets they write.`r`n"), $utf8)
+        Write-Host 'Created Tools\'
     }
 
     git init -b main | Out-Null

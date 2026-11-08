@@ -5,7 +5,7 @@
 //   node gen/perf/bench.ts                                  # built-in render-path comparison
 //   node gen/perf/bench.ts --variant "check:"               # the build as it ships (or --only current)
 //   node gen/perf/bench.ts --variant "a:" --variant "b:r.AllowOcclusionQueries=0"
-//   options: --exe <path> (default C:\dev\Builds\<Project>\Windows\<Project>.exe)  --res 3840x2160 | native
+//   options: --exe <path> (default C:\dev\Builds\<Project>\Windows\<Project>.exe, else <Project>\Builds\...)  --res 3840x2160 | native
 //            --frames 1200  --skip 200  --only name1,name2  --no-warmup  --force (run even if the GPU is busy)
 //            --target-fps 60 (the game's target from DECISIONS.md; sets the hitch limit and the PASS/FAIL column)
 // -DPCVars also sets game cvars registered at runtime (non-cheat), so an autoplay switch works as part of a variant.
@@ -53,7 +53,14 @@ const targetFps = Number(o['target-fps']) || 60;
 
 // With --exe the project name comes from the exe (<Project>.exe sits next to <Project>\Saved), so MEGAJAM_PROJECT
 // is only needed for the default path.
-const exe = o.exe ?? join('C:\\dev\\Builds', basename(projectDir()), 'Windows', `${basename(projectDir())}.exe`);
+// Default build folder: package.ps1's -BuildRoot C:\dev\Builds, or <Project>\Builds when it packaged into the project.
+const defaultExe = (): string => {
+  const p = basename(projectDir());
+  const a = join('C:\\dev\\Builds', p, 'Windows', `${p}.exe`);
+  const b = join(projectDir(), 'Builds', p, 'Windows', `${p}.exe`);
+  return existsSync(a) || !existsSync(b) ? a : b;
+};
+const exe = o.exe ?? defaultExe();
 const proj = basename(exe).replace(/\.exe$/i, '');
 if (!existsSync(exe)) fail(`packaged exe not found: ${exe} (run scripts\\package.ps1 or pass --exe)`);
 const saved = join(exe, '..', proj, 'Saved');

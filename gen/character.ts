@@ -86,7 +86,8 @@ if (o.rig && !o.pbr) {
 
 // ---------- typed results (verified 2026-10-24) ----------
 
-interface PrepRigResult { armature: string; bones: number; scale_factor: number; size_m: number[]; mode: string; out: string }
+interface Facing { ok: boolean | null; why?: string; toe_forward_m?: number; toe_side_m?: number; left_foot_x_m?: number; suggest_rot?: number }
+interface PrepRigResult { armature: string; bones: number; scale_factor: number; size_m: number[]; mode: string; out: string; rot: number; facing: Facing }
 interface PbrMap { file: string; size: number[]; from: string; channel: number | null }
 interface PbrResult { source: string; dir: string; maps: Partial<Record<'basecolor' | 'normal' | 'roughness' | 'metallic', PbrMap>>; missing: string[] }
 interface ImportResult { mesh: string; skeleton: string; size_cm: number[] }
@@ -289,9 +290,25 @@ try {
   step('4', `Blender prep_rig (height ${o.height} m, rot ${o.rot})`);
   let t = Date.now();
   const skFbx = join(dir, `SK_${name}.fbx`);
-  const prep = parseMarkedJson<PrepRigResult>(
-    await run('blender', ['-b', '--factory-startup', '--python', BL('prep_rig.py'), '--', rigFbx, skFbx, '--height', o.height, '--rot', o.rot], 'blender prep_rig'),
+  const prepRig = async (r: string): Promise<PrepRigResult> => parseMarkedJson<PrepRigResult>(
+    await run('blender', ['-b', '--factory-startup', '--python', BL('prep_rig.py'), '--', rigFbx, skFbx, '--height', o.height, '--rot', r], 'blender prep_rig'),
     'PREP_RIG_JSON');
+  let prep = await prepRig(o.rot);
+  // Facing check: some Tripo rigs face the other way, and a backward character passes every later check (it just
+  // runs backward). With the default --rot, fix it; with an explicit --rot, stop and say which value would.
+  const rotGiven = process.argv.some((a) => a === '--rot' || a.startsWith('--rot='));
+  if (prep.facing.ok === false && prep.facing.suggest_rot !== undefined) {
+    const sug = String(prep.facing.suggest_rot);
+    if (rotGiven) {
+      throw new Error(`the rig faces the wrong way with --rot=${o.rot} (toe forward ${prep.facing.toe_forward_m} m, side ${prep.facing.toe_side_m} m): use --rot=${sug}`);
+    }
+    console.log(`    facing: wrong way with the default --rot=${o.rot}; re-running prep with --rot=${sug}`);
+    prep = await prepRig(sug);
+    if (prep.facing.ok !== true) throw new Error(`the rig still doesn't face +Y with --rot=${sug}: inspect ${rigFbx} (facing ${JSON.stringify(prep.facing)})`);
+  } else if (prep.facing.ok === null) {
+    console.log(`    facing: not checked (${prep.facing.why}); look at the first run frame`);
+  }
+  o.rot = String(prep.rot);
   manifest.steps.prep = { ...prep, time: secs(t) };
   console.log(`    ${skFbx}  ${prep.bones} bones, ${prep.size_m.join(' x ')} m (export mode ${prep.mode})`);
 

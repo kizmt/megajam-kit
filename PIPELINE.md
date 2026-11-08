@@ -81,7 +81,9 @@ node gen/views.ts <sheet.png> [--layout grid|row]       # cut a sheet by hand: <
   gpt-image-2 (~450 px per view: enough in the test).
 - **Check the four views before paying for the model:** same design in all four, left and right sides the right way
   round (a belt knot or a strap shows it), nothing crossing between cells. A mismatched sheet gives a worse mesh
-  than one good front view.
+  than one good front view. Gemini swapped or doubled the side views on 2 of 2 sheets in a practice run
+  (2026-11-08). **A swapped sheet needs no new image:** cut it with `gen/views.ts`, then pass the files in true order,
+  `--views <s>_front.png,<s>_right.png,<s>_back.png,<s>_left.png`. A sheet that draws one side twice needs a re-roll.
 - **Keep the approved design:** pass the approved front concept as the first `--ref`, so the sheet redraws that
   character instead of a new one.
 - **Cutting:** `views.ts` cuts through the emptiest band near each expected split, trims each view to its figure and

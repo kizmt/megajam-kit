@@ -21,9 +21,9 @@ export type Layout = 'grid' | 'row';
 /** The layout part of a turnaround prompt: four views, plain background, nothing held. */
 export const TURNAROUND_RULES = (layout: Layout): string =>
   (layout === 'grid'
-    ? 'Exactly four views of the SAME subject in a 2x2 grid of equal cells: top-left FRONT view, top-right LEFT ' +
-      'side view (we see its left side; it faces the image\'s left edge), bottom-left BACK view, bottom-right ' +
-      'RIGHT side view (it faces the image\'s right edge). '
+    ? 'Exactly four views of the SAME subject in a 2x2 grid of equal cells: top-left FRONT view; top-right LEFT ' +
+      'side view: its front points to the LEFT edge of the image; bottom-left BACK view; bottom-right RIGHT side ' +
+      'view: its front points to the RIGHT edge of the image. The two side views face opposite ways. '
     : 'Exactly four views of the SAME subject in one row, left to right: FRONT, LEFT side (faces the image\'s left ' +
       'edge), BACK, RIGHT side (faces the image\'s right edge). ') +
   'Orthographic camera at the same height and the same scale in every view; identical design, colours, ' +

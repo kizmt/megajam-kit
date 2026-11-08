@@ -186,8 +186,18 @@ protected:
   (`bs.get_editor_property('sample_data')`) before tuning `MaxWalkSpeed` and the walk/run speeds in the tuning
   DataAsset. To move a sample off the axis grid, turn `snap_to_grid` off first, on every axis that has it
   (`editor-scripting.md` E).
+  - **The retargeted copy keeps Manny's 300/600 rows** (`character.ts` retargets the template's blend space): a
+    character whose speeds aren't 300/600 skates (a practice run: 42 cm per plant at 450 cm/s). Put the rows at the
+    game's own walk and run speeds.
   - **Lock the feet at the real walk speed W:** put the walk samples at W and set their `rate_scale` to W / the clip's
-    root speed (root bone travel / clip length).
+    root speed (root bone travel / clip length). With an in-place clip (root locked in game), measure the planted
+    foot's backward speed relative to the root instead (`AnimPoseExtensions.get_bone_pose` over the clip).
+  - **Python can't rebuild the blend space after editing `sample_data`:** `UBlendSpace::ResampleData` is not a
+    UFUNCTION, and edited samples keep the old triangulation until the asset is opened in the editor. Iterating an
+    `unreal.Array` of structs yields copies: write each one back by index. Fix: a few lines of editor-only C++ in the
+    game module, e.g. a `UBlueprintFunctionLibrary` with `UFUNCTION(BlueprintCallable) static void
+    ResampleBlendSpace(UBlendSpace* BS)` that calls `BS->ResampleData(); BS->MarkPackageDirty();` inside `#if
+    WITH_EDITOR`, then call it from Python and save (proven in a practice run, 2026-11-08).
   - **A long idle sample slows part-speed walks.** The blend's cycle length is the weighted mean of its samples'
     `length / rate` (`UBlendSpace::GetAnimationLengthFromSampleData`): at 93% walk a 7.6 s idle stretched a 1.5 s walk
     to 1.9 s and the feet slid (132 cm/s instead of 280). If the standing idle is its own ABP state, give the blend

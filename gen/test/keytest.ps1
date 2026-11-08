@@ -24,6 +24,7 @@ param(
     [Parameter(Mandatory = $true)][string]$Exe,
     [Parameter(Mandatory = $true)][string]$Sequence,
     [string]$StartPattern = '',      # log regex that marks t = 0 (e.g. the level/round start line)
+    [string]$Log = '',               # game log to watch (default: the packaged exe's Saved\Logs\<Game>.log)
     [double]$ReadyTimeoutSec = 120,
     [string]$Record = '',            # optional mp4 path: recorded through record_window.ps1 (game window only)
     [string[]]$GameArgs = @()
@@ -70,7 +71,7 @@ $steps = @(foreach ($part in ($Sequence -split ';' | Where-Object { $_.Trim() })
 }) | Sort-Object At
 
 $name = [IO.Path]::GetFileNameWithoutExtension($Exe)
-$log = Join-Path (Split-Path $Exe) "$name\Saved\Logs\$name.log"
+$log = if ($Log) { $Log } else { Join-Path (Split-Path $Exe) "$name\Saved\Logs\$name.log" }
 $start = Get-Date
 # Instances already running are not ours: never send keys to, record or kill one of them.
 # A packaged <Game>.exe is a launcher: the window belongs to a child named <Game> (Development) or
