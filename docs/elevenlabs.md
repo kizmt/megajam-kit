@@ -58,8 +58,9 @@ models page no longer says so, 2026-11-07): an account without it gets "Unknown 
 ### Prompts
 
 - **Decide five things, or the model picks the most average answer:** genre, mood, instruments, tempo (BPM) and
-  production era, plus a key. Example: `ambient folk exploration theme, 72 BPM, D dorian, solo bouzouki over low
-  drone strings, sparse frame drum, weathered and warm, recorded in a stone chapel, instrumental`.
+  production era, plus a key. Examples: `ambient folk theme, 72 BPM, D dorian, solo bouzouki over low drone strings,
+  sparse frame drum, weathered and warm, recorded in a stone chapel, instrumental`; `bouncy chiptune puzzle theme,
+  132 BPM, C major, square-wave lead over a busy bass line, 8-bit console era, instrumental`.
 - **Studio words change the mix** (`close-mic'd`, `bone-dry`, `plate reverb`, `tape saturation`); without them,
   describe the room. Take them from the style lock so the music matches the look.
 - **One BPM and key for all the game's cues** (calm, pressure, climax), so crossfades and layers line up; the model
@@ -68,15 +69,15 @@ models page no longer says so, 2026-11-07): an account without it gets "Unknown 
   `docs/ue/audio-ui.md`).
 - **Narrate intros, stingers and endings in order:** `start with just a drone, bring in the melody after eight bars,
   then...`. "Just" keeps the model from filling the silence.
-- **Musical ambience:** the model also renders non-musical sound in a key and tempo (`wind through a ruined temple,
+- **Musical ambience:** the model also renders non-musical sound in a key and tempo (`rain on a tin roof,
   in D, slow`), for beds that should sit under the score.
 - Record each cue's final prompt or plan in `DECISIONS.md` so later cues match it.
 
 ### Composition plans: exact section lengths (recommended for game cues)
 
-`node gen/audio.ts plan "<prompt>" --seconds 60 --name Explore` asks ElevenLabs for a plan (free, rate limited) and
-writes `MUS_Explore.plan.json` (*tested* 2026-11-01). Edit it, then compose with
-`node gen/audio.ts music --plan <file> --seed 1 --name Explore`.
+`node gen/audio.ts plan "<prompt>" --seconds 60 --name Main` asks ElevenLabs for a plan (free, rate limited) and
+writes `MUS_Main.plan.json` (*tested* 2026-11-01). Edit it, then compose with
+`node gen/audio.ts music --plan <file> --seed 1 --name Main`.
 
 - A plan is up to 30 chunks, 3 s to 10 min in total, each chunk 3-120 s with `text` (a `[Section name]`),
   `duration_ms`, `positive_styles` and `negative_styles` (up to 50 each) and `context_adherence` (low/medium/high).
@@ -106,17 +107,17 @@ writes `MUS_Explore.plan.json` (*tested* 2026-11-01). Edit it, then compose with
 character's lines in one batch on one day.
 
 - **Direct the delivery with audio tags** in square brackets before the words: `[low, gravelly voice, slow and
-  measured] The tower has stood for a thousand years.` Describe the voice, not an event: v4 also makes sound effects
+  measured] You made it. I wasn't sure you would.` Describe the voice, not an event: v4 also makes sound effects
   and can read an ambiguous tag (`[thunder]`) as one. Match tags to the voice: a calm voice won't shout convincingly.
 - **No SSML.** `<break>` tags don't work on v4. Pause with ellipses, `[short pause]` / `[long pause]` and line
   breaks. v4 has no Speed or Style setting; only Stability (lower is more varied) and Similarity apply
   (`--stability`, `--similarity`, untested).
 - **CAPITALS add emphasis**, ellipses add weight. Write what is said: numbers and abbreviations in words
   ("forty-two", "Doctor"). Stage directions in the text ("she said softly") are spoken aloud: use tags instead.
-- **Names:** IPA between slashes in the text (`"/ˈθeɪlɪs/"`), with stress marks; or one pronunciation dictionary for
-  all lines (case-sensitive: add both "Name" and "name"; not scripted).
-- **Accents:** `[strong Greek accent]` is an experimental tag; test it per voice. A voice keeps its accent in its own
-  language, but v4 drops it when generating another language.
+- **Names:** IPA between slashes in the text (`"/ʃɪˈvɔːn/"` for Siobhan), with stress marks; or one pronunciation
+  dictionary for all lines (case-sensitive: add both "Name" and "name"; not scripted).
+- **Accents:** `[strong Scottish accent]` is an experimental tag; test it per voice. A voice keeps its accent in its
+  own language, but v4 drops it when generating another language.
 - **Subtitles:** `--timestamps` saves per-character timing in the line's `.json` sidecar (untested).
 - `--seed` is best-effort repeatability. Lines generated together can share context through request stitching
   (`previous_request_ids`, up to 3, under 2 hours old; not scripted).
@@ -142,9 +143,11 @@ label, ignored in every preview) taught us the first rule below.
 
 - **Write the accent into the description, using ElevenLabs' structure:**
   `Native <language>. <Gender>, <age range>. <Quality level>.` then `Persona: <2-5 words>. Emotion: <2-3 adjectives>.`
-  then 1-2 sentences on timbre, pacing and delivery. Example: `Native English speaker with a thick Greek accent. Male,
-  70s. Studio quality. Persona: wise old storyteller. Emotion: warm, patient, wry. Deep, raspy voice, rolled r's and
-  full open vowels; slow, measured pacing with long pauses.`
+  then 1-2 sentences on timbre, pacing and delivery. Examples: `Native English speaker with a thick Greek accent.
+  Male, 70s. Studio quality. Persona: wise old storyteller. Emotion: warm, patient, wry. Deep, raspy voice, rolled r's
+  and full open vowels; slow, measured pacing with long pauses.`; `Native English speaker with a light Australian
+  accent. Female, 30s. Studio quality. Persona: upbeat radio host. Emotion: bright, quick, teasing. Clear mid-range
+  voice, crisp consonants; fast, punchy pacing with short pauses.`
 - **"Thick" works better than "strong"** for how much accent. Combine it with age, tone and pacing; give ages, not
   "old". Describe timbre (raspy, gravelly) separately from emotion.
 - **Guidance scale:** higher follows the prompt more closely, "recommended when accent or tone accuracy" matters; too
