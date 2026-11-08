@@ -44,10 +44,14 @@ space) before the next idea. Uninterrupted difficulty reads as a grind; uninterr
 
 ## Level design craft
 
+These fit a game with a space the player moves through. A game without one (single screen, board, menu-driven,
+abstract) takes the ideas that apply (readability, introduce-test-twist-combine, space or layout telling difficulty)
+and skips the rest; none of this says what kind of game to make.
+
 - **Readable critical path.** At any moment the player can tell where to go next. Test: from each spawn point and
   checkpoint, is the next goal or a lead toward it visible on screen?
-- **Landmarks and sightlines.** One tall, distinct landmark seen from most of the level (the goal, or the set
-  piece); preview the next area before the player gets there (a window, a drop, a gap).
+- **Landmarks and sightlines.** Something distinct the player orients by, seen from most of the space (the goal, or
+  the set piece); preview the next area before the player gets there.
 - **Gates and loops.** Gate new areas behind the newly taught idea. Prefer a loop or a shortcut back over
   backtracking through a cleared area.
 - **No dead ends without a reward.** A side path ends in a pickup, a view or a secret; otherwise cut it.
@@ -56,17 +60,17 @@ space) before the next idea. Uninterrupted difficulty reads as a grind; uninterr
 - **Space tells difficulty before numbers do.** Narrow, dark, cluttered = tense; wide, lit, open = safe. Change
   the space first, the tuning numbers second.
 - **Grey-box first.** Lay out every beat in grey boxes (`docs/ue/worldbuilding.md` "Blockout and level
-  organisation"; optionally by the director: "Director blockout" below) and play it before any art goes in. Art follows
-  the layout, never the other way round.
-- **Scale and metrics:** decide the player's jump height, run speed and reach early, write them in the verb table,
-  and build every gap, ledge and corridor from those numbers.
+  organisation"; optionally by the director: "Director blockout" below) and play it before any art goes in. Art
+  follows the layout, never the other way round.
+- **Scale and metrics:** measure the player's movement and reach numbers early (whatever the game has: speed,
+  jump, reach, turn rate, a cell size), write them in the verb table, and build the space from those numbers.
 - **Boundaries are proven, not assumed.** Every edge the player must not cross gets a pawn-sized walk test
   (`docs/ue/gameplay.md` "Verification lessons"); a gentle steady slope leaks as surely as a cliff edge.
-- **Check where the route meets water or a drop.** When a script lays the route and the water (or cliffs)
-  separately, nothing checks where they meet: in the rehearsal the director found the route crossing two streams
-  with no way over. After laying a route, list every point where it crosses water or a drop deeper than a step
-  (the route's line against the water outlines, then a trace down at each crossing for what carries the player), and
-  give each one a crossing (bridge, stepping stones, ford) before playtesting.
+- **Check where the route meets water or a drop** (games with a walked route). When a script lays the route and
+  the water (or cliffs) separately, nothing checks where they meet: in the rehearsal the director found the route
+  crossing two streams with no way over. After laying a route, list every point where it crosses water or a drop
+  deeper than a step (the route's line against the water outlines, then a trace down at each crossing for what
+  carries the player), and give each one a crossing (bridge, stepping stones, ford) before playtesting.
 
 ## Director blockout (optional): when the director wants to shape a space by hand
 
@@ -76,14 +80,12 @@ time; use it only when the director wants to shape a beat's space themselves (fl
 the director's layout input is playing the grey box and saying what to change. When they do want it, the steps:
 
 **1. The session prepares (≤ 15 min), in `design/blockout.md`:**
-- **The brief per beat:** its one new idea, what the player does there, the landmark they see, where they enter and
-  leave, a rough size (e.g. "30 x 20 m, two levels"), and a top-down sketch (ASCII or a quick image).
-- **The metrics table**, measured in this project, not guessed: capsule height and radius, step height, jump height,
-  the longest gap a running jump clears, walk and run speed, steepest walkable slope; plus the rules of thumb that
-  follow (paths ≥ 3 m wide, a jump gap ≤ 80% of the measured maximum, ceilings ≥ 2x capsule height).
-- **The level to block in:** a level or folder named for the beat, a PlayerStart at the entry, the player able to
-  walk it in PIE, and three flat colours (walkable, wall or blocked, hazard or goal) as materials the director can
-  drop on blocks.
+- **The brief per beat:** its one new idea, what the player does there, what the space must hold, a rough size and a
+  sketch (ASCII or a quick image). Written from the game's own design, not from a template.
+- **The metrics table**, measured in this project, not guessed: the movement and reach numbers this game has, and the
+  safe limits that follow from them (e.g. for a jumping character: the longest gap a jump clears and 80% of it).
+- **The level to block in:** a level or folder named for the beat, the player able to play it in PIE, and three
+  flat colours (e.g. usable, blocked, hazard or goal) as materials the director can drop on blocks.
 
 **2. The director blocks it out (20-45 min a beat).** Nothing needs to look good or be exact.
 - **Blocks:** drag meshes from `/Game/LevelPrototyping/Meshes` in the Content Browser (`SM_Cube`, `SM_ChamferCube`,
@@ -91,20 +93,20 @@ the director's layout input is playing the grey box and saying what to change. W
 - **Keys:** W move, E rotate, R scale; hold Alt while dragging to duplicate; End drops the selection to the floor;
   F focuses on it; G hides the editor icons; Ctrl+S saves. Turn grid snapping on in the viewport toolbar (50 cm for
   moving, 15° for rotating) so pieces meet cleanly.
-- **Order:** the landmark first, then the main path from entry to exit, then the beat's challenge, then side spaces.
-- **Walk it:** Alt+P plays in the viewport. Can you see where to go? Do the jumps feel fair? Adjust, walk again.
-- **Then tell the session, in a few lines per beat:** where it starts, what the landmark is, the moment that matters
-  ("the drop after the bridge is the twist"), and anything you're unsure about. Save first.
+- **Order:** what the beat is built around first, then how the player moves through or uses it, then the rest.
+- **Play it:** Alt+P plays in the viewport. Is it clear what to do? Does it feel fair? Adjust, play again.
+- **Then tell the session, in a few lines per beat:** what the space is for, the moment that matters, and anything
+  you're unsure about. Save first.
 
 **3. The session takes over (≤ 1 round):**
 - **Record it:** read every block's mesh and transform and write them to `design/blockout_<beat>.json` (tracked), so
   the layout survives any rebuild; commit.
-- **Check it against the metrics and the craft rules above:** `traverse_survey.py` and `route_walk.py` on the route
-  (`docs/ue/debugging.md` F "Traversal checks"), a top-down capture plus the route frames for the critic with this
-  section's rubric (readable path, landmark, gates, no dead ends). Report what fails.
-- **Fix without changing intent:** widen a path, shorten an impossible gap, add a missing floor. A change to the
-  layout's idea (moving the landmark, cutting a route) is the director's call: propose it.
-- **Build on it:** art replaces blocks keeping their footprint and sightlines (art follows the layout).
+- **Check it against the metrics and the craft rules that apply:** for a walked space, `traverse_survey.py` and
+  `route_walk.py` (`docs/ue/debugging.md` F "Traversal checks"); a capture of the whole space for the critic with the
+  rules above as the rubric. Report what fails.
+- **Fix without changing intent:** what breaks the metrics or a rule (too tight, unreachable, unreadable). A change
+  to the layout's idea is the director's call: propose it.
+- **Build on it:** art replaces blocks keeping their footprint (art follows the layout).
 
 ## Difficulty and fairness
 
