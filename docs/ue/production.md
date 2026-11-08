@@ -141,17 +141,15 @@ which build they played (a stale unzipped copy fooled a prototype test).
 Freeze features first: from here, only fixes. Each check is done on the build that will ship, unzipped to a fresh
 folder, never on PIE.
 
-- **The build that ships is Shipping** (`package.ps1 -Config Shipping`). A Development build starts a trace listener
-  on TCP port 1985 ("LogTrace: Display: Control listening on port 1985"), and Windows Defender asks every player to
-  allow it on first launch: a judge's first sight of the game is a security prompt (seen in a practice run,
-  2026-11-08; the prompt also held the foreground and blocked `keytest.ps1` for hours). Shipping drops the trace
-  listener, the console and most logging, so the session's `-game` tests keep running on the editor build and the
-  daily packages stay Development; package Shipping here, unzip it, play it once. If Shipping misbehaves, ship the
-  Development zip and say on the page that Windows may ask about network access.
-- **Which build each check uses:** Shipping writes no log and keeps `Saved\` elsewhere (`cpp.md` "Build
-  configurations"), so the checks that read logs or `Saved\` (the bench, the ensure grep, the cold-launch `Saved\`
-  delete) run on a **Development package of the same commit**; the play-throughs, the first launch (no firewall
-  prompt, intended window mode) and the package checks run on the **Shipping zip**.
+- **The build that ships is Development** (`package.ps1`, the default). The jam rules say "Package your game for
+  Windows (development build)", so the submitted zip is never Shipping, and every check below runs on that one zip.
+- **The firewall prompt:** a Development build's trace writer listens on TCP port 1985 on all interfaces ("LogTrace:
+  Display: Control listening on port 1985"; `TraceLog\Private\Trace\Control.cpp`, bound to 0.0.0.0 in
+  `WindowsTrace.cpp`), so Windows Defender Firewall asks the player once per exe location whether to allow it. The
+  game runs the same either way. Turning it off needs `UE_TRACE_ALLOW_TCP_CONTROL=0`, a compile define for the
+  engine's TraceLog module: a launcher engine can't rebuild that (it needs a unique build environment), so there is
+  no fix for us. Say it on the page instead (`SETUP.md` 9 step 5). The prompt also takes the foreground, so tests on
+  this machine use `postkeys.ps1`, or allow the exe once (a rule per exe path: each new unzip folder asks again).
 
 - **Full play-through twice**, start to credits, with real input (keyboard and mouse, plus gamepad if the page claims
   it). Restart, quit and every menu path work; Esc always has a way out; the game never soft-locks.

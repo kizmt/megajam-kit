@@ -230,8 +230,8 @@ add an entry to the project's `KIT_NOTES.md` in the same round.
 ## Shipping
 
 - Package a Win64 development build at least once per day from day 2 (`scripts/package.ps1`). **The submitted zip is
-  a Shipping build** (`-Config Shipping`, made and played once at the final pass): a Development build opens a debug
-  port, and Windows shows players a firewall prompt on its first launch (`docs/ue/production.md`). Show the build
+  a Development build**: the jam rules require it, so never `-Config Shipping`. Its trace port makes Windows show a
+  firewall prompt on first launch, which the page explains (`docs/ue/production.md` "Final pass"). Show the build
   stamp in a corner and log it at startup (`docs/ue/production.md`).
 - Zip as `TeamName_GameName.zip`, under 1 GB. `package.ps1` names it `<ZipName>_<ProjectName>.zip`: name the
   project after the game and pass `-ZipName <TeamName>` (also to `upload.ps1`).

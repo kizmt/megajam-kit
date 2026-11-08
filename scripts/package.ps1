@@ -11,7 +11,7 @@
   largest zip entries, so a stale or oversized file shows up.
 .EXAMPLE
   .\scripts\package.ps1 -ZipName MyTeam
-  .\scripts\package.ps1 -ZipName MyTeam -Config Shipping     # try a smaller build (no -seconds, no console)
+  .\scripts\package.ps1 -ZipName MyTeam -Config Shipping     # experiments only: the jam rules require Development
 #>
 [CmdletBinding()]
 param(

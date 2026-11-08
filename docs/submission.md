@@ -11,6 +11,9 @@ CLAUDE.md "Shipping" and `SETUP.md` 9, the video in `docs/ue/cinematics-video.md
       (20:59 ET Nov 15). Late or broken entries are not accepted, and "proof of submission is not proof of receipt".
 - [ ] Packaged for Windows, playable on Windows 10/11, needing **no additional software** (rules 1, 7(f)): the
       VC++ runtime check in Windows Sandbox (`docs/ue/production.md` "Packaging and what gets shipped").
+- [ ] A **development build** (jam page, Unreal Engine teams: "Package your game for Windows (development build)"):
+      `package.ps1` without `-Config`, never Shipping. Zip named `TeamName_GameName`, under 1 GB, uploaded to our
+      own itch.io account, then submitted to the jam.
 - [ ] **Full name and email of every entrant**, one named as the team owner (rule 1(c)).
 - [ ] **Sourced assets noted at submission** (rule 1(d)): the list from `SOURCED_ASSETS.md`, with licences.
 - [ ] **Video:** 30-60 s of recorded gameplay, 1920x1080 or higher, English (rules 1(e), 7(c), 7(i)).
@@ -79,7 +82,8 @@ appends `devlog/YYYY-MM-DD.md` (CLAUDE.md "Devlog (Glass Box)"). At content lock
 ## Order on the last day
 
 1. D − 14 h: video cut, page and devlog drafted (text and screenshots).
-2. D − 12 h: final pass on the **Shipping** zip (`package.ps1 -Config Shipping`; `docs/ue/production.md` "Final pass").
+2. D − 12 h: final pass on the **Development** zip the rules require (`package.ps1`, never `-Config Shipping`;
+   `docs/ue/production.md` "Final pass").
 3. Upload the zip with `scripts/upload.ps1 -Push` (the director's go-ahead), then download it from the page,
    unzip to a fresh folder and play the first minute.
 4. Fill the submission form: entrants, sourced assets, video link, devlog link. Submit by **D − 3 h**.

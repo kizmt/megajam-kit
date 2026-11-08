@@ -126,7 +126,7 @@ Keep the order and the gaps:
 | D − 30 h | Rough video cut from the shot list (`gen/test/shots.ps1`): shows which shots still need building |
 | D − 20 h | **Content lock:** levels, assets and audio in. Final cold playtest done (`docs/design.md` "Playtesting") |
 | D − 14 h | Video captured and cut (`docs/ue/cinematics-video.md`); page text and screenshots drafted |
-| D − 12 h | Final pass on the **Shipping** zip (`docs/ue/production.md` "Final pass": the last half-day) |
+| D − 12 h | Final pass on the Development zip (`docs/ue/production.md` "Final pass": the last half-day) |
 | **D − 3 h** | **Submitted.** The remaining hours are the buffer for upload or page problems, not for features |
 
 Package and bench from first playable onward, at every round close that added content (CLAUDE.md "Working model").

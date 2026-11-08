@@ -108,7 +108,7 @@ Never wait for a reply; never end a turn with a question.
 4. **Build** in rounds, as CLAUDE.md says, against the schedule below. Every round closes as usual (PROGRESS,
    devlog, DECISIONS, package and bench when content was added). No round waits for anything.
 5. **Ship** as `docs/submission.md` says up to the upload: the zip (`package.ps1 -ZipName <team name> -BuildRoot
-   <Project>\Builds`: nothing is created outside the project; `Builds/` is gitignored; Shipping for the final zip), the
+   <Project>\Builds`: nothing is created outside the project; `Builds/` is gitignored; Development, as the rules require), the
    30-60 s video (`docs/ue/cinematics-video.md`, D3b first), the page text, screenshots and the devlog, all in the
    project. Then the final report.
 

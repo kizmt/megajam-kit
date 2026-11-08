@@ -294,7 +294,9 @@ Do this before jam day so the first real upload isn't on the final night.
    platform.
 5. Game page text: the exe is unsigned. Add a line like *"Unsigned build: Windows SmartScreen may need More info >
    Run anyway. If Smart App Control is on, Windows blocks the game; it can only be turned off machine-wide (Windows
-   Security > App & browser control)."* Code signing (Microsoft Artifact Signing, or an OV certificate) removes this
+   Security > App & browser control). Windows Firewall may ask about network access on first launch: the game needs
+   none, so Cancel is fine."* (The jam requires a Development build, which opens a debug port: `docs/ue/production.md`
+   "Final pass".) Code signing (Microsoft Artifact Signing, or an OV certificate) removes this
    but needs identity verification of 1-20 business days; see `docs/ue/production.md`.
 6. Trailer: the jam wants a link (YouTube, unlisted is fine), not an upload. Recipes in `docs/ue/cinematics-video.md`.
 

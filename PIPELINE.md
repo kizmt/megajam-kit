@@ -248,7 +248,7 @@ Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls nee
 | `gen/unreal/materials.ts` | `M_PBR_Master` + per-asset material instances (`master [--force]`, `apply <Name> <textureDir> [/Game/Props] [--opengl-normals]`); runs `gen/unreal/py/build_master_material.py` |
 | `gen/vfx/vfx.ts` | VFX building blocks: procedural mask/noise textures (`gen/vfx/textures.ts`), `M_VFX_Master` + per-effect instances (`gen/unreal/py/build_vfx_material.py`, `build_vfx_instance.py`), effect meshes (`gen/blender/vfx_meshes.py`) (`docs/ue/vfx.md` "Kit VFX building blocks") |
 | `scripts/build.ps1` | Full C++ editor build with the editor closed; PASS only with zero warnings (`-AllowWarnings` to relax; `-EngineRoot` for an engine outside `C:\Program Files\Epic Games\UE_5.8`) |
-| `scripts/package.ps1` | Win64 package to `C:\dev\Builds\<Project>\` + `<ZipName>_<Project>.zip` (`-ZipName` required, `-Config Shipping` and `-EngineRoot` optional) |
+| `scripts/package.ps1` | Win64 package to `C:\dev\Builds\<Project>\` + `<ZipName>_<Project>.zip` (`-ZipName` required, `-EngineRoot` optional; the jam requires the default Development config) |
 | `scripts/upload.ps1` | itch.io upload of the zip with butler: dry run unless `-Push` (`-ZipName`, `-Target user/game`, `-Channel windows`) |
 | `scripts/init-repo.ps1` | Project Git + LFS setup and first commit (`SETUP.md` step 6; `-Message`, `-Trailer` set the commit text) |
 | `unreal/Plugins/MegajamTools` | Project plugin: MCP tools `import_sound`, `import_any`, `run_console_command`, `run_python`, `get_sound_info` |

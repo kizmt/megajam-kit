@@ -407,7 +407,7 @@ Test whether players see it at all: every recorded crash had a screen recorder r
   `AddOnScreenDebugMessage`/`DrawDebug` visible. Strip or gate debug drawing before the final video.
 - PDBs and the itch zip: SETUP step 7 and `performance.md` "Budgets". Keep each PDB with its build.
 - **Conflict risk:** all of section C, `stat`, cheats and `-seconds` disappear in Shipping. We package
-  Development; if anyone switches to Shipping for the final upload, the smoke test stops working.
+  Development, which the jam rules require for the submitted zip too, so these keep working on the final build.
 
 ## Verified against
 
