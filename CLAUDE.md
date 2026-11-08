@@ -254,6 +254,8 @@ add an entry to the project's `KIT_NOTES.md` in the same round.
   flag is `"isAiForbidden"` at `https://www.fab.com/i/listings/<listing id>`). Check before importing any pack. Fab
   refuses scripted requests (Cloudflare challenge / HTTP 403), so ask the director to read the flag in a browser (or
   paste the listing JSON), and record it in `SOURCED_ASSETS.md` with the listing URL and the date checked.
+  Quixel Megascans in the director's Fab library are already audited (`docs/ue/worldbuilding.md` "Quixel
+  Megascans"): supporting art only, never in place of generated or made art.
 - **The Unreal Engine EULA no longer limits AI use of the engine or MetaHuman** (Epic's 2026-10-29 update deleted
   the two AI restrictions in EULA section 6e; accepted by the director): engine source can be read by the agent, and
   MetaHuman Creator, Animator and Mesh to MetaHuman output can be used with AI tools. NoAI rules for Fab and Epic

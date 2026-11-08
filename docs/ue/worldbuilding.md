@@ -78,6 +78,32 @@ Nanite settings for plants (Voxelize vs Preserve Area, wind): `performance.md` "
   `collision_enabled` (there is no `set_collision_profile_name` in Python).
 - Thin grass goes black against the sun with Default Lit: `materials.md` "Lessons from a prototype".
 
+## Quixel Megascans: available, supporting art only (Fab library, audited 2026-11-09)
+
+The director's Fab account holds 22,611 free Megascans listings (Fab Standard License, any engine): 11,032
+materials, 8,800 3D models, 2,228 decals and 519 brushes allow AI use. Know they are there; don't default to them.
+
+- **Never the first choice over generated or made art.** Megascans are sourced assets, and the rules' 15(c) says
+  sourced assets "will not be reviewed or scored" (CLAUDE.md "Jam compliance"). A level carried by scans gives the
+  judges less of the entry's own work to score under Visuals. Generate or make the art first (`gen/asset.ts`, kit
+  materials, Blender, PCG); reach for a scan only when it is supporting material the generated set lacks: ground and
+  rock surfaces, debris, decals, filler foliage. What a judge remembers (hero props, characters, set pieces, the
+  look) is the entry's own.
+- **Only if the style lock says so.** They are photoreal scans: they suit a realistic or semi-real look and clash
+  with a stylised one. `prompts/style-lock.md` step 3 records yes or no; a stylised lock means none.
+- **Only assets marked "Allows usage with AI: Yes".** All script-added listings were audited for `isAiForbidden`:
+  16 are No (13 3D models, 2 decals, 1 material). Their listing ids are in `docs/megascans-noai.csv`; check every
+  chosen listing against it. A listing not covered by the audit (added later) needs the director to read the flag
+  (CLAUDE.md "Only use a sourced asset whose licence allows AI use").
+- **The director adds them; the session picks.** Fab refuses scripted requests, so the session lists exactly what it
+  wants (listing title and URL, format, quality: 2K textures unless a close-up needs more) and the director adds
+  them through Fab. Fab is disabled in the `.uproject` to avoid the `RulesError` builds (`SETUP.md` step 2): enable
+  it for that step only, then disable it again and rebuild.
+- **Keep them small.** Pull only what the level uses (the whole library is ~34 TB at full quality), Nanite on for
+  their static meshes, textures at 2K or less (`performance.md`): 8 GB of VRAM and the 1 GB zip both count.
+- **Log each one** in `SOURCED_ASSETS.md`: title, listing URL, Fab Standard License, "Allows usage with AI: Yes (audit
+  2026-11-09)", and where it is used. The credits and the submission list them (`docs/submission.md`).
+
 ## Ambition on a budget: making a small game feel big
 
 Ambition and Innovation is judged, but the jam is four days and rule 1 (small scope) stands. Ambition reads from what

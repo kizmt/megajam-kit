@@ -27,6 +27,8 @@ Concrete and checkable, never vague adjectives:
   For a dark game, give a numeric black floor (e.g. "darkest 1% of pixels at luma ≥ N/255, under 1% near-black") and
   check in-engine shots against that number, not against the key art: image models crush blacks at the frame edges
   even when told not to.
+- **Megascans:** yes or no, and for what (supporting surfaces, debris, decals only: `docs/ue/worldbuilding.md`
+  "Quixel Megascans"). No for a stylised look.
 - **Post-process:** colour grading LUT or curve notes, bloom, vignette, outline/cel settings. Name the stack
   precisely: each PP material with its Blendable Location (Before Tonemapping for outlines), the LUT file and
   intensity, tonemapper deviations (Tone Curve Amount, Expand Gamut), local exposure values, the Custom Depth-Stencil
