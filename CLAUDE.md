@@ -68,8 +68,8 @@ director). **The target PC** is the machine the game is built and measured on (R
   give the `critic` subagent the screenshots and the references (or the rubric) with labels hidden, briefed per
   `prompts/critic.md`; its ranked flaws become the next tasks. The director's calls (`DECISIONS.md`) overrule the
   critic.
-- **`DECISIONS.md` (in the game project) records the director's explicit calls** ("responsiveness beats foot
-  accuracy", "accept this shot"), one line each with the date. Read it at the start of every round. Never silently
+- **`DECISIONS.md` (in the game project) records the director's explicit calls** ("responsiveness beats
+  realism", "accept this shot"), one line each with the date. Read it at the start of every round. Never silently
   undo one; to change one, propose it with evidence and ask. It records what the director decided, not what is
   forbidden: new ideas are welcome. Start it in the theme window with the concept pick (`prompts/concept.md`); append
   whenever the director makes a call, grouped by area; strike through superseded calls with a pointer; record "your
@@ -106,7 +106,7 @@ director). **The target PC** is the machine the game is built and measured on (R
   content or systems, package and bench, or say why not; put the editor close/reopen this needs in the round plan,
   so the director approves it with the plan instead of in a separate round trip.
 - **Every goal in a plan has a check that can pass or fail:** a number (latency in s, foot slip in cm, fps, contrast),
-  a behaviour ("the exit is visible from the first fight", "no dead ends"), a reference image to match, or a short
+  a behaviour ("the goal is visible from the start", "no dead ends"), a reference image to match, or a short
   rubric (3-5 criteria) when nothing else fits. "Make the room better" is not a goal until it has one. Report each
   check's before and after.
 - **Two failed fixes, then roll back.** Commit before each risky change. If two fixes for the same problem have not
@@ -205,9 +205,10 @@ add an entry to the project's `KIT_NOTES.md` in the same round.
 - **Test the feel, not the binding**: a player action is done when it reads from the gameplay camera, and the
   director has played it. Test input with real input, not autoplay hooks. **Ask the director before every
   key-injection run** and use `gen/test/keytest.ps1` (it aborts if the game loses focus). Details:
-  `docs/ue/gameplay.md`, `docs/ue/debugging.md` F. Keep a verb table in PROGRESS (move, attack, hurt, die, restart,
-  win...; columns: built, autoplay clip, played by the director with real input). A verb isn't done until the
-  director has played it; flag unplayed ones in every review.
+  `docs/ue/gameplay.md`, `docs/ue/debugging.md` F. Keep a verb table in PROGRESS (every player action in
+  `design/concept.md`'s verb table, plus fail, restart and win if the game has them; columns: built, autoplay clip,
+  played by the director with real input). A verb isn't done until the director has played it; flag unplayed ones
+  in every review.
 - **Juice pass:** once a verb works, give it feedback on 3+ channels (visual, audio, camera/time) before calling it
   done (`docs/ue/game-feel.md`). Fun is judged, and it breaks ties.
 - **Performance numbers come from `gen/perf/bench.ts` on a packaged build**, not editor `stat` (a background editor

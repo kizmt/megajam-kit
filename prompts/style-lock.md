@@ -12,7 +12,7 @@ references for *feel only* (no copying), and one sentence on what the player sho
 
 ## 2. Key art (Claude, 30 min)
 1. **Directions in words first (free).** Write 2–3 distinct directions as short paragraphs (setting, light,
-   palette, material feel, character idea), all for the same scene. The director can often pick or merge from the
+   palette, material feel, and the character or main subject if there is one), all for the same scene. The director can often pick or merge from the
    text alone; then only that direction gets images.
 2. **Images for the chosen direction(s)** (image model, cost stated first; prices in `PIPELINE.md`): per direction,
    2 key frames of the game's main view (different parts of the level) + **1 character sheet** if the game has a
@@ -23,7 +23,8 @@ references for *feel only* (no copying), and one sentence on what the player sho
 ## 3. Write `art/style-lock.md`
 Concrete and checkable, never vague adjectives:
 - **Palette:** 5–7 hex values with roles (key light, shadow, accent, UI, hazard).
-- **Lighting:** time of day, sun angle and colour, sky, fog density and colour, exposure range.
+- **Lighting:** time of day, sun angle and colour, sky, fog density and colour, exposure range (for an interior
+  or abstract space: the key light sources, their colours and the ambient level instead of sun and sky).
   For a dark game, give a numeric black floor (e.g. "darkest 1% of pixels at luma ≥ N/255, under 1% near-black") and
   check in-engine shots against that number, not against the key art: image models crush blacks at the frame edges
   even when told not to.
@@ -32,15 +33,16 @@ Concrete and checkable, never vague adjectives:
 - **Post-process:** colour grading LUT or curve notes, bloom, vignette, outline/cel settings. Name the stack
   precisely: each PP material with its Blendable Location (Before Tonemapping for outlines), the LUT file and
   intensity, tonemapper deviations (Tone Curve Amount, Expand Gamut), local exposure values, the Custom Depth-Stencil
-  mode and stencil value table (e.g. 1 = interactable, 2 = enemy), and whether Substrate Toon is in (only if a
+  mode and stencil value table (e.g. 1 = interactable, 2 = hazard), and whether Substrate Toon is in (only if a
   practice run proved it). Details: `docs/ue/materials.md` "Stylized looks", `docs/ue/lighting.md` "Post-process look".
 - **Materials:** one master material approach (flat, toon, painted, PBR). Roughness range.
-- **Shape language:** proportions, silhouette rules, level of detail, scale of player vs world.
+- **Shape language:** proportions, silhouette rules, level of detail, scale of what the player controls (if
+  anything) vs the world.
 - **Asset prompt prefix:** the exact text prepended to every image-to-3D concept prompt.
 - **Don'ts:** what would break the look.
 
 ## 4. Build the look in-engine *before* the game (Claude, 1–1.5 h)
-Graybox room + sky + fog + post-process volume + master material + 3 generated hero props.
+Graybox of the main view's space + sky (or the interior's lights) + fog + post-process volume + master material + 3 generated hero props.
 The Basic level has no post-process volume: build an unbound one here, and on the Lumen path set its
 `LumenMaxRoughnessToTraceReflections` to 0.25 (`SETUP.md` 7b).
 Define 4-6 fixed camera transforms in `art/camera-set.md` (the gameplay view plus key spots), capture those

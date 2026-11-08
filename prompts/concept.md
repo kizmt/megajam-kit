@@ -53,9 +53,11 @@ this format:
 
 - **Working title:** distinctive, not a single common word.
 - **Pitch:** one sentence a judge would repeat.
-- **Core verb:** the one thing the player does most (jump, push, aim, time, steer...). One verb, done well.
+- **Core verb:** the one thing the player does most (jump, aim, steer, time, place, connect, sort, hide, choose...).
+  One verb, done well.
 - **Theme link:** how the theme changes the *rules*, not only the setting.
-- **Stakes:** how the player can lose an attempt, and what it costs (`docs/design.md` "Difficulty and fairness").
+- **Stakes:** how the player can lose an attempt and what it costs, or, with no fail state, what the player risks
+  instead (`docs/design.md` "Difficulty and fairness").
 - **The 60-second moment:** the shot that sells it in the video's first 5 seconds.
 - **Beats:** onboarding, 2-3 twists (each adds one new idea to the core verb), climax
   (`docs/design.md` "Shape of a short game").
@@ -71,7 +73,7 @@ can't hide weak audio. No averaging away a red flag:
 | Concept | Theme | Fun in 30 s | Gameplay | Ambition / novelty | Level + progression room | Visuals | Audio | Video moment | Build risk (5 = safe) |
 |---|---|---|---|---|---|---|---|---|---|
 
-- **Fun in 30 s:** would a stranger enjoy the core verb in an empty grey room? If not, no amount of content fixes it.
+- **Fun in 30 s:** would a stranger enjoy the core verb in grey boxes, with no content? If not, no amount of content fixes it.
 - **Ambition:** the judges' wording includes "a bigger scope"; in this kit bigger scope is earned by illusion (a
   world beyond the playable space, scale contrast, one set piece: `docs/ue/worldbuilding.md` "Ambition on a budget").
 - **Build risk:** anything needing a system the kit hasn't proven (networking, physics-driven gameplay at scale,
@@ -84,7 +86,7 @@ can't hide weak audio. No averaging away a red flag:
 ## 4. Scope: the cut list (Claude, 15 min)
 Write `design/concept.md` (in the planning folder until S):
 - Pitch, core verb, theme link, target length (from step 1; default 5-10 min for a first-time player), win and lose
-  conditions.
+  conditions (or what the stakes put at risk instead).
 - **Verb table:** each player action, its input, and its feedback on 3+ channels (visual, audio, camera/time):
   CLAUDE.md "Juice pass" and `docs/ue/game-feel.md` work from this table.
 - **Beats:** onboarding, each twist with the one new idea it adds, the climax, the end.
