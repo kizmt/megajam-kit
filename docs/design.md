@@ -55,8 +55,8 @@ space) before the next idea. Uninterrupted difficulty reads as a grind; uninterr
   then use it together with an earlier idea.
 - **Space tells difficulty before numbers do.** Narrow, dark, cluttered = tense; wide, lit, open = safe. Change
   the space first, the tuning numbers second.
-- **Grey-box first.** Lay out every beat in grey boxes (the director can block it out: "Director blockout" below;
-  `docs/ue/worldbuilding.md` "Blockout and level organisation") and play it before any art goes in. Art follows
+- **Grey-box first.** Lay out every beat in grey boxes (`docs/ue/worldbuilding.md` "Blockout and level
+  organisation"; optionally by the director: "Director blockout" below) and play it before any art goes in. Art follows
   the layout, never the other way round.
 - **Scale and metrics:** decide the player's jump height, run speed and reach early, write them in the verb table,
   and build every gap, ledge and corridor from those numbers.
@@ -68,12 +68,12 @@ space) before the next idea. Uninterrupted difficulty reads as a grind; uninterr
   (the route's line against the water outlines, then a trace down at each crossing for what carries the player), and
   give each one a crossing (bridge, stepping stones, ford) before playtesting.
 
-## Director blockout: the director shapes the space, the session builds it
+## Director blockout (optional): when the director wants to shape a space by hand
 
-A person lays out a level's shape in minutes; an agent placing every block through scripts is slow and comes out
-boxy. So each beat's layout can be blocked out by the director in the editor, and the session takes it from there.
-Use it after the risk spike (the core verb works in grey boxes) and for every new area. Ask for it like any other
-human step (CLAUDE.md "Working model"): one message with the brief below.
+The session builds grey boxes itself, by script, and that is the default: in the 2026-11-08 practice run a scripted
+grey box of five beats took part of one round and its test route passed first time. A director blockout saves no
+time; use it only when the director wants to shape a beat's space themselves (flow, sightlines, pacing). Otherwise
+the director's layout input is playing the grey box and saying what to change. When they do want it, the steps:
 
 **1. The session prepares (≤ 15 min), in `design/blockout.md`:**
 - **The brief per beat:** its one new idea, what the player does there, the landmark they see, where they enter and

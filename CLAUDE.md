@@ -87,8 +87,7 @@ director). **The target PC** is the machine the game is built and measured on (R
   whether it is fun, the concept and story, colour and mood, and what lifts it to a quality product. Bring each such
   call with options, evidence (captures, numbers) and a recommendation. The session can also call on the director
   like a tool: when a step needs a human (a UI-only button, a sign-in, a purchase, a cold playtest, judging feel by
-  hand, a level blockout: `docs/design.md` "Director blockout"), ask for exactly that, step by step, and keep
-  working on something else meanwhile.
+  hand), ask for exactly that, step by step, and keep working on something else meanwhile.
 - **Work long stretches unassisted.** Once the session has what it needs (the concept, the look, the calls in
   `DECISIONS.md`), it keeps going round after round without waiting for replies. It stops only for a director's call,
   a change to a frozen decision, spending beyond the agreed budget, an action this file says to ask before, or a step
