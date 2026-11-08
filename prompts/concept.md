@@ -73,7 +73,8 @@ can't hide weak audio. No averaging away a red flag:
 | Concept | Theme | Fun in 30 s | Gameplay | Ambition / novelty | Level + progression room | Visuals | Audio | Video moment | Build risk (5 = safe) |
 |---|---|---|---|---|---|---|---|---|---|
 
-- **Fun in 30 s:** would a stranger enjoy the core verb in grey boxes, with no content? If not, no amount of content fixes it.
+- **Fun in 30 s:** would a stranger enjoy the core verb in grey boxes, with no content? If not, no amount of
+  content fixes it.
 - **Ambition:** the judges' wording includes "a bigger scope"; in this kit bigger scope is earned by illusion (a
   world beyond the playable space, scale contrast, one set piece: `docs/ue/worldbuilding.md` "Ambition on a budget").
 - **Build risk:** anything needing a system the kit hasn't proven (networking, physics-driven gameplay at scale,

@@ -66,8 +66,9 @@ completes a set), play the stronger, never both.
 
 Feel's core idea in Unreal terms, described so the session can write it quickly:
 
-- A `UDataAsset` per event (`DA_Feel_LightHit`, `DA_Feel_Land`, `DA_Feel_Solve`...) holding a list of entries. Each entry: a type
-  (HitStop, Shake, FovKick, Flash, Rumble, Niagara, Sound, Launch, SlowMo...), its parameters and a delay.
+- A `UDataAsset` per event (`DA_Feel_LightHit`, `DA_Feel_Land`, `DA_Feel_Solve`...) holding a list of entries. Each
+  entry: a type (HitStop, Shake, FovKick, Flash, Rumble, Niagara, Sound, Launch, SlowMo...), its parameters and a
+  delay.
 - A `UActorComponent` on the player (or a world subsystem) with one call: `Play(Asset, Context)`, where the context
   carries location, normal, instigator, target and an intensity 0-1 multiplied into the scalable parameters.
 - Entries with a delay use world timers; hit-stop and slow-mo restore themselves; springs (FOV, scale) tick in the
