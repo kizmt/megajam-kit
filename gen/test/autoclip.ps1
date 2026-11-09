@@ -25,7 +25,7 @@ $log = Join-Path $proj.Dir 'Saved\Logs\autoclip.log'
 if (Test-Path $log) { Remove-Item $log }
 New-Item -ItemType Directory -Force -Path (Split-Path $Out) | Out-Null
 $args2 = "`"$($proj.UProject)`" $Map -game -windowed -ResX=1920 -ResY=1080 -WinX=40 -WinY=40 -log -abslog=`"$log`" $GameArgs"
-$p = Start-Process (Get-EditorExe) -ArgumentList $args2 -PassThru
+$p = Start-Process (Get-EditorExe $proj) -ArgumentList $args2 -PassThru
 $h = Wait-GameWindow -Process $p -Log $log -Pattern $StartPattern -TimeoutSec $ReadyTimeoutSec
 if ($h -eq [IntPtr]::Zero) {
     Write-Host "FAIL: game window or the '$StartPattern' log line never appeared"

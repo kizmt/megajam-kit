@@ -36,7 +36,7 @@ $py = (Resolve-Path $Script).Path.Replace('\', '/')
 # -ExecCmds="py <path>" can't carry a quoted path inside its own quotes.
 if ($py -match '\s') { throw "The test script path contains a space, which -ExecCmds can't pass: $py (move it to a path without spaces)" }
 $argline = "`"$($proj.UProject)`" $Map -game -windowed -ResX=$ResX -ResY=$ResY -WinX=40 -WinY=40 -log -abslog=`"$log`" -ExecCmds=`"py $py`" $GameArgs"
-$p = Start-Process (Get-EditorExe) -ArgumentList $argline -PassThru
+$p = Start-Process (Get-EditorExe $proj) -ArgumentList $argline -PassThru
 # Wait, but stop early if the test throws every tick (a long run otherwise burns its whole timeout).
 $deadline = (Get-Date).AddSeconds($TimeoutSec)
 while (-not $p.WaitForExit(5000)) {

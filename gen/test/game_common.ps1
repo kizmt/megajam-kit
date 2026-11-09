@@ -32,7 +32,7 @@ function Start-KitGame($proj, [string]$Map, [string]$Script, [hashtable]$Setting
     if ($py -match '\s') { throw "Script path has a space, which -ExecCmds can't pass: $py" }
     if (Test-Path $Log) { Remove-Item $Log }
     $argline = "`"$($proj.UProject)`" $Map -game -windowed -ResX=$ResX -ResY=$ResY -WinX=40 -WinY=40 -abslog=`"$Log`" -ExecCmds=`"py $py`" -NoTitle $ExtraArgs"
-    return Start-Process (Get-EditorExe) -ArgumentList $argline -PassThru
+    return Start-Process (Get-EditorExe $proj) -ArgumentList $argline -PassThru
 }
 
 # The kit capture scripts' result lines (PROOF ...) and real errors, without the toolset plugins' -game noise.
@@ -43,8 +43,35 @@ function Show-KitLog([string]$Log, [int]$Max = 40) {
         Select-Object -First $Max | ForEach-Object { $_.Line -replace '^\[[^\]]*\]\[[^\]]*\]', '' }
 }
 
-function Get-EditorExe {
-    $exe = 'C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor.exe'
+# The engine this project uses: the .uproject's EngineAssociation ("5.8", "5.9", or a source build's GUID), looked up
+# in the Launcher's install list, then the default install folder. KIT_ENGINE_ROOT overrides. So one script serves a
+# 5.8 and a 5.9 project side by side: switching a project's engine (right-click the .uproject > Switch Unreal Engine
+# version) is all it takes.
+function Resolve-KitEngine([string]$UProject) {
+    if ($env:KIT_ENGINE_ROOT) { return $env:KIT_ENGINE_ROOT }
+    $assoc = [string](Get-Content -Raw $UProject | ConvertFrom-Json).EngineAssociation
+    if (-not $assoc) { throw "$UProject has no EngineAssociation: open it once in the editor, or pass -EngineRoot" }
+    if ($assoc -match '^\{?[0-9A-Fa-f-]{36}\}?$') {
+        $builds = Get-ItemProperty 'HKCU:\Software\Epic Games\Unreal Engine\Builds' -ErrorAction SilentlyContinue
+        $root = if ($builds) { $builds.PSObject.Properties[$assoc].Value } else { $null }
+        if ($root) { return $root }
+        throw "source-build engine $assoc is not registered (HKCU\Software\Epic Games\Unreal Engine\Builds)"
+    }
+    $dat = Join-Path $env:ProgramData 'Epic\UnrealEngineLauncher\LauncherInstalled.dat'
+    if (Test-Path $dat) {
+        $hit = @((Get-Content -Raw $dat | ConvertFrom-Json).InstallationList | ForEach-Object { $_ } |
+            Where-Object { $_.AppName -eq "UE_$assoc" -and (Test-Path $_.InstallLocation) }) | Select-Object -First 1
+        if ($hit) { return $hit.InstallLocation }
+    }
+    $default = "C:\Program Files\Epic Games\UE_$assoc"
+    if (Test-Path $default) { return $default }
+    throw "engine $assoc (from $UProject) not found: install it in the Epic Games Launcher, or pass -EngineRoot"
+}
+
+# The editor of the engine the project names (5.8 or 5.9 side by side). $proj from Resolve-KitProject.
+function Get-EditorExe($proj = $null) {
+    if (-not $proj) { $proj = Resolve-KitProject '' }
+    $exe = Join-Path (Resolve-KitEngine $proj.UProject) 'Engine\Binaries\Win64\UnrealEditor.exe'
     if (-not (Test-Path $exe)) { throw "Editor not found at $exe" }
     return $exe
 }

@@ -10,12 +10,37 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$EngineRoot = 'C:\Program Files\Epic Games\UE_5.8',
+    [string]$EngineRoot = '',          # default: the engine the .uproject names (Resolve-KitEngine)
     [string]$Configuration = 'Development',
     [switch]$AllowWarnings
 )
 
 $ErrorActionPreference = 'Stop'
+
+# The engine this project uses: the .uproject's EngineAssociation ("5.8", "5.9", or a source build's GUID), looked up
+# in the Launcher's install list, then the default install folder. KIT_ENGINE_ROOT overrides. So one script serves a
+# 5.8 and a 5.9 project side by side: switching a project's engine (right-click the .uproject > Switch Unreal Engine
+# version) is all it takes.
+function Resolve-KitEngine([string]$UProject) {
+    if ($env:KIT_ENGINE_ROOT) { return $env:KIT_ENGINE_ROOT }
+    $assoc = [string](Get-Content -Raw $UProject | ConvertFrom-Json).EngineAssociation
+    if (-not $assoc) { throw "$UProject has no EngineAssociation: open it once in the editor, or pass -EngineRoot" }
+    if ($assoc -match '^\{?[0-9A-Fa-f-]{36}\}?$') {
+        $builds = Get-ItemProperty 'HKCU:\Software\Epic Games\Unreal Engine\Builds' -ErrorAction SilentlyContinue
+        $root = if ($builds) { $builds.PSObject.Properties[$assoc].Value } else { $null }
+        if ($root) { return $root }
+        throw "source-build engine $assoc is not registered (HKCU\Software\Epic Games\Unreal Engine\Builds)"
+    }
+    $dat = Join-Path $env:ProgramData 'Epic\UnrealEngineLauncher\LauncherInstalled.dat'
+    if (Test-Path $dat) {
+        $hit = @((Get-Content -Raw $dat | ConvertFrom-Json).InstallationList | ForEach-Object { $_ } |
+            Where-Object { $_.AppName -eq "UE_$assoc" -and (Test-Path $_.InstallLocation) }) | Select-Object -First 1
+        if ($hit) { return $hit.InstallLocation }
+    }
+    $default = "C:\Program Files\Epic Games\UE_$assoc"
+    if (Test-Path $default) { return $default }
+    throw "engine $assoc (from $UProject) not found: install it in the Epic Games Launcher, or pass -EngineRoot"
+}
 
 if (Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue) {
     Write-Host 'FAIL: UnrealEditor.exe is running. Save, close the editor, then run this again.'
@@ -27,6 +52,8 @@ $projectDir = Split-Path -Parent $PSScriptRoot
 $uproject = Get-ChildItem -Path $projectDir -Filter *.uproject -File | Select-Object -First 1
 if (-not $uproject) { Write-Host "FAIL: no .uproject found in $projectDir"; exit 1 }
 $name = $uproject.BaseName
+if (-not $EngineRoot) { $EngineRoot = Resolve-KitEngine $uproject.FullName }
+Write-Host "engine: $EngineRoot"
 $buildBat = Join-Path $EngineRoot 'Engine\Build\BatchFiles\Build.bat'
 if (-not (Test-Path $buildBat)) { Write-Host "FAIL: Build.bat not found at $buildBat"; exit 1 }
 
