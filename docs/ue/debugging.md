@@ -64,6 +64,8 @@ UE_LOG(LogMyGame, Display, TEXT("Door %s opened by %s"), *GetName(), *GetNameSaf
 **Message Log** (Window > Message Log) holds what the Output Log buries: Blueprint compile errors,
 **Play In Editor** runtime errors ("Accessed None trying to read property..."), Map Check
 (Build > Map Check, or console `MAP CHECK`), asset load errors. Read it after every PIE that misbehaves.
+**5.9:** the editor adds a Map Check subsystem with Blueprint logging (no page details it yet; grep the 5.9 stub or
+headers before scripting it) (docs/ue59/pages/unreal-engine-5-9-release-notes.md).
 
 **Scary but harmless (all seen on the target PC):**
 - `LogWindows: Failed to load 'aqProf.dll'` / `'VtuneApi.dll'` - optional profiler hooks.
@@ -99,11 +101,21 @@ UE_LOG(LogMyGame, Display, TEXT("Door %s opened by %s"), *GetName(), *GetNameSaf
 - **MCP `ECONNREFUSED`:** check `Get-Process UnrealEditor` and the log's last line (`LogExit: Exiting.` = clean exit,
   not a crash) before diagnosing; then ask the director to reopen the editor. (Live Coding then a map load is a known crash:
   `cpp.md`.)
+  - **5.9:** with Auto Start Server on, the server logs its bind address, port and URL path at editor startup, and a
+    failed bind (port in use, missing plugin) is logged there too: grep the log's `LogModelContextProtocol` lines
+    before asking for a reopen. The port is an Editor Preference (Agentic Workflows > Model Context Protocol > Server
+    Port Number, default 8000) or `-ModelContextProtocolPort=N`; `ModelContextProtocol.StartServer [port]` starts a
+    stopped server from the editor console. Each `initialize` result carries the PID, project and engine version in
+    `_meta["com.epicgames.unrealengine/instance"]`: check it reached the right editor (docs/ue59/pages/unreal-mcp-in-unreal-editor.md,
+    docs/ue59/pages/unreal-engine-5-9-release-notes.md).
 - **MCP calls time out while the editor shows "Responding":** a modal dialog is blocking the game thread (seen after
   `reload_packages` on a dirty asset, and "Overwrite Existing Object"). List the editor's top-level windows
   (`EnumWindows` on its PID): a window titled "Message" is the dialog. `PrintWindow(hwnd, hdc, 2)` captures it even
   behind other windows (UI Automation saw no Slate controls). Read it before answering; `PostMessage`
   WM_KEYDOWN/WM_KEYUP VK_RETURN to that hwnd presses its default button.
+  - **5.9:** the MCP page also names a client-side timeout: Claude Code stops waiting after about 120 s. Split long
+    work (Live Coding builds, large scripts, asset scans, automation runs) into shorter calls; a timeout on a long call
+    is not by itself a sign of a modal dialog (docs/ue59/pages/unreal-mcp-in-unreal-editor.md).
 - **Packaged Development PDBs (verified):** BuildCookRun stages them by default ("Copying DebugFiles"):
   `<Build>\<Game>\Binaries\Win64\<Game>.pdb` (test project: 370 MB, bigger than the 337 MB exe).
   Rule: **keep the PDB next to the exe it was built with**; a PDB from another build is useless.
@@ -158,6 +170,11 @@ at the real resolution.**
   during a playthrough and grep the log afterwards. `stat none` clears all.
 - `ProfileGPU` (Ctrl+Shift+,): one-frame GPU breakdown; editor opens the GPU Visualizer, packaged dumps
   the tree to the log. Look for the biggest pass (Lumen, shadows, post, Nanite).
+- **5.9:** new MCP toolsets include performance, scene capture and console; the Perf toolset (CSV and GPU profiler,
+  Stats), Console and Scene Capture have runtime-callable tools. A cooked build (Shipping included) can host the MCP
+  server with `-ModelContextProtocolStartServer`, exposing only `AIRuntimeCallable` tools (`Cannot register Toolset …
+  no entry in baked manifest` in `LogToolsetRegistry` = none). `describe_toolsets` before relying on one
+  (docs/ue59/pages/unreal-mcp-in-unreal-editor.md, docs/ue59/pages/unreal-engine-5-9-release-notes.md).
 - **Unreal Insights** (verified present: `Engine\Binaries\Win64\UnrealInsights.exe`):
   - Editor: bottom toolbar **Trace** status widget > start/stop; or console `Trace.File` (writes
     `<Project>\Saved\Profiling\<timestamp>.utrace`), `Trace.Stop`, `Trace.Status`.
@@ -180,6 +197,8 @@ at the real resolution.**
 
 - Jam-worthy tests: one **packaged smoke test** (daily, with the package) and a handful of C++ automation
   tests for pure logic (scoring, inventory, save/load). Skip screenshot-comparison and big functional suites.
+  - **5.9:** adds the Modular Test Framework, for writing and running scoped plugin tests (release notes only; no
+    page yet). The C++ automation tests below remain the kit's path (docs/ue59/pages/unreal-engine-5-9-release-notes.md).
 - C++ test (`#include "Misc/AutomationTest.h"`, in a non-shipping module or `#if WITH_AUTOMATION_TESTS`):
 ```cpp
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FScoreTest, "Megajam.Score.Combo",
@@ -191,6 +210,8 @@ bool FScoreTest::RunTest(const FString&) { TestEqual(TEXT("x3 combo"), ScoreFor(
   `RunTests([...])` or `RunTestsByFilter("StartsWith:Megajam")` (also `^Foo`, `Bar$`, `Group:Name`) >
   `GetTestStatus()` / `GetTestResults()` (JSON with per-test errors) > `StopTests()`.
   Window > Test Automation (Session Frontend) is the same backend.
+  **5.9:** keep each MCP call under Claude Code's ~120 s wait: start the run, then poll `GetTestStatus()` in separate
+  calls rather than one long call (docs/ue59/pages/unreal-mcp-in-unreal-editor.md "Handle Long Tool Calls").
   **A filter that matched zero tests is not a pass:** report the test names that ran with the result, and if none
   matched, say so (and write the test if the behaviour has none).
 - Command line equivalent (editor, headless): `UnrealEditor-Cmd.exe <uproject> -ExecCmds="Automation
@@ -256,6 +277,12 @@ no foreground needed), `gen/test/camset.ps1` (camera-set frames), `gen/test/stab
     property" there although the editor reads it. Give what a test reads `BlueprintReadOnly` (header change, full
     build) or a `BlueprintCallable` getter, or hard-code it with a comment. Without a header change:
     `get_components_by_class` plus the component name, and actor transforms.
+  - **5.9:** Python gives each Blueprint class its own wrapper type (`BP_MyActor_C`, a subclass of its native parent,
+    with the Blueprint's added properties and functions), and each User Defined Struct its own type; 5.8 saw the
+    nearest native parent / `unreal.StructBase`. `isinstance()` and `get_editor_property()` work either way; test code
+    that compares `type(obj)` or the type name to a native class must change, or set
+    `Engine.Python.WrapBlueprintClassesOnDemand` / `Engine.Python.WrapUserDefinedStructsOnDemand` to false for the 5.8
+    behaviour (docs/ue59/pages/scripting-the-unreal-editor-using-python.md).
   - **Check the first ticks of a long run for Python exceptions** before leaving it: a 40-minute run threw on every
     tick and was wasted. `game_test.ps1` stops a run that floods the log with Python errors.
   - **`slomo` does nothing** sent through `SystemLibrary.execute_console_command`; use
@@ -324,12 +351,21 @@ no foreground needed), `gen/test/camset.ps1` (camera-set frames), `gen/test/stab
   False, unreal.ComparisonTolerance.LOW, "", 0.5, True)`. It pilots the viewport, writes `<path>.png` and releases
   the pilot. With the editor in the background the request waits until the viewport draws: one MCP `CaptureViewport`
   call forces the draw (`editor_invalidate_viewports()` did not).
+  - **5.9:** Editor Preferences > Agentic Workflows > Model Context Protocol > **Dump Media To Disk** (default off)
+    writes every image and audio block sent over MCP to `Saved/ModelContextProtocol/`, to check what a capture tool
+    actually returned (docs/ue59/pages/unreal-mcp-in-unreal-editor.md).
 - **Editor captures at High scalability show black shade after an editor restart** (rehearsal: ~12% of pixels below
   luma 20 for minutes, vs 0.23% in the packaged game at the same settings). High sets
   `r.LumenScene.DirectLighting.UpdateFactor 64` and `r.LumenScene.Radiosity.UpdateFactor 128`, and a background editor
   renders so few frames that Lumen's surface cache barely converges. Set both to 8 in the editor console before
   capturing (not saved; `shot.ts --converge` does it): 0.17-1.17%. Ruled out first: surface cache atlas size, GI
   on/off, `r.Lumen.TraceMeshSDFs`, reflections.
+  - **5.9:** a project that opts into the Lumen World Cache (Hardware Ray Tracing only; off by default) replaces the
+    Surface Cache completely for that view; Software Ray Tracing still uses the Surface Cache. The World Cache
+    averages each cell over `r.Lumen.WorldCache.MaxFramesAccumulated` frames (default 16), so lighting lags changes
+    and new areas take frames to fill: give a background editor enough frames before capturing. `View Modes > Lumen >
+    Surface Cache` shows the World Cache when it is active; `r.Lumen.WorldCache.Allowed 0` switches back to the
+    Surface Cache without a restart (docs/ue59/pages/lumen-world-cache-in-unreal-engine.md).
 - **Before capturing a World Partition level,** load its streamed actors (`worldbuilding.md` "World Partition from
   Python"); unloaded cells show coarse stand-ins that look like a Nanite bug.
 - **After a water rebuild,** wait a few seconds or capture twice before judging an underwater-tinted shot

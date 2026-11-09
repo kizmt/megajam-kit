@@ -1,11 +1,14 @@
-# New project setup — UE 5.8.4 + Claude Code
+# New project setup — UE 5.8.4 or 5.9 Preview + Claude Code
 
 Verified on the target PC (Windows 11, i5-14500, RTX 4060 8 GB, 32 GB) on 2026-10-24 with the kit's test project.
-Target: ~10 minutes on jam day. Do the steps in order.
+Target: ~10 minutes on jam day. Do the steps in order. The steps are the same on the 5.9 Preview (Epic's 5.9 Unreal MCP
+page: `docs/ue59/pages/unreal-mcp-in-unreal-editor.md`); where 5.9 differs the step says so. Which engine a project
+uses is the director's call (CLAUDE.md "Engine version"); the kit's scripts follow the project's `.uproject`.
 
 ## Machine prerequisites (already done, re-check only)
 
-- Unreal Engine 5.8.4 (Epic launcher install)
+- Unreal Engine 5.8.4 and, for 5.9 projects, the 5.9 Preview (Epic launcher installs; they sit side by side in
+  `C:\Program Files\Epic Games\UE_5.8` and `UE_5.9`)
 - Visual Studio 2026 (18.10.x) with the "Game development with C++" workload — verified compiling on 5.8.4
 - Git + Git LFS (`git lfs version` → 3.7.1)
 - Claude Code
@@ -34,7 +37,8 @@ The theme window runs before the project exists (`prompts/concept.md`). Check it
 
 ## 1. Create the project (2 min)
 
-1. Unreal Project Browser → Games → **Blank**, **C++**.
+1. Launch the chosen engine from the Epic Games Launcher (Unreal Engine > Library: 5.8.4 or 5.9), then in the
+   Project Browser → Games → **Blank**, **C++**.
 2. Location `C:\dev`, name `<ProjectName>` (short path; Unreal creates the project folder itself). Ask the director
    for the **team name** too (it names the zip, step 7): solo entrants use their itch.io username or their name.
 3. Wait for the C++ build; the editor should open with no "rebuild modules" prompt.

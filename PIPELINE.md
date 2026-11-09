@@ -247,7 +247,7 @@ Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls nee
 | `gen/unreal/py/import_skeletal.py` / `check_skeletal.py` / `retarget_setup.py` / `clean_character.py` / `make_character_bp.py` | Skeletal import, root-scale check, IK retarget, safe rebuild, thin BP |
 | `gen/unreal/materials.ts` | `M_PBR_Master` + per-asset material instances (`master [--force]`, `apply <Name> <textureDir> [/Game/Props] [--opengl-normals]`); runs `gen/unreal/py/build_master_material.py` |
 | `gen/vfx/vfx.ts` | VFX building blocks: procedural mask/noise textures (`gen/vfx/textures.ts`), `M_VFX_Master` + per-effect instances (`gen/unreal/py/build_vfx_material.py`, `build_vfx_instance.py`), effect meshes (`gen/blender/vfx_meshes.py`) (`docs/ue/vfx.md` "Kit VFX building blocks") |
-| `scripts/build.ps1` | Full C++ editor build with the editor closed; PASS only with zero warnings (`-AllowWarnings` to relax; `-EngineRoot` for an engine outside `C:\Program Files\Epic Games\UE_5.8`) |
+| `scripts/build.ps1` | Full C++ editor build with the editor closed; PASS only with zero warnings (`-AllowWarnings` to relax; the engine comes from the `.uproject`, `-EngineRoot` overrides) |
 | `scripts/package.ps1` | Win64 package to `C:\dev\Builds\<Project>\` + `<ZipName>_<Project>.zip` (`-ZipName` required, `-EngineRoot` optional; the jam requires the default Development config) |
 | `scripts/upload.ps1` | itch.io upload of the zip with butler: dry run unless `-Push` (`-ZipName`, `-Target user/game`, `-Channel windows`) |
 | `scripts/init-repo.ps1` | Project Git + LFS setup and first commit (`SETUP.md` step 6; `-Message`, `-Trailer` set the commit text) |
@@ -270,7 +270,7 @@ Shared modules, not run on their own: `gen/paths.ts` (kit and project paths, `.e
 - Gemini images: https://ai.google.dev/gemini-api/docs/nanobanana (Interactions API, JPEG output only).
 - OpenAI images: Images API, model `gpt-image-2` (generations; edits when reference images are given).
 
-## Hard-won facts (UE 5.8.4)
+## Hard-won facts (UE 5.8.4; check them on 5.9, `docs/ue/ue59.md`)
 
 - FBX from Blender must use `apply_scale_options=FBX_SCALE_NONE`; the other modes import 100x too small and UE drops
   triangles.

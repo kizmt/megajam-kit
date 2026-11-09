@@ -2,7 +2,7 @@
   "name": "megajam-kit",
   "private": true,
   "type": "module",
-  "description": "Pre-jam pipeline kit for the 2026 Epic AI MegaJam (UE 5.8). Scripts run directly with Node 24 (type stripping); tsc only type-checks.",
+  "description": "Pre-jam pipeline kit for the 2026 Epic AI MegaJam (UE 5.8 or 5.9). Scripts run directly with Node 24 (type stripping); tsc only type-checks.",
   "packageManager": "pnpm@12.15.0",
   "engines": {
     "node": ">=24"

@@ -74,6 +74,10 @@ Workflow: `CreateNiagaraSystem` from a **template system**, giving it an `FXS_` 
   write against the `describe_toolset` schema; after `AddUserVariables` run `GetStackIssues` and grep the log for
   "Invalid parameter"; never call `GetUserVariables` on a system that logged it. **Save a new system before editing
   it**, so a crash costs only the edits.
+  - **5.9:** the tool-search meta-tools are `list_toolsets`, `describe_toolsets` (tools of one or more toolsets;
+    schemas only with `include_schemas: true`), `describe_tools` (full schemas for named `Toolset.Tool`s) and
+    `call_tool`. On 5.9 check writes against `describe_tools` for the tool you call
+    (docs/ue59/pages/unreal-mcp-in-unreal-editor.md).
 - **Curve data interfaces written with `SetStackInputData` leave a stale LUT** ("Post CopyToInternal LUT generation is
   out of sync"). A written curve on `ScaleSpriteSize` scaled every sprite to 0 with no error. Workaround: disable the
   module and take the size from the spawn range. (Untested: setting the curve in the UI, or recompiling after.)
@@ -83,6 +87,9 @@ Workflow: `CreateNiagaraSystem` from a **template system**, giving it an `FXS_` 
 - **`SetRendererData`** reads back PascalCase keys (`Material`), but the write that worked used camelCase (`material`).
 - **Large outputs:** `describe_toolset NiagaraToolsets.NiagaraToolset_System` and `AddEmitter` exceed the tool-result
   limit; parse the saved file instead.
+  - **5.9:** `describe_toolsets` returns names, descriptions and annotations unless `include_schemas: true`;
+    fetch one tool's schema with `describe_tools` (e.g. `NiagaraToolsets.NiagaraToolset_System.AddEmitter`)
+    instead of the whole toolset (docs/ue59/pages/unreal-mcp-in-unreal-editor.md).
 - **Sprite Rotation Mode: Unset with the renderer still binding `Particles.SpriteRotation`** (which nothing writes)
   turned 9-14 cm sprites into ~20 x 150 cm stretched quads at fixed angles, visible only in the packaged build. For
   upright sprites use **Direct Angle (Degrees)** with angle 0. When a sprite effect looks wrong, swap in
@@ -138,6 +145,10 @@ at the gameplay camera's distance.
 | Rain / snow | `RecycleParticlesInView` (or `Fountain` from above) attached to the camera or player pawn | GPU, fixed bounds around camera. Rain = velocity-aligned stretched sprites. Snow = slow drift + noise | GPU | Component on the camera's owner | M |
 | Confetti / win | `ConfettiBurst` | Mesh or sprite tumble, gravity, drag | CPU | AutoRelease | S |
 | Debris chunks | `UpwardMeshBurst` | Low-poly particle mesh, collision only if needed | CPU | AutoRelease | S-M |
+
+**5.9:** the Unreal Animation Framework (UAF) gains a notify system with a built-in Play Niagara Effect handler.
+It applies to UAF-animated characters only; for footstep dust on those, it is an alternative to the anim notify ->
+C++ handler route (docs/ue59/pages/unreal-engine-5-9-release-notes.md).
 
 Lightweight variants (`*Lightweight` templates) are the cheapest for simple bursts and fountains. But they're
 fixed-function (limited modules, no scratchpads or dynamic inputs) and the MCP toolset can't edit them. Use one only
@@ -329,6 +340,15 @@ UNiagaraFunctionLibrary::SpawnSystemAttached(TrailFX, Mesh, NAME_None, FVector::
   projectiles and muzzle FX. Turn off owner-velocity inheritance when the system isn't attached to a moving object.
   Keep Trim Attributes on.
 - **Sort mode None** unless blending looks wrong. Sorting costs GPU time and index-buffer memory.
+- **5.9:** AVBOIT (Experimental) blends overlapping translucent surfaces, particles included, independent of draw
+  order. Off by default: `r.OIT.Method=1` plus `r.AVBOIT.NonNanite=1` (needed for particles) in `DefaultEngine.ini`
+  `[SystemSettings]`; SM6 desktop only, off with MSAA. Works with Translucent, Additive, Modulate and
+  AlphaComposite; materials that sample SceneColor or use refraction/distortion blend wrongly (washed out), so
+  `M_VFX_Master` instances with `DistortionStrength` > 0 won't composite correctly under it. `r.AVBOIT.Support`
+  (default 1, read-only, restart) compiles an extra shader per translucent material even with `r.OIT.Method=0`:
+  set `r.AVBOIT.Support=0` if unused. Changing `r.OIT.Method` at runtime hitches. Debug: `r.AVBOIT.Visualize` with
+  `r.ShaderPrint 1`; `r.AVBOIT.DebugWeightOutput 2` shows whether a material adds the background itself
+  (docs/ue59/pages/adaptive-voxelbased-order-independent-transparency-in-unreal-engine.md).
 - **Translucency and overdraw are the real GPU cost** at 4K output. Prefer fewer, smaller sprites. Check with view mode
   *Optimization Viewmodes > Shader Complexity / Quad Overdraw*. A few huge smoke sprites filling the screen can cost
   more than a thousand sparks.
@@ -336,6 +356,9 @@ UNiagaraFunctionLibrary::SpawnSystemAttached(TrailFX, Mesh, NAME_None, FVector::
   **Exception to `performance.md` "Nanite on for every static prop"** (listed there): that rule is for level props.
   Particle meshes are tiny, low-poly, non-Nanite meshes (the Nanite renderer is the Experimental `NiagaraNanite`).
 - Measure with `stat Niagara`, `stat gpu`, and the Niagara Debugger (Tools > Debug) (unverified menu path).
+- **5.9:** the 5.9 docs give the path as Level Editor **Tools > Debug > Niagara Debugger**; FX budget cvars there:
+  `fx.budget.enabled 1`, `fx.Budget.GameThread`, `fx.Budget.RenderThread`. Its FX Outliner is still in development
+  and the Performance tab is highly experimental (docs/ue59/pages/niagara-debugger-for-unreal-engine.md).
 
 ## Effect Types and scalability
 
@@ -371,6 +394,9 @@ UNiagaraFunctionLibrary::SpawnSystemAttached(TrailFX, Mesh, NAME_None, FVector::
   (unverified for 5.8). For a glow that lights surroundings, use a Light renderer particle or a real light on the
   actor. Torches and campfires should use an actor PointLight with shadows off; one that casts shadows counts against
   `performance.md`'s "Dynamic shadow-casting lights" budget.
+- **5.9:** the new Lumen World Cache (Hardware Ray Tracing, per project) doesn't cache translucent surfaces either:
+  its paths pass through translucent materials and store lighting for opaque surfaces only, so it
+  doesn't change the rule above (docs/ue59/pages/lumen-world-cache-in-unreal-engine.md).
 - **Additive particles don't appear in Lumen reflections or screen traces**; what reflects is the light's specular, so
   shape it with the light's source radius / length.
 

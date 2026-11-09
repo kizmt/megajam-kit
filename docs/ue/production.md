@@ -107,8 +107,16 @@
   A). `EditorAssetLibrary` itself lives in that plugin (`Plugins/Editor/EditorScriptingUtilities`), which
   ToolsetRegistry depends on (5.8.4 `.uplugin` files), so enabling the MCP plugins enables it; `MegajamTools.uplugin`
   lists it too, since its Python calls `EditorAssetLibrary`.
+- **5.9:** new Blueprint and Python libraries create and edit Blueprints (graphs, nodes, variables), chooser tables,
+  StateTrees and Dataflow graphs from scripts, and the Python Foundation Packages plugin is removed
+  (docs/ue59/pages/unreal-engine-5-9-release-notes.md).
 - Python editor scripting and Unreal MCP are Beta/Experimental (`features.md`); every pipeline step is therefore
   verified by reading back state or a screenshot.
+- **5.9:** Python now gives each Blueprint class (`BP_MyActor_C`) and User Defined Struct its own wrapper type
+  instead of the native parent / `unreal.StructBase`. `isinstance()` and `get_editor_property()` read-backs work
+  either way; a check on `type(obj)` or the Python type name may need updating, or set
+  `Engine.Python.WrapBlueprintClassesOnDemand` / `Engine.Python.WrapUserDefinedStructsOnDemand` to false for the 5.8
+  behaviour (docs/ue59/pages/scripting-the-unreal-editor-using-python.md).
 
 ## Version control
 

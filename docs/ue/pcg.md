@@ -7,6 +7,8 @@ placement only; hero props are placed by hand.
 ## Supervised agent workflow (mandatory; PCG via MCP is Experimental)
 
 1. Load `PCGToolset` and **`Skill_PCGGraphGeneration` first** (without it the agent misreads concepts).
+   **5.9:** a Toolset Registry controls which toolsets agents may use; make sure `PCGToolset` is allowed there
+   before loading it (docs/ue59/pages/unreal-engine-5-9-release-notes.md).
 2. Find a similar example graph (PCG SampleContent, PCGPrimitives examples, project graphs) and adapt it; build new
    only if none fits.
 3. The director selects the assets/actors to use in the editor; don't let the agent search broadly.
@@ -73,6 +75,9 @@ Other skills: `Skill_InstantLevelOperations` (quick batch placement without a gr
 | Distance | `UPCGDistanceSettings` | to nearest point of 2nd input | Distance-based culling/density |
 | Copy Points | `UPCGCopyPointsSettings` | source x target | Clusters around anchor points |
 | Static Mesh Spawner | `UPCGStaticMeshSpawnerSettings` | MeshSelectorType (Weighted / ByAttribute / WeightedByCategory), bApplyMeshBoundsToPoints true, bAllowDescriptorChanges true, bSetupCullingCells false | Points to instanced meshes |
+
+- **5.9:** new **Concave Hull** node (docs/ue59/pages/unreal-engine-5-9-release-notes.md). The 5.9 node reference
+  has no entry for it yet: read its class and settings in the 5.9 source or `GetNativeNodeSchema` before using it.
 
 ## Our floors may not be Landscape: sampling static mesh floors
 
@@ -160,7 +165,9 @@ Other skills: `Skill_InstantLevelOperations` (quick batch placement without a gr
 
 Skills: `Skill_PCGGraphGeneration`, `Skill_InstantLevelOperations`, `Skill_PCGInstancingOnMeshActor`,
 `Skill_PCGShapeGrammarDefinition`, `Skill_PCGAssetZoo`, `Skill_PCGBiomeCore`, `Skill_PCGBiomeCoreRefinement`,
-`Skill_PCGMeshPartition` (needs Mesh Terrain; skip). They are Blueprint assets (`UAgentSkill`); the graph skill
+`Skill_PCGMeshPartition` (needs Mesh Terrain; skip; **5.9:** Mesh Partition gains mesh simplification settings, a
+ray-tracing proxy option and better PCG interop, still only relevant with Mesh Terrain;
+docs/ue59/pages/unreal-engine-5-9-release-notes.md). They are Blueprint assets (`UAgentSkill`); the graph skill
 fills `{Subgraphs}`, `{Nodes}`, `{Examples}`, `{Instant Graphs}` at load time from the folders above.
 
 **Skill_PCGGraphGeneration rules:**
@@ -202,6 +209,9 @@ for the director to review a batch of generated props side by side.
 - Nodes: `ListNativeNodes(bCommonOnly=true)`, `ListAvailableSubgraphs`, `GetNativeNodeSchema`, `AddNode`,
   `AddSubgraphNode`, `UpdateNode`, `SetNodeComment`, `GetNodeInfo`, `RepositionNode`, `RemoveNode`,
   `ConnectNodePins` (may auto-insert conversion nodes), `DisconnectNodePins`.
+  **5.9:** new script functions add and validate PCG graph edges (docs/ue59/pages/unreal-engine-5-9-release-notes.md;
+  the page doesn't name them). For scripted whole-graph builds on 5.9, grep the Python stub for them and validate
+  edges after wiring.
 - Data: `GetNodeDataView(PCGVolume, Node, PinLabel="Out", AttributeName, StartIndex, EndIndex)`. First call enables
   inspection; re-execute, then read. **Never run it/Execute on two volumes sharing a graph at once: freeze.**
 - Comments: `AddCommentBox`, `UpdateCommentBox`, `RemoveCommentBox`. Other: `DrawSpline(ActorLabel, ActorTag,

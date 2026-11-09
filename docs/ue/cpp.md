@@ -160,6 +160,11 @@ protected:
   `LogLiveCoding: Display: Live coding succeeded` (~7 s for one .cpp on the target PC, verified 2026-10-24). Changes apply
   from the next PIE session. Not through MCP: the 5.8.4 build registers no `LiveCodingToolset` (the `unreal-mcp`
   skill names one).
+  **5.9:** the release notes add a console toolset to the engine's AI toolsets, and the Unreal MCP page lists Console
+  among the engine toolsets; neither names a Live Coding toolset. The MCP page says Claude Code stops waiting for a
+  call after about 120 s and to split long work such as Live Coding builds into shorter calls, so keep the
+  compile-then-poll pattern (docs/ue59/pages/unreal-engine-5-9-release-notes.md,
+  docs/ue59/pages/unreal-mcp-in-unreal-editor.md).
 - Full build with the editor closed: `scripts\build.ps1` (24 s for a 4-class module on the target PC). It passes only with
   zero warnings in our files; engine/toolchain warnings are listed separately. Known engine one: 5.8's own
   `GameFramework/Character.h(798)` raises **C4996 GetMovementBase deprecated** for every `ACharacter` subclass;

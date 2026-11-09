@@ -112,8 +112,30 @@ export async function listToolsets(): Promise<string> {
   return contentText(await metaCall('list_toolsets', {}));
 }
 
+// The meta-tools differ by engine: 5.8.4 has describe_toolset({toolset_name}); 5.9 has describe_toolsets (one or
+// more toolsets, include_schemas) and describe_tools. Read the server's own tools/list schemas once and call
+// whichever it offers, so the kit works against either editor.
+interface MetaTool { name: string; inputSchema?: { properties?: Record<string, { type?: string }> } }
+let metaTools: MetaTool[] | undefined;
+async function getMetaTools(): Promise<MetaTool[]> {
+  if (!metaTools) {
+    await ensureSession();
+    const r = (await rpc('tools/list', {})) as { tools?: MetaTool[] } | undefined;
+    metaTools = r?.tools ?? [];
+  }
+  return metaTools;
+}
+
 export async function describeToolset(toolset: string): Promise<string> {
-  return contentText(await metaCall('describe_toolset', { toolset_name: toolset }));
+  const tools = await getMetaTools();
+  const plural = tools.find((t) => t.name === 'describe_toolsets');
+  if (!plural) return contentText(await metaCall('describe_toolset', { toolset_name: toolset }));
+  const props = plural.inputSchema?.properties ?? {};
+  // The toolset-name argument: an array property (5.9 takes several toolsets) or a single string.
+  const [key, spec] = Object.entries(props).find(([k]) => /toolset/i.test(k)) ?? ['toolset_names', { type: 'array' }];
+  const args: ToolArgs = { [key]: spec?.type === 'array' ? [toolset] : toolset };
+  if ('include_schemas' in props) args['include_schemas'] = true;
+  return contentText(await metaCall('describe_toolsets', args));
 }
 
 /** Call one tool and return the raw MCP result. Throws on tool errors. */

@@ -1,4 +1,4 @@
-# UE 5.8 knowledge base
+# UE knowledge base (5.8, with 5.9 differences)
 
 Curated notes for this kit, written from the UE 5.8 docs (from 2026-10-24) and checked against the 5.8.4
 headers, the Python stub and a test project, then extended with lessons from prototypes.
@@ -6,6 +6,10 @@ Lessons that depend on genre or art style say so where they appear; treat their 
 re-measure. Read the matching note **before** starting work in that area, then still verify what you use
 (CLAUDE.md, "Unreal knowledge"). Most notes end with "Verified against" (dated) and "Sources (5.8)" so claims can
 be traced.
+
+Lines starting **5.9:** (added 2026-11-10 from the 5.9 Preview docs in `docs/ue59/`) say what differs on a 5.9
+project; everything else was verified on 5.8.4. [ue59.md](ue59.md) covers switching a project between versions,
+what 5.9 adds for the kit, and the kit behaviours still to confirm on 5.9.
 
 If a note and the engine disagree, the engine wins. In a game session, add an entry to the project's
 `KIT_NOTES.md` (the kit is read-only there); a kit-maintenance session then fixes the note and, for pipeline facts,
@@ -42,8 +46,11 @@ If a note and the engine disagree, the engine wins. In a game session, add an en
 | Track down a bug, crash, hitch; profile; write a test; scripted captures, key-injection tests, rare crashes | [debugging.md](debugging.md) |
 | Record the submission video or a cinematic (trailer recipes: game audio, offline `-game` frame capture (the default once the game has test hooks), MRQ gameplay render, beat-cut edit) | [cinematics-video.md](cinematics-video.md) |
 | Packaging, build stamp, final-pass checklist, code signing / Smart App Control, DDC/Zen, version control | [production.md](production.md) |
+| Engine version: 5.8 or 5.9, switching a project, what 5.9 adds, what to test on 5.9 | [ue59.md](ue59.md) |
 
 ## Official references (5.8; all verified to resolve to 5.8 pages on 2026-10-24)
+
+On a 5.9 project, change `application_version=5.8` to `5.9` in these links (or use `docs/ue59/`).
 
 - Python API reference: https://dev.epicgames.com/documentation/en-us/unreal-engine/python-api/?application_version=5.8
   Same content as the local stub (both come from the engine's reflection data). Grep the stub first; use the web

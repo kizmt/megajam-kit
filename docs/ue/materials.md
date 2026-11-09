@@ -91,6 +91,10 @@ default material.
 
 - Nanite supports **Opaque and Masked** only. Unsupported material on a Nanite mesh = default material + Output Log
   warning. Translucent = non-Nanite mesh.
+  **5.9:** the AVBOIT page mentions Nanite translucency, off by default and turned on with `r.Nanite.AllowTranslucency`
+  (docs/ue59/pages/adaptive-voxelbased-order-independent-transparency-in-unreal-engine.md); the 5.9 Nanite page still
+  lists Opaque and Masked only (docs/ue59/pages/nanite-virtualized-geometry-in-unreal-engine.md). Keep glass on
+  non-Nanite meshes.
 - Masked and World Position Offset work with Nanite but cost more (programmable raster; unverified on the 5.8 page).
   WPO is "supported, but limited": clamp displacement. Custom UVs / Vertex Interpolator are evaluated 3x per pixel under Nanite. Custom HLSL
   nodes "might result in artifacts". Prefer Opaque; use Masked only where the cutout is visible (leaves, fences).
@@ -111,6 +115,17 @@ default material.
 - Lit translucent surfaces are lit via a volume texture: "missing direct specular", can look low-res. Fine for small glass.
 - Cost: **overdraw**: every stacked translucent layer re-shades the pixel. Check Shader Complexity view (green cheap,
   red expensive). Keep glass small on screen, avoid layered glass. Use Translucency Sort Priority to fix sorting.
+- **5.9:** **AVBOIT** (Adaptive Voxel-Based Order Independent Transparency, **Experimental**) blends overlapping
+  translucency correctly regardless of draw order (no sort popping). Off by default; no Project Settings entry. Turn on in
+  `DefaultEngine.ini` `[SystemSettings]`: `r.OIT.Method=1`, plus `r.AVBOIT.NonNanite=1` for non-Nanite translucency and
+  particles (our `M_Glass`; default 0, so without it nothing changes). Needs an SM6 desktop platform; off under MSAA and
+  in debug view modes. Works with Translucent, Additive, Modulate, AlphaComposite and coloured transmittance (tinted
+  glass, `r.AVBOIT.RGB` 1). The material must output only its own light: **no SceneColor, refraction or distortion**
+  (they wash out to a flat filter); check with `r.AVBOIT.DebugWeightOutput 2`. Changing `r.OIT.Method` at runtime
+  recreates all render state (hitch). Limits: surfaces in the same depth slice average; edges step at
+  `r.AVBOIT.PixelSize` (8 px); beyond `r.AVBOIT.MaxDistance` (20000 cm) all goes in one slice. Debug views
+  `r.AVBOIT.Visualize` need `r.ShaderPrint 1` and are absent in Test/Shipping
+  (docs/ue59/pages/adaptive-voxelbased-order-independent-transparency-in-unreal-engine.md).
 - Translucent colored shadows need static lighting/Lightmass: **not available to us (dynamic lighting only, no baking)**.
 
 ## Substrate (on by default in our 5.8 project)
@@ -240,12 +255,19 @@ default material.
 - Count matters more than graph size: texture samples (each prop = 3: colour, normal, ORM; +1 with an emissive
   texture), translucent overdraw, full-screen PP passes. Check Material Editor Stats (instruction/sampler counts) and Shader Complexity view.
 - Every new Material / static permutation = shader compiles in editor (grey meshes until done) and more PSOs at runtime.
+- **5.9:** `r.AVBOIT.Support` (default 1, read-only, restart) compiles an extra shader version of every translucent
+  material on SM6 desktop even with `r.OIT.Method` 0. If the game doesn't use AVBOIT, set `r.AVBOIT.Support=0` in
+  `DefaultEngine.ini` (docs/ue59/pages/adaptive-voxelbased-order-independent-transparency-in-unreal-engine.md).
 - **PSO precaching** is on by default in 5.8: if a component's PSOs aren't ready the engine **skips drawing it**
   (pop-in) rather than hitching (`r.PSOPrecache.ProxyCreationStrategy`, default 1 = delay; the older
   `r.PSOPrecache.ProxyCreationWhenPSOReady` is deprecated in 5.8). Values (`EPSOPrecacheProxyCreationStrategy`,
   `PSOPrecacheComponent.h`): 0 `AlwaysCreate` (draw now, may hitch), 1 `DelayUntilPSOPrecached` (pop-in), 2
   `UseFallbackMaterialUntilPSOPrecached` (default grey material). Epic's 5.8 precaching *page* still documents the
   old cvar pair: trust the API and the console (`r.PSOPrecache.` then Tab). Few masters/permutations = fewer PSOs.
+  **5.9:** the 5.9 precaching page and the 5.9 console variable reference also list only the old pair
+  (`r.PSOPrecache.ProxyCreationWhenPSOReady`, `r.PSOPrecache.ProxyCreationDelayStrategy`), no `ProxyCreationStrategy`
+  (docs/ue59/pages/pso-precaching-for-unreal-engine.md, docs/ue59/pages/unreal-engine-console-variables-reference.md).
+  Check the console on 5.9 the same way.
   First-launch warm-up screen and the cold-cache test: `production.md` "First launch: PSO warm-up".
 
 ## MCP MaterialTools (what the agent can build)

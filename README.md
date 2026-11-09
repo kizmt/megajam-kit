@@ -1,6 +1,6 @@
 # megajam-kit
 
-A toolkit for building a solo entry to the **2026 Epic AI MegaJam** with Unreal Engine 5.8.4 and Claude Code.
+A toolkit for building a solo entry to the **2026 Epic AI MegaJam** with Unreal Engine 5.8.4 or the 5.9 Preview and Claude Code.
 
 It holds **tools only**: setup steps, agent instructions, pipeline scripts and engine notes. It contains no
 gameplay code, levels or game assets.
@@ -11,7 +11,7 @@ gameplay code, levels or game assets.
   is fun) and steers at any time; the session works long stretches on its own once it has what it needs, and asks
   the director for the steps only a human can do. A single Claude Code session (Claude Opus 5.5) writes the code,
   drives the Unreal editor and runs the asset pipeline. `CLAUDE.md` holds the standing rules the session follows.
-- **Unreal Engine 5.8.4**, C++ gameplay classes with thin Blueprint subclasses, dynamic lighting (full Lumen, Lumen
+- **Unreal Engine 5.8.4 or 5.9 Preview** (the scripts follow each project's `.uproject`), C++ gameplay classes with thin Blueprint subclasses, dynamic lighting (full Lumen, Lumen
   Lite or a no-Lumen stylized path, chosen at the style lock), Nanite meshes.
 - The session works in the editor through Epic's **Unreal MCP** plugin plus a small kit plugin (`MegajamTools`)
   that adds a few editor tools: running editor Python, importing sounds and files, and console commands.
@@ -42,7 +42,8 @@ video editing), Node 24 (the kit's TypeScript runs directly), Git + Git LFS.
 | `docs/design.md` | Game, level and progression design playbook, with playtesting checks |
 | `docs/submission.md` | The submission: the rules' must-haves, the itch.io page, the devlog, the last-day order |
 | `docs/elevenlabs.md` | Prompting ElevenLabs for sound effects, music and voice; limits, prices and licence |
-| `docs/ue/` | Curated notes on UE 5.8 (C++, gameplay, materials, characters, lighting, performance and more) with links to Epic's docs |
+| `docs/ue/` | Curated notes verified on UE 5.8.4, with **5.9:** lines for what differs on 5.9 (C++, gameplay, materials, characters, lighting, performance and more), linking Epic's docs; `docs/ue/ue59.md` covers switching |
+| `docs/ue59/` | The UE 5.9 documentation offline: every page's text and a searchable index (search it, never open it whole) |
 | `prompts/concept.md` | Jam-start procedure: concepts scored against the judging categories, cut list, schedule with freeze points |
 | `prompts/style-lock.md` | Procedure for agreeing and writing down the game's visual style |
 | `prompts/playtest.md` | Brief for a fresh agent reviewing a recorded first-time play |
@@ -67,7 +68,7 @@ All generated files go into the game project (`<Project>/Generated/`), never int
 
 ## Running it
 
-Requires Windows, UE 5.8.4, Node 24, pnpm, Blender, ffmpeg and the Tripo CLI. Copy `.env.example` to `.env` and add
+Requires Windows, UE 5.8.4 and/or the 5.9 Preview, Node 24, pnpm, Blender, ffmpeg and the Tripo CLI. Copy `.env.example` to `.env` and add
 API keys (`.env` is gitignored). Point `MEGAJAM_PROJECT` at the Unreal project, then follow `SETUP.md`.
 Type-check the kit with `pnpm install` then `pnpm typecheck`.
 

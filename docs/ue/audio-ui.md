@@ -367,6 +367,9 @@ them ("Settings menu" above) and name them in the submission text.
   bottom-centre text block on a 60-75% opaque dark box, hidden after `USoundBase::GetDuration()`. (The engine's
   legacy `UGameplayStatics::SetSubtitlesEnabled` only affects engine subtitles; the Beta "Subtitles and Closed
   Captions" plugin, `USubtitleAssetUserData` on a sound, is worth it only if lines must sync in Sequencer.)
+  **5.9:** if the plugin is used, subtitles embedded as AssetUserData in localized Waves from 5.8 or earlier must
+  be migrated on 5.9: right-click the source Wave > Migrate Embedded Subtitles to Asset, then Fix Localized
+  Subtitle Waves; the migration tool is Beta (docs/ue59/pages/subtitles-and-closed-captions-plugin-in-unreal-engine.md).
 - [ ] **Text size 100 / 125 / 150%:** multiply in the one px-to-pt font helper ("Layout, fonts, DPI") and re-push
   text on change. Check 150% at 1080p for overflow.
 - [ ] **Colour-blind mode, one call:** `UWidgetBlueprintLibrary::SetColorVisionDeficiencyType(Type, Severity,
@@ -396,6 +399,11 @@ Functions (C++ names; the MCP may expose them snake_cased):
 - Create the WBP with our C++ class as `ParentClass`, add widgets named exactly as the `BindWidget` properties, compile.
 - Don't use `BindToEventProperty`: it puts logic in the BP graph. Bind delegates in C++ instead (kit rule).
 - `MVVMToolset` also exists (CreateViewModel, CreateViewBinding, ...); unused since we skip Viewmodel.
+- **5.9:** more AI toolsets ship, including MVVM, Slate inspection and widget animation, and a Toolset Registry
+  controls which toolsets agents may use (docs/ue59/pages/unreal-engine-5-9-release-notes.md). The 5.9 MCP page
+  names `WidgetBlueprintEditorSubsystem` as a toolset provider and Widget Finder among the runtime-callable
+  toolsets (docs/ue59/pages/unreal-mcp-in-unreal-editor.md). On 5.9, `list_toolsets` / `describe_toolsets` before
+  building WBPs or their animations, to see what is registered next to `UMGToolSet` and under which names.
 
 ## Quick canvas HUD (before a UMG HUD exists)
 

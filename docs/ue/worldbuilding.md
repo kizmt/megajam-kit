@@ -14,6 +14,9 @@ their own sections below.
 
 - Block out with simple geometry first (boxes, Modeling Mode, Shift+5), test with PIE, then swap in generated props.
   Gameplay space before set dressing.
+- **5.9:** the editor adds functions to replace actors with an asset or class (names not given on the page): grep the
+  5.9 Python stub for them before writing a blockout-to-prop swap by hand
+  (docs/ue59/pages/unreal-engine-5-9-release-notes.md "Editor and Workflows").
 - **Script-built blockout needs simple collision**, proven by a downward trace before building nav
   (`editor-scripting.md` section C).
 - Organise actors with Outliner folders (`SceneTools.set_actor_folder`) per area/room: `Lighting/`, `Gameplay/`,
@@ -29,6 +32,9 @@ their own sections below.
   full workflow, skills, tools and recipes are in `pcg.md`.
 - Pairs with our pipeline: generate 4-6 props, then let PCG dress the level with instanced copies (cheap, see
   `performance.md`).
+- **5.9:** PCG adds a **Concave Hull** node, and new functions add and validate graph edges from script; Blueprints
+  can read and write the source of custom HLSL nodes (docs/ue59/pages/unreal-engine-5-9-release-notes.md "World
+  Building and Procedural Content").
 
 ## Foliage and landscape grass (5.8.4, from the rehearsal)
 
@@ -63,6 +69,12 @@ Nanite settings for plants (Voxelize vs Preserve Area, wind): `performance.md` "
   `InstancedFoliageActor.remove_all_instances` + `add_instances` for that type, then save the level.
 - **Wind on fine foliage blurs at 4K under TSR**: fade it out near the camera in the material and decide at the style
   lock which plants move (`performance.md` "Render paths").
+- **5.9:** the **Dynamic Wind** plugin (Experimental, off by default; Edit > Plugins > Rendering, restart) moves
+  Nanite Foliage by GPU bone simulation (Nanite Skinning) instead of World Position Offset. It drives only skeletal
+  plants placed as **Instanced Skinned Mesh** components (not `FoliageType_InstancedStaticMesh`), needs SM6 and Nanite
+  Foliage (Experimental) enabled, and its bone data comes only from PVE, USD or JSON import. `DynamicWind.Mode`
+  switches to a cheaper parametric mode (docs/ue59/pages/dynamic-wind-for-nanite-foliage-in-unreal-engine.md,
+  docs/ue59/pages/nanite-foliage.md). Experimental: `features.md` rules apply.
 - **Probe foliage collision in a later call than the one that loads the actors.** A probe right after
   `WorldPartitionBlueprintLibrary.load_actors` found instance bodies on 0 of 18 tree meshes; the same probe a minute
   later found 17 of 18 (the 18th used a separate collision actor by design). Likely cause (suspected): physics state
@@ -182,6 +194,10 @@ Only for a game that truly needs an open space (see "Ambition on a budget").
   bake, so a level built on far reveals (in the rehearsal, a town seen from a crest) loses them. Setting
   `is_spatially_loaded = False` on every `LandscapeStreamingProxy` keeps the landscape loaded; statics can stay
   streamed with HLODs. Measure the memory cost. Runtime grid ranges are not editable from Python in 5.8.4.
+- **5.9:** World Partition gains "many new Blueprint functions" and Data Layer nodes for child layers and for checking
+  whether an actor can be added to a layer; the page doesn't list them, so grep the 5.9 Python stub
+  (`WorldPartitionBlueprintLibrary`, Data Layer classes) before relying on the 5.8.4 limits above
+  (docs/ue59/pages/unreal-engine-5-9-release-notes.md "World Building and Procedural Content").
 - **Copying actors between levels:** select them, console `EDIT COPY` (the clipboard gets T3D; check it with
   PowerShell `Get-Clipboard`), open the target map, `EDIT PASTE`. To copy a whole level, see `editor-scripting.md`
   (Levels row).

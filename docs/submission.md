@@ -74,7 +74,7 @@ of the page has to sell the game and get it running.
 
 Judged on how well it documents *how the game was made*. The kit already writes the raw material: each round
 appends `devlog/YYYY-MM-DD.md` (CLAUDE.md "Devlog (Glass Box)"). At content lock, turn it into one readable post:
-- **Overview first:** the game, the team, the tools (Unreal 5.8.4, Claude Code with Unreal MCP, the kit's
+- **Overview first:** the game, the team, the tools (the Unreal version the project used, Claude Code with Unreal MCP, the kit's
   pipeline, the generators and services used), and the time it took.
 - **The story by day:** concept and why it won, the style lock, first playable, what broke and how it was fixed,
   what was cut and why, the final pass.
