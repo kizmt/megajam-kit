@@ -1,0 +1,11 @@
+# Cinematic Workflow Guides and Examples
+
+https://dev.epicgames.com/documentation/en-us/unreal-engine/cinematic-workflow-guides-and-examples-in-unreal-engine?application_version=5.9
+
+> A How To Guide for creating cinematic sequences with the Sequencer Editor.
+
+The **Sequencer - How To...** pages provide step-by-step examples on how to work with the **Sequencer** Editor in various capacties inside Unreal Engine.
+Whether you would like to learn how to animate a character, setup up multi-camera sequences or learn about working with cameras in general, these pages will guide you each step of the way.
+Reference links are also included to provide more detailed documentation of the systems and content being outlined in each guide.
+
+Refer to the table below for more information and click each link to view its contents.

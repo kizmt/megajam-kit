@@ -1,0 +1,117 @@
+# Templates Reference
+
+https://dev.epicgames.com/documentation/en-us/unreal-engine/unreal-engine-templates-reference?application_version=5.9
+
+> Templates available with Unreal Engine and how to use them.
+
+When you create a new Unreal Engine project, you have the option to use one of the existing templates as a base for your game or application. Unreal Engine templates contain character controllers, Blueprints, and other features that work without the need for additional configuration.
+
+To learn how to create a new project from a template, see the Creating New Project (-> creating-a-new-project-in-unreal-engine) page.
+
+When you select a template, you will see a description that tells you more about the template and what it contains. Scroll down to read the full description.
+
+[image: Example description of an Unreal Engine template] Example of a template description for the Third Person template.
+
+You can also create custom templates from any one of your existing projects. To learn more, see the Creating Custom Templates (-> converting-a-project-to-an-unreal-engine-template) page.
+
+## Configuring Input for Playable Characters
+
+Many templates include a character you can control using your keyboard, mouse, or controller. In Unreal Engine terms, this is called a Pawn.
+
+You can learn more about how you can configure and use these in a template project by checking out Configuring Input for Playable Characters in Templates (-> configuring-input-for-your-template-pawns).
+
+## Available Templates in Unreal Engine
+
+The templates in Unreal Engine are split into the following categories:
+
+- Games
+- Film, Television, and Live Events
+- Architecture, Engineering, and Construction
+- Automotive, Product Design, and Manufacturing
+- Simulation
+
+Each of these categories also includes a **Blank** template, which consists of an empty project with no additional content and settings. This is the most basic template available.
+
+### Games Templates
+
+[image: Unreal Engine's Game Templates with the First Person template in the background.] Unreal Engine's Game Templates.
+
+Unreal Engine's **Games** templates offer quick starting points for various kinds of games, such as first and third-person, side-scroller, top-down, virtual reality, and driving.
+
+Although these are tagged as "Game" templates, you can use them as a starting point for any kind of project. For example, you can use the VR Template to create a virtual reality walkthrough of a three-dimensional space. The Third Person template is generally a good starting point for many different kinds of projects, such as a platformer game or walking simulator.
+
+| Template Name | Template Contents | Additional Documentation |
+| --- | --- | --- |
+| **First Person** | A character with a first-person camera perspective where you'll experience level contents from the character's viewport. This template includes various variants that includes a walking simulator, shooter arena with different weapon types, and a horror-like walking/platformer style game. | First Person Template Overview (-> first-person-template-in-unreal-engine) |
+| **Third Person** | A character with a third-person camera perspective and basic scene geometry. The camera is located above and behind the character. | Third Person Template Overview |
+| **Top Down** | A character you move by clicking or tapping to a new location. The camera is in a fixed position above the character and follows their movement. |  |
+| **Handheld AR** | A starting point for creating AR applications you can deploy to Android or iOS. Includes runtime logic for scanning an environment to gather data for creating interactive planes in the virtual scene, and lighting and scene depth information. | Handheld AR Template Quickstart (-> handheld-ar-template-quickstart-in-unreal-engine)Handheld AR Template Technical Reference (-> handheld-ar-template-technical-reference) |
+| **Virtual Reality** | A starting point for all of your virtual reality (VR) projects in Unreal Engine 5. It includes encapsulated logic for teleport locomotion and common input actions, such as grabbing and attaching items to your hand. | VR template (-> vr-template-in-unreal-engine)Developing for VR in Unreal Engine (-> developing-for-xr-experiences-in-unreal-engine) |
+| **Vehicle** | A physics-driven vehicle with two different camera views — one inside the vehicle, the other above and behind it — as well as a HUD. |  |
+
+### Film, Video, and Live Events Templates
+
+[image: Film, Video, and Live Event Templates.] Film, Video, and Live Event Templates.
+
+The **Film, Video, and Live Events** templates provide a starting point for live production work.
+
+| Template Name | Template Contents | Additional Documentation |
+| --- | --- | --- |
+| **Virtual Production** | Functionality for VR Scouting, Virtual Camera, SDI Video, Composure, and nDisplay. | Virtual Scouting Overview (-> virtual-scouting-in-unreal-engine)Controlling Virtual Camera Actors (-> controlling-a-virtual-camera-actor-using-live-link-in-unreal-engine) |
+| **DMX** | Examples for addressing, patching, and controlling proxy lighting fixtures, as well as recording and playback of live DMX data streams in and outside Unreal Engine. | DMX (-> dmx-in-unreal-engine) |
+| **InCamera VFX** | Blueprints, plugins, and example stages for in-camera VFX workflows. Use this as a starting point for Virtual Production shoots with LED volumes. | In-Camera VFX Template (-> in-camera-vfx-template-in-unreal-engine)In-Camera VFX Overview (-> incamera-vfx-in-unreal-engine) |
+| **nDisplay** | Display functionality using a cluster of PCs. Use as a starting point for rendering on complex arrangements of physical displays for live performances. | nDisplay Template (-> ndisplay-template-in-unreal-engine)Rendering to Multiple Displays with nDisplay (-> rendering-to-multiple-displays-with-ndisplay-in-unreal-engine) |
+
+### Architecture, Engineering, and Construction Templates
+
+[image: Architecture Templates.] Architecture Templates.
+
+The **Architecture** templates (including engineering and construction) use Datasmith (-> datasmith-plugins-for-unreal-engine)to import content from various 3D programs into Unreal Engine, where you can further refine that content for desktop and XR applications.
+
+| Template Name | Template Contents | Additional Documentation |
+| --- | --- | --- |
+| **Archvis** | Example architectural visualisation workflows with sample scenes for sun studies, interior renderings, and non-photorealistic stylized renderings. | Architectural Visualization for Design Strategies (video)Designing an Interior Space in Unreal Engine (video)The Epic Games Ecosystem for Arch Viz - Part 1 (tutorial) |
+| **Design Configurator** | Uses Variant Manager, UMG, and Blueprint functionality to build a project where you can toggle between different object states such as visibility, initiate animation sequences, switch between views, and toggle between different design options. |  |
+| **Collab Viewer** | Navigation and interaction for desktop and VR in collaborative sessions. This template contains some archviz-specific starter content and has several additional plugins enabled by default, including OpenXR and LiveLink. | Collab Viewer Template (-> collab-viewer-templates-in-unreal-engine) |
+| **Handheld AR** | A starting point for creating AR applications you can deploy to Android or iOS. Includes runtime logic for scanning an environment to gather data for creating interactive planes in the virtual scene, and lighting and scene depth information. | Handheld AR Template Quickstart (-> handheld-ar-template-quickstart-in-unreal-engine)Handheld AR Template Technical Reference (-> handheld-ar-template-technical-reference) |
+
+### Automotive, Product Design, and Manufacturing Templates
+
+[image: Automotive, Product Design, and Manufacturing Templates.] Automotive, Product Design, and Manufacturing Templates.
+
+The **Automotive, Product Design, and Manufacturing** templates use Datasmith to import content from various 3D programs into Unreal Engine, where you can further refine that content for desktop and XR applications.
+
+| Template Name | Template Contents | Additional Documentation |
+| --- | --- | --- |
+| **Photo Studio** | A premade photographic studio environment you can use for cinematics and product presentations. |  |
+| **Product Configurator** | Uses Variant Manager, UMG, and Blueprint functionality to build a generic product configurator (that is, a program that lets you swap out different parts to test out new looks for a product, such as different colors for a car). | Product Configurator (-> product-configurator-template-in-unreal-engine) |
+| **Collab Viewer** | Navigation and interaction for desktop and VR in collaborative sessions. This template also contains a sample model car that can be explored in VR. | Collab Viewer Template (-> collab-viewer-templates-in-unreal-engine) |
+| **Handheld AR** | A starting point for creating AR applications you can deploy to Android or iOS. Includes runtime logic for scanning an environment to gather data for creating interactive planes in the virtual scene, and lighting and scene depth information. | Handheld AR Template Quickstart (-> handheld-ar-template-quickstart-in-unreal-engine)Handheld AR Template Technical Reference (-> handheld-ar-template-technical-reference) |
+
+### Simulation Templates
+
+[image: Simulation Templates.] Simulation Templates.
+
+**Simulation** templates offer a broad range of starting points for various enterprise simulation applications. These templates contain the following functionality:
+
+- Specific settings for outdoor environments.
+- Realistic sky and lighting.
+- Georeferencing tools.
+
+| Template Name | Template Contents | Additional Documentation |
+| --- | --- | --- |
+| **Simulation Blank** | A template that consists of an empty project with the required settings and plugins enabled. This template is suitable as a starting point for most simulation applications and contains the following features:Earth atmosphereAtmospheric lightingVolumetric cloudsGeographical coordinatesWorld Geodetic System (WGS84) |  |
+| **Handheld AR** | A starting point for creating AR applications you can deploy to Android or iOS. Includes runtime logic for scanning an environment to gather data for creating interactive planes in the virtual scene, and lighting and scene depth information. | Handheld AR Template Quickstart (-> handheld-ar-template-quickstart-in-unreal-engine)Handheld AR Template Technical Reference (-> handheld-ar-template-technical-reference) |
+| **Virtual Reality** | A starting point for all of your virtual reality (VR) projects in Unreal Engine 5. It includes encapsulated logic for teleport locomotion and common input actions, such as grabbing and attaching items to your hand. | VR template (-> vr-template-in-unreal-engine)Developing for VR in Unreal Engine (-> developing-for-xr-experiences-in-unreal-engine) |
+
+- templates
+
+On this page
+
+- Configuring Input for Playable Characters (-> unreal-engine-templates-reference)
+- Available Templates in Unreal Engine (-> unreal-engine-templates-reference)
+- Games Templates (-> unreal-engine-templates-reference)
+- Film, Video, and Live Events Templates (-> unreal-engine-templates-reference)
+- Architecture, Engineering, and Construction Templates (-> unreal-engine-templates-reference)
+- Automotive, Product Design, and Manufacturing Templates (-> unreal-engine-templates-reference)
+- Simulation Templates (-> unreal-engine-templates-reference)

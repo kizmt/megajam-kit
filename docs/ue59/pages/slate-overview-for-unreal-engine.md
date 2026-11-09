@@ -1,0 +1,344 @@
+# Slate Overview
+
+https://dev.epicgames.com/documentation/en-us/unreal-engine/slate-overview-for-unreal-engine?application_version=5.9
+
+> Overview of the cross-platform Slate UI framework.
+
+[image: Slate Overview]
+
+ [image: Unreal Editor is built with the Slate UI framework]
+
+**Slate** is a completely custom and platform agnostic user interface framework that is designed to make building the user interfaces for tools and applications such as Unreal Editor, or in-game user interfaces, fun and efficient. It combines a declarative syntax with the ability to easily design, lay out, and style components that allows for easily creating and iterating on UIs.
+
+The Slate UI solution makes it extremely easy to put together graphical user interfaces for tools and applications and iterate on them quickly.
+
+## Declarative Syntax
+
+Slate's declarative syntax makes building UIs accessible to programmers without adding layers of indirection. A complete set of macros are provided to simplify the process of declaring and creating new widgets.
+
+```
+	SLATE_BEGIN_ARGS( SSubMenuButton )
+		: _ShouldAppearHovered( false )
+		{}
+		/** The label to display on the button */
+		SLATE_ATTRIBUTE( FString, Label )
+		/** Called when the button is clicked */
+		SLATE_EVENT( FOnClicked, OnClicked )
+		/** Content to put in the button */
+		SLATE_NAMED_SLOT( FArguments, FSimpleSlot, Content )
+		/** Whether or not the button should appear in the hovered state */
+		SLATE_ATTRIBUTE( bool, ShouldAppearHovered )
+	SLATE_END_ARGS()
+```
+
+SLATE_BEGIN_ARGS( SSubMenuButton )
+ : _ShouldAppearHovered( false )
+ {}
+ /** The label to display on the button */
+ SLATE_ATTRIBUTE( FString, Label )
+ /** Called when the button is clicked */
+ SLATE_EVENT( FOnClicked, OnClicked )
+ /** Content to put in the button */
+ SLATE_NAMED_SLOT( FArguments, FSimpleSlot, Content )
+ /** Whether or not the button should appear in the hovered state */
+ SLATE_ATTRIBUTE( bool, ShouldAppearHovered )
+ SLATE_END_ARGS()
+
+## Composition
+
+Slate's composition framework makes it simple to re-arrange UI elements quickly for prototyping and iteration.
+
+Here is an example of a piece of the UI being composed:
+
+```
+	// Add a new section for static meshes
+	ContextualEditingWidget->AddSlot()
+	.Padding( 2.0f )
+	[
+		SNew( SDetailSection )
+		.SectionName("StaticMeshSection")
+		.SectionTitle( LOCTEXT("StaticMeshSection", "Static Mesh").ToString() )
+		.Content()
+		[
+			SNew( SVerticalBox )
+			+ SVerticalBox::Slot()
+			.Padding( 3.0f, 1.0f )
+			[
+				SNew( SHorizontalBox )
+				+ SHorizontalBox::Slot()
+				.Padding( 2.0f )
+				[
+					SNew( SComboButton )
+					.ButtonContent()
+					[
+						SNew( STextBlock )
+						.Text( LOCTEXT("BlockingVolumeMenu", "Create Blocking Volume") )
+						.Font( FontInfo )
+					]
+					.MenuContent()
+					[
+						BlockingVolumeBuilder.MakeWidget()
+					]
+				]
+			]
+
+		]
+	];
+```
+
+// Add a new section for static meshes
+ ContextualEditingWidget->AddSlot()
+ .Padding( 2.0f )
+ [
+ SNew( SDetailSection )
+ .SectionName("StaticMeshSection")
+ .SectionTitle( LOCTEXT("StaticMeshSection", "Static Mesh").ToString() )
+ .Content()
+ [
+ SNew( SVerticalBox )
+ + SVerticalBox::Slot()
+ .Padding( 3.0f, 1.0f )
+ [
+ SNew( SHorizontalBox )
+ + SHorizontalBox::Slot()
+ .Padding( 2.0f )
+ [
+ SNew( SComboButton )
+ .ButtonContent()
+ [
+ SNew( STextBlock )
+ .Text( LOCTEXT("BlockingVolumeMenu", "Create Blocking Volume") )
+ .Font( FontInfo )
+ ]
+ .MenuContent()
+ [
+ BlockingVolumeBuilder.MakeWidget()
+ ]
+ ]
+ ]
+
+ ]
+ ];
+
+The composition above creates the UI elements below:
+
+ [image: Rendered UI]
+
+## Styles
+
+Styles can be created and applied to the various parts of a widget. This makes it easy to iterate on the look of the components in the UI, as well as share and reuse styles.
+
+```
+	// Tool bar
+	{
+		Set( "ToolBar.Background", FSlateBoxBrush( TEXT("Common/GroupBorder"), FMargin(4.0f/16.0f) ) );
+
+		Set( "ToolBarButton.Normal", FSlateNoResource() );		// Note: Intentionally transparent background
+		Set( "ToolBarButton.Pressed", FSlateBoxBrush( TEXT("Old/MenuItemButton_Pressed"), 4.0f/32.0f ) );
+		Set( "ToolBarButton.Hovered", FSlateBoxBrush( TEXT("Old/MenuItemButton_Hovered"), 4.0f/32.0f ) );
+
+		// Tool bar buttons are sometimes toggle buttons, so they need styles for "checked" state
+		Set( "ToolBarButton.Checked", FSlateBoxBrush( TEXT("Old/MenuItemButton_Pressed"),  4.0f/32.0f, FLinearColor( 0.3f, 0.3f, 0.3f ) ) );
+		Set( "ToolBarButton.Checked_Hovered", FSlateBoxBrush( TEXT("Old/MenuItemButton_Hovered"),  4.0f/32.0f ) );
+		Set( "ToolBarButton.Checked_Pressed", FSlateBoxBrush( TEXT("Old/MenuItemButton_Pressed"),  4.0f/32.0f, FLinearColor( 0.5f, 0.5f, 0.5f ) ) );
+
+		// Tool bar button label font
+		Set( "ToolBarButton.LabelFont", FSlateFontInfo( TEXT("Roboto-Regular"), 8 ) );
+	}
+```
+
+// Tool bar
+ {
+ Set( "ToolBar.Background", FSlateBoxBrush( TEXT("Common/GroupBorder"), FMargin(4.0f/16.0f) ) );
+
+ Set( "ToolBarButton.Normal", FSlateNoResource() ); // Note: Intentionally transparent background
+ Set( "ToolBarButton.Pressed", FSlateBoxBrush( TEXT("Old/MenuItemButton_Pressed"), 4.0f/32.0f ) );
+ Set( "ToolBarButton.Hovered", FSlateBoxBrush( TEXT("Old/MenuItemButton_Hovered"), 4.0f/32.0f ) );
+
+ // Tool bar buttons are sometimes toggle buttons, so they need styles for "checked" state
+ Set( "ToolBarButton.Checked", FSlateBoxBrush( TEXT("Old/MenuItemButton_Pressed"), 4.0f/32.0f, FLinearColor( 0.3f, 0.3f, 0.3f ) ) );
+ Set( "ToolBarButton.Checked_Hovered", FSlateBoxBrush( TEXT("Old/MenuItemButton_Hovered"), 4.0f/32.0f ) );
+ Set( "ToolBarButton.Checked_Pressed", FSlateBoxBrush( TEXT("Old/MenuItemButton_Pressed"), 4.0f/32.0f, FLinearColor( 0.5f, 0.5f, 0.5f ) ) );
+
+ // Tool bar button label font
+ Set( "ToolBarButton.LabelFont", FSlateFontInfo( TEXT("Roboto-Regular"), 8 ) );
+ }
+
+Styles used in composition:
+
+```
+	SNew( SBorder )
+	.BorderImage( FEditorStyle::GetBrush( "ToolBar.Background" ) )
+	.Content()
+	[
+		SNew(SHorizontalBox)
+
+		// Compile button (faked to look like a multibox button)
+		+SHorizontalBox::Slot()
+		[
+			SNew(SButton)
+			.Style(TEXT("ToolBarButton"))
+			.OnClicked( InKismet2.ToSharedRef(), &FKismet::Compile_OnClicked )
+			.IsEnabled( InKismet2.ToSharedRef(), &FKismet::InEditingMode )
+			.Content()
+			[
+				SNew(SVerticalBox)
+				+SVerticalBox::Slot()
+				.Padding( 1.0f )
+				.HAlign(HAlign_Center)
+				[
+					SNew(SImage)
+					.Image(this, &SBlueprintEditorToolbar::GetStatusImage)
+					.ToolTipText(this, &SBlueprintEditorToolbar::GetStatusTooltip)
+				]
+				+SVerticalBox::Slot()
+				.Padding( 1.0f )
+				.HAlign(HAlign_Center)
+				[
+					SNew(STextBlock)
+					.Text(LOCTEXT("CompileButton", "Compile"))
+					.Font( FEditorStyle::GetFontStyle( FName( "ToolBarButton.LabelFont" ) ) )
+					.ToolTipText(LOCTEXT("CompileButton_Tooltip", "Recompile the blueprint"))
+				]
+			]
+		]
+	]
+```
+
+SNew( SBorder )
+ .BorderImage( FEditorStyle::GetBrush( "ToolBar.Background" ) )
+ .Content()
+ [
+ SNew(SHorizontalBox)
+
+ // Compile button (faked to look like a multibox button)
+ +SHorizontalBox::Slot()
+ [
+ SNew(SButton)
+ .Style(TEXT("ToolBarButton"))
+ .OnClicked( InKismet2.ToSharedRef(), &FKismet::Compile_OnClicked )
+ .IsEnabled( InKismet2.ToSharedRef(), &FKismet::InEditingMode )
+ .Content()
+ [
+ SNew(SVerticalBox)
+ +SVerticalBox::Slot()
+ .Padding( 1.0f )
+ .HAlign(HAlign_Center)
+ [
+ SNew(SImage)
+ .Image(this, &SBlueprintEditorToolbar::GetStatusImage)
+ .ToolTipText(this, &SBlueprintEditorToolbar::GetStatusTooltip)
+ ]
+ +SVerticalBox::Slot()
+ .Padding( 1.0f )
+ .HAlign(HAlign_Center)
+ [
+ SNew(STextBlock)
+ .Text(LOCTEXT("CompileButton", "Compile"))
+ .Font( FEditorStyle::GetFontStyle( FName( "ToolBarButton.LabelFont" ) ) )
+ .ToolTipText(LOCTEXT("CompileButton_Tooltip", "Recompile the blueprint"))
+ ]
+ ]
+ ]
+ ]
+
+## Input
+
+Slate has support for accepting mouse and keyboard input. It provides a flexible key binding system that makes it possible to bind any key combination to any command; including the ability to dynamically modify those bindings.
+
+## Output
+
+Slate uses target agnostic rendering primitives allowing it to potentially run on any platform. It currently targets the Unreal Engine 4 (UE4) Rendering Hardware Interface (RHI) so it can run on any platform that UE4 runs on.
+
+## Layout Primitives
+
+Layout Primitives make it easy to build static and dynamic layouts.
+
+```
+	FString DefaultLayout =
+					TEXT( "	{" )
+					TEXT( "		\"type\": \"tabstack\"," )
+					TEXT( "		\"sizecoeff\": 1," )
+					TEXT( "		\"children\":" )
+					TEXT( "		[" )
+					TEXT( "			{" )
+					TEXT( "				\"type\": \"tab\"," )
+					TEXT( "				\"content\": \"Widget Inspector Tab\"" )
+					TEXT( "			}," )
+					TEXT( "			{" )
+					TEXT( "				\"type\": \"tab\"," )
+					TEXT( "				\"content\": \"Plugin Manager Tab\"" )
+					TEXT( "			}," )
+					TEXT( "			{" )
+					TEXT( "				\"type\": \"tab\"," )
+					TEXT( "				\"content\": \"Debug Tools\"" )
+					TEXT( "			}" )
+					TEXT( "		]" )
+					TEXT( "	}" );
+```
+
+FString DefaultLayout =
+ TEXT( " {" )
+ TEXT( " \"type\": \"tabstack\"," )
+ TEXT( " \"sizecoeff\": 1," )
+ TEXT( " \"children\":" )
+ TEXT( " [" )
+ TEXT( " {" )
+ TEXT( " \"type\": \"tab\"," )
+ TEXT( " \"content\": \"Widget Inspector Tab\"" )
+ TEXT( " }," )
+ TEXT( " {" )
+ TEXT( " \"type\": \"tab\"," )
+ TEXT( " \"content\": \"Plugin Manager Tab\"" )
+ TEXT( " }," )
+ TEXT( " {" )
+ TEXT( " \"type\": \"tab\"," )
+ TEXT( " \"content\": \"Debug Tools\"" )
+ TEXT( " }" )
+ TEXT( " ]" )
+ TEXT( " }" );
+
+The layout above creates the UI below:
+
+ [image: UI Layout]
+
+## User Driven Layout
+
+Slate's docking framework puts the power into the user's hands by allowing its tabbed panels to be rearranged and docked into virtually any layout imaginable. The ability to customize their environment lets the user work with the tools they want to work with the way they want to work with them.
+
+Floating tab:
+
+ [image: Docking]
+
+Drag tab to docking target:
+
+ [image: Drag to Docking Area]
+
+Docked tab:
+
+ [image: Docked]
+
+## Developer tools
+
+The **Slate Widget Reflector** provides a means of debugging and analyzing the UI and associated code. This helps track down bugs and undesirable behavior as well as profile and optimize your user interface.
+
+ [image: Widget Inspector]
+
+## Engine Access
+
+The Slate UI system provides direct access to engine and editor for programmers; making it much easier to implement new features and tools to accommodate the workflow of any development team and requirements of any project.
+
+- ui
+- slate
+
+On this page
+
+- Declarative Syntax (-> slate-overview-for-unreal-engine)
+- Composition (-> slate-overview-for-unreal-engine)
+- Styles (-> slate-overview-for-unreal-engine)
+- Input (-> slate-overview-for-unreal-engine)
+- Output (-> slate-overview-for-unreal-engine)
+- Layout Primitives (-> slate-overview-for-unreal-engine)
+- User Driven Layout (-> slate-overview-for-unreal-engine)
+- Developer tools (-> slate-overview-for-unreal-engine)
+- Engine Access (-> slate-overview-for-unreal-engine)

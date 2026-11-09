@@ -1,0 +1,31 @@
+# Known Limitations
+
+https://dev.epicgames.com/documentation/en-us/unreal-engine/known-limitations-of-containers-in-unreal-engine?application_version=5.9
+
+> Known limitations of container support in Unreal Engine.
+
+[image: Known Limitations]
+
+Learn to use this **Beta** feature, but use caution when shipping with it.
+
+Official support for containers in Unreal Engine is still in Beta and is subject to a number of limitations.
+
+## Windows Development Images
+
+The container images that are included with Unreal Engine currently only include Linux development images and not Windows development images. This is due to both technical and legal limitations that currently prevent us from distributing Windows development images.
+
+For a discussion on the technical issues that affect Windows development images, see the blog post Preview the future of the ue4-docker project by Adam Rehn.
+
+## Support for AMD GPUs in Container-Based Pixel Streaming
+
+Windows runtime images that support Pixel Streaming (-> pixel-streaming-in-unreal-engine) support GPU acceleration with both NVIDIA and AMD GPUs. Linux images only support NVIDIA GPUs, but support for AMD GPUs is planned for a future release.
+
+- beta
+- container
+- containers
+- platform delivery
+
+On this page
+
+- Windows Development Images (-> known-limitations-of-containers-in-unreal-engine)
+- Support for AMD GPUs in Container-Based Pixel Streaming (-> known-limitations-of-containers-in-unreal-engine)

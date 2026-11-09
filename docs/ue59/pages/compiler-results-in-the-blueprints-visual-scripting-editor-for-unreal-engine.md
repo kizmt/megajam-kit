@@ -1,0 +1,43 @@
+# Blueprint Editor Compiler Results
+
+https://dev.epicgames.com/documentation/en-us/unreal-engine/compiler-results-in-the-blueprints-visual-scripting-editor-for-unreal-engine?application_version=5.9
+
+> Interface for the Compiler Results panel of the Blueprint Editor.
+
+[image: Blueprint Editor Compiler Results]
+
+The **Compiler Results** panel provides feedback on the compiling of your Blueprint scripts, telling you whether a Blueprint script compile was successful or if there were errors or warnings. Whenever errors or warnings are found, the **Compiler Results** panel gives information on the error and provides hyperlink access, enabling you to jump the graph view directly to the source of the problem.
+
+## Interface
+
+The UI of the **Compiler Results** panel is very simple, consisting primarily of a self-populated list of compile successes, warnings, and errors (failures). Each entry can be moused over for further information, where applicable, and any warnings or errors will also offer a hyperlink, which will take you to the source of the message.
+
+- Result List - This self-populated list shows the results of your compile. Any hyperlinks to errors and warnings will appear. If the compile was successful, you will also see the total compile time in milliseconds.
+
+- Pop-up Help - By mousing over any entry in the list, you can get more information about the nature of the entry. In the case of hyperlinks, you will get the path directly to the problematic node.
+
+- Clear Button - This simply clears out the existing list of results.
+
+## Opening the Compiler Results Panel
+
+The **Compiler Results** panel will not always be available by default, but can be found within the **Window** menu of the Blueprint Editor. The panel will also open automatically whenever a Blueprint compile results in errors or warnings. Generally, the panel will appear at the bottom of the current **Graph** panel.
+
+## Error and Warning Navigation
+
+Whenever your compile process results in a warning or error, the **Compiler Results** panel enables you to do the following:
+
+- Mouse over a message to see further detail.
+
+- Mouse over the hyperlink at the end of a message to see a link to the problematic node.
+
+- Click on a message to jump the graph view directly to the problematic node or part of the visual script.
+
+- Click the **Clear** button at the bottom right corner of the panel to clear out any existing messages.
+
+- blueprints
+
+On this page
+
+- Interface (-> compiler-results-in-the-blueprints-visual-scripting-editor-for-unreal-engine)
+- Opening the Compiler Results Panel (-> compiler-results-in-the-blueprints-visual-scripting-editor-for-unreal-engine)
+- Error and Warning Navigation (-> compiler-results-in-the-blueprints-visual-scripting-editor-for-unreal-engine)

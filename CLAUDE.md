@@ -191,7 +191,10 @@ Order of authority (highest first):
    - Claude Code `unreal-engine-skills-for-claude-code` plugin skills (unreal-mcp, create-toolset, unreal-skill).
 4. **Kit knowledge**: `PIPELINE.md` (tools and hard-won facts) and `docs/ue/` (curated 5.8 notes).
    `docs/ue/README.md` says which note to read before each kind of work; read that note before starting
-   work in the area. `docs/ue/INDEX-docs.md` maps the whole 5.8 doc site with URLs.
+   work in the area. `docs/ue/INDEX-docs.md` maps the whole 5.8 doc site with URLs. `docs/ue59/INDEX.md` maps
+   every page of the 5.9 (Preview) docs with a summary, exact setting/API names and warnings, and
+   `docs/ue59/pages/<slug>.md` holds each page's full text offline: grep them before web-searching. On a 5.8
+   project, check that what a 5.9 page describes exists in 5.8 (pages marked **NEW** or "5.9:" may not).
 5. **Official docs**, always 5.8 (append `?application_version=5.8` to doc URLs). Key links (Python and C++ API
    references, MCP, coding standard, packaging, console variables) are in `docs/ue/README.md` "Official references".
    Prefer them over forum posts and older-version tutorials.

@@ -1,0 +1,129 @@
+# Basic Navigation
+
+https://dev.epicgames.com/documentation/en-us/unreal-engine/basic-navigation-in-unreal-engine?application_version=5.9
+
+> This guide shows how to use the Navigation System in Unreal Engine.
+
+[image: Basic Navigation]
+
+## Overview
+
+The **Unreal Engine Navigation System** provides pathfinding capabilities to Artificial Intelligence Agents.
+
+To make it possible to find a path between a start location and a destination, a Navigation Mesh is generated from the world's collision geometry. This simplified polygon mesh represents the navigable space in the Level. Default settings subdivide the Navigation Mesh into tiles to allow rebuilding localized parts of the Navigation Mesh.
+
+The resulting mesh is made of polygons and a cost is associated with each polygon. While searching for a path, the pathfinding algorithm will attempt to find an optimal path with the lowest cost to the destination.
+
+The system includes a variety of features that you can use to customize the Agent's navigation behavior based on your specific needs.
+
+## Goals
+
+In this Quick Start guide, you will learn how to create a simple Agent that will use the Navigation System to roam around the Level.
+
+## Objectives
+
+- Use a Navigation Mesh Actor in your Level to build the navigation.
+
+- Learn to visualize the navigation mesh in your Level and adjust it to cover your needs.
+
+- Modify the ThirdPersonCharacter Blueprint to roam around the Level using the Navigation System.
+
+## 1 - Required Setup
+
+- In the **New Project Categories** section of the Unreal Project Browser, select **Games** and the **Third Person** template. [image: Select the Games category and click Next]
+
+- Select the **Blueprint **and **No Starter Content** options and click **Create**. [image: Select Blueprint and No Starter Content and click Create Project]
+
+### Section Results
+
+You have created a new Third Person project and are now ready to learn about the Navigation System.
+
+## 2 - Building the Navigation Mesh
+
+In this section, you will use a **Navigation Mesh Bounds Volume** to specify the area in your Level where navigation needs to be generated. This information is used by Agents to navigate the Level and get to their destinations.
+
+- On the default **ThirdPersonExampleMap **of your project, go to the **Place Actors** panel, search for **NavMeshBoundsVolume,** and drag it into your Level. [image: Drag a Nav Mesh Bounds Volume actor to the Level]
+
+- With the **NavMeshBoundsVolume** selected, go to the **Details **panel and scale the volume to X = 20, Y= 20, and Z = 5. Move the volume so it covers the entire play area, as seen below. [image: Scale the volume to X = 20, Y= 20, and Z = 5] [image: The volume now covers the entire play area]
+
+- Select the **BP_ThirdPersonCharacter** Blueprint in the **Outliner** window and remove it from the Level. [image: Remove the Third Person Character from the Level]
+
+- Press the **P key** on your keyboard to visualize the Navigation Mesh in your Level. As you can see from the image below, the Navigation Mesh is visualized with the color green by default. Unreal Engine automatically generates the Navigation Mesh as soon as a Nav Mesh Bounds Volume Actor is added to the Level or is resized. [image: Press P to visualize the Navigation Mesh]
+
+- Notice how the Navigation Mesh contains visual artifacts on the stairs. This can happen because the Navigation Mesh is a simplified representation of the collision in the Level. Select the **RecastNavMesh-Default** Actor in the **Outliner** window and go to the **Details **panel. Go to the **Display **section and set the **Draw Offset** value to **50**. This adjusts the height offset where the Navigation Mesh is drawn for better readability. [image: Set the Draw Offset to 50 for better readibility]
+
+### Section Results
+
+In this section, you added a Nav Mesh Bounds Volume Actor to your Level and scaled it to fit the play area. You also learned how to visualize the final Navigation Mesh by pressing the P key.
+
+## 3 - Visualizing the Navigation Mesh
+
+In this section, you will learn how to modify various Navigation Mesh settings, as well as how to change the way you can visualize the mesh in the Level.
+
+- Go to the **Outliner** and select the **RecastNavMesh-Default **Actor. [image: Select the Recast Nav Mesh Actor Default from the World Outliner]
+
+- With the Actor selected, go to the **Details **panel and scroll down to the **Display **section. Here you will find a variety of options to better visualize the generated Navigation Mesh. In the example below, I selected the **Draw Poly Edges** to see the polygons that make up the mesh. [image: Select Draw Poly Edges to see the polygons that make up the mesh]
+
+- You can also visualize the individual Navigation Tiles by enabling the **Draw Tile Bounds** checkbox. [image: Enable Draw Tile Bounds to visualize the Navigation Tiles]
+
+- You can modify the way the Navigation Mesh is generated by going to the **Generation **section and changing its options.
+
+### Section Results
+
+In this section, you learned how to change the Display settings of your Navigation Mesh and how you can influence its generation by adjusting a variety of options.
+
+## 4 - Creating your First Agent
+
+In this section, you will create a simple Agent that will roam around your Level by selecting a random location nearby and navigating to it. The Agent will wait a few seconds when it arrives at its destination before repeating the process.
+
+- In the **Content Drawer**, right-click and select **New Folder** to create a new folder. Name the folder **NavigationSystem**.
+
+- In the** Content Drawer**, go to **ThirdPerson > Blueprints** and select the **BP_ThirdPersonCharacter **Blueprint. Drag it to the **NavigationSystem** folder and select the option **Copy Here**. [image: Drag the Third Person Character Blueprint into the Navigation System folder and select Copy Here]
+
+- Go to the **NavigationSystem **folder and rename the Blueprint to **BP_NPC_NavMesh**. Double-click the Blueprint to open it and go to the **Event Graph**. Select all input nodes and delete them.
+
+- Right-click the **Event Graph**, then search for and select **Add Custom Event**. Name the event **MoveNPC**. [image: Right click in the Event Graph and search for Add Custom Event]
+
+- Right-click the **Event Graph**, then search for and select **Get Actor Location**. [image: Right click the Event Graph then search for and select Get Actor Location]
+
+- Drag from the **GetActorLocation **node and search for and select **Get Random Reachable Point In Radius**. Set the **Radius **to 1000 units. [image: Drag from the Get Actor Location node and search for and select Get Random Reachable Point In Radius]
+
+- Drag from the **Random Location** pin of the **GetRandomReachablePointInRadius **node and select **Promote to variable**. [image: Drag from the Random Location pin of the Get Random Reachable Point In Radius node and select Promote to variable]
+
+- Connect the **MoveNPC **node to the **RandomLocation** node you just created. [image: Connect the Move NPC node to the Random Location node]
+
+- Right-click the **Event Graph**, then search for and select **AI Move To**. Connect the **RandomLocation **node to the **AI Move To** node. [image: Right click the Event Graph, then search for and select AI Move To]
+
+- Right-click the **Event Graph** and search for and select **Get a reference to self**. [image: Right click the Event Graph and search for and select Get a reference to self]
+
+- Connect the **Self **node to the **Pawn **pin of the **AI Move To** node. Connect the **yellow **pin of the **Random Location** node to the **Destination **pin of the **AI Move To** node, as seen below. [image: Connect the Self node to the Pawn pin of the AI Move To node]
+
+- Drag from the **On Success** pin of the **AI Move To** node, then search for and select **Delay**. Set the **Duration **of the node** **to 4. Drag from the **Completed **pin of the **Delay **node, then search for and select **MoveNPC**, as seen below. [image: Drag from the On Success pin of the AI Move To node and add a Delay node. Set Duration to 0.4. Drag from the Delay node and add a Move NPC node]
+
+- Repeat the steps above to add the nodes to the **On Fail** pin of the **AI Move To** node. Set the **Duration **of the **Delay **node to 0.1. [image: Repeat the steps above to add nodes to the On Fail pin of the AI Move To node]
+
+- Right-click the **Event Graph**, then search for and select **Event Begin Play**. Drag from the **Event Begin Play** node, then search for and select **MoveNPC**. [image: Right-click the Event Graph, then search for and select Event Begin Play] [image: Drag from the Event Begin Play node, then search for and select Move NPC]
+
+- **Compile **and **Save **the Blueprint.
+
+- Drag your **BP_NPC_NavMesh **Blueprint to your Level and click **Simulate**. You should see your Agent roam around the Level. [image: Your Agent is now moving in the Level] [image: Multiple Agents are moving in the Level]
+
+### Section Results
+
+In this section, you learned how to create a simple Agent that roams around the Level using the **Navigation Mesh**.
+
+- ai
+
+On this page
+
+- Overview (-> basic-navigation-in-unreal-engine)
+- Goals (-> basic-navigation-in-unreal-engine)
+- Objectives (-> basic-navigation-in-unreal-engine)
+- 1 - Required Setup (-> basic-navigation-in-unreal-engine)
+- Section Results (-> basic-navigation-in-unreal-engine)
+- 2 - Building the Navigation Mesh (-> basic-navigation-in-unreal-engine)
+- Section Results (-> basic-navigation-in-unreal-engine)
+- 3 - Visualizing the Navigation Mesh (-> basic-navigation-in-unreal-engine)
+- Section Results (-> basic-navigation-in-unreal-engine)
+- 4 - Creating your First Agent (-> basic-navigation-in-unreal-engine)
+- Section Results (-> basic-navigation-in-unreal-engine)

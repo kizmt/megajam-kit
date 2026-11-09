@@ -1,0 +1,10 @@
+# XR Performance and Profiling
+
+https://dev.epicgames.com/documentation/en-us/unreal-engine/xr-performance-and-profiling-in-unreal-engine?application_version=5.9
+
+> Tools and strategies for profiling your XR projects in Unreal Engine
+
+[image: XR Performance and Profiling]
+
+Because of the hardware requirements of virtual reality, as well as the impact poor performance can have on your users' comfort, maintaining good VR project performance is key. Unreal Engine contains a suite of tools that allow you to view the performance of your project on both the CPU and the GPU. By interpreting those results, and then applying best content and gameplay code practices, you can provide
+the best possible experience with your project.

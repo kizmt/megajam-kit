@@ -1,0 +1,236 @@
+# City Sample Quick Start - Generating a City and Freeway in Unreal Engine 5
+
+https://dev.epicgames.com/documentation/en-us/unreal-engine/city-sample-quick-start-for-generating-a-city-and-freeway-in-unreal-engine-5?application_version=5.9
+
+> A guide for using procedural data generatedin Houdini to create a city in Unreal Engine 5.
+
+[image: City Sample Quick Start - Generating a City and Freeway in Unreal Engine 5]
+
+The **City Sample** project is a technical demonstration of how you can use procedurally generated data from SideFX's Houdini Engine in Unreal Engine 5 to create a working simulated world. The City Sample uses the data generated from Houdini to populate assets, drive artificial intelligence simulations, audio simulations, and much more.
+
+This guide is part two of a two-part series that walks you through importing data which you generated in Houdini Engine into Unreal Engine 5.
+
+To complete this part of the guide, you must have first followed City Sample - Generating a City and Freeway using Houdini (-> city-sample-quick-start-for-generating-a-city-and-freeway-using-houdini).
+
+In this guide, you will learn how to:
+
+- Import data you generated from Houdini Engine into Unreal Engine 5.
+
+- Prepare an open world environment to support your city.
+
+- Use the Rule Processor to import Houdini procedural data to generate your city.
+
+- Use the point cloud data with Zone Graph for Traffic simulation.
+
+- Generate Hierarchical Level of Detail meshes for World Partition.
+
+## Prerequisites for this Guide
+
+- Completion of City Sample - Generating a City and Freeway using Houdini (-> city-sample-quick-start-for-generating-a-city-and-freeway-using-houdini)
+
+- SideFX Houdini We recommend using version 18.5.532 since it's the version that was used to develop the City Sample project.
+
+- At least 2 gigabytes (GB) of free hard disk space to extract the data and generate small-sized cities. For bigger cities, you can expect to use from 5 to 10 GB of space.
+
+- Refer to the City Sample Recommended System Specifications (-> city-sample-project-unreal-engine-demonstration).
+
+- Download the City Sample Unreal Engine 5 project through the Epic Games Launcher.
+
+### Additional Notes about this guide
+
+- The workflow and files used in this guide work with the Windows 10 operating system. While Unreal Engine and Houdini support Mac and Linux, the workflows and source files have not been tested with those systems and we cannot guarantee they will work as intended.
+
+- This guide also assumes you have knowledge of Windows operating systems when using something like Command Prompt.
+
+## Step 1 - Project Setup and Configuration
+
+Before you can use your own city's data you generated while following the City Sample: Generating a City and Freeway using Houdini guide, you'll first need to open and set up a few things in Unreal Engine 5.
+
+- Open the **City Sample** project with Unreal Engine 5. [image: Opening City Sample the first time]
+
+- In the **Content Browser** under the **Content > City**, create a folder with the exact same name as the city you created in Houdini. For example, the sample Houdini city file you created in Part 1 was named "MyCity". Therefore, name the folder you create in the Content Browser **MyCity**. [image: Creating a folder named after your city]
+
+- Open your named city folder and create two new folders named **Geometry** and **PBC**. [image: Create two folder named PBC and Geometry]
+
+- The City Sample project includes the **Houdini Engine Plugin**, which is already enabled. From the main menu, open the **Houdini Engine** dropdown menu and select **Create Session**. [image: Create a Houdini Session in Unreal Engine] If a session cannot be created, check the **Output Log** for additional context as to why it failed to do so.
+
+At this point, you have opened the City Sample project and created folder locations to import the data you generated in Houdini for your own city. You have a new folder named for your city, and two folders within it named **Geometry** and **PBC**.
+
+## Step 2 - Importing the City Data into Unreal Engine 5
+
+With your own city's folders created and a Houdini Engine session started in the previous step, you can now import your data into Unreal Engine 5.
+
+- In Windows, open the file location where you saved your Houdini city data. In the first part of the Quick Start Guide for Generating a City and Freeway using Houdini (-> city-sample-quick-start-for-generating-a-city-and-freeway-using-houdini), you set the folder path as `D:/CitySampleSource/MyCity`. [image: Windows Folder import city date to Unreal Engine]
+
+- Inside the Windows **MyCity** folder, open the **PBC** folder. In Unreal Engine, use the **Content Browser** to open the **City > MyCity > PBC** folder. Select all the files in the PBC folder in Windows and drag them to the PBC folder in Unreal Engine. Once the import process completes, your **PBC** folder should look like the one below with the imported point cloud data generated by Houdini. [image: Imported point cloud data in Unreal Engine Content Browser]
+
+- Inside the Windows **MyCity** folder, open the **EXPORT** folder. In Unreal Engine, use the **Content Browser** to open the **City > MyCity > Geometry** folder. Select all the files in the EXPORT folder in Windows and drag them to the Geometry folder in Unreal Engine. This video has been sped up to show the full import process of a smaller city created in Houdini being imported. The import process can take some time depending on the size of your city. For example, the cities included with the City Sample project can take less than 10 minutes for the Small_City to import and upwards of 40 minutes for the Big_City to import.
+
+- Use the **File** menu to **Save All**.
+
+At this point, you should see all your geometry and point cloud data files have been imported and saved as assets in the folders you created in Step 1 of this guide. These assets are used in the steps that follow to start generating your city.
+
+## Step 3 - Preparing an Open World Level
+
+In this step, you will create a new level from a templated City Open World level. This template level provides a starting point for creating your own city like the one from City Sample, with its own lighting and skybox set up and Blueprint spawners used to populate data.
+
+- Using the **File** menu, select **New Level** (1). Choose **City Open World Empty** (2) from the available templates and click **Create** (3). [image: Create a new City Open World Empty Template level]
+
+- Once the new level has been created, use the **File** menu to **Save Current Level As** (1). Save the map in the **Content > Maps** (2) folder and enter the **Name** (3) of your city into the text field. For example, this guide uses **MyCity** as the level name. [image: Save the level and name it after your city]
+
+- Click **Save** in the **Save Level As** window. [image: Save the Level]
+
+You now have a level that you can use to generate and build your city.
+
+ [image: Empty City Level]
+
+## Step 4 - Running the Rule Processor Generation
+
+All the data needed to start generating your city has been imported into the engine and you have a map with which to load and save it. In this step, you'll use the Rules Processor for the City and Freeway point cloud data you imported into the engine. The Rules Processor maps the generated point cloud data from Houdini Engine to rules that tell Unreal Engine how to use that data to populate the world.
+
+- From the main menu, use **Window > Rule Processor** to open **RuleProcessor_City**. This opens the window where the files you generated in Houdini will be used to generate the city in Unreal Engine. Click image for full size.
+
+- In the **RuleProcessor_City** window, replace the **Point Cloud** column's assigned assets with ones of the same name from the **City > [YourCityName] > PBC** folder. For example, this guide uses the files imported in Step 2 located in the **City > MyCity > PBC** folder.
+
+- In the **RuleProcessor_City** window, click **Run Rules** to process your imported city files. [image: Run the Rules Processor for the City PBC Files]
+
+- A pop-up window asks you to confirm the processing. When ready, click **OK**. [image: Confirm running rules processor] The time it takes to generate your city can vary based on the size of your city. It can take 15 minutes to an hour to finish processing.
+
+- Repeat the process for the **Freeway** PBC files located in the **PBC** folder. From the main menu, use **Window > Rule Processor** to open **Rule Processor_Freeway**. Replace the **Point Cloud** column's assets with ones of the same name from the **City > [YourCityName] > PBC**. For example, this guide uses the files imported in Step 2 located in the **City > MyCity > PBC** folder.
+
+- In the **RuleProcessor_Freeway** window, click **Run Rules** to process your imported freeway files. [image: Run freeway Rules Processor]
+
+- A pop-up window asks you to confirm the processing. When ready, click **OK**. [image: Confirm running rules processor] The time it takes to generate your city can vary based on the size of your city. It can take 15 minutes to an hour to finish processing.
+
+- In the **World Partition** panel, **left-click and drag** to select all the cells in the world partition map. **Right-click** and select **Load Selected Cells**.
+
+Using the Rule Processor for the City and Freeway point cloud data provides Unreal Engine with information to generate your city based on sets of rules. This lets the engine place assets to build out the city.
+
+Once the Rules Processor has completed processing the data, the city can be loaded into the Level Viewport using the World Partition Editor. Once loaded, you can fly out and inspect your city.
+
+ [image: Your city loaded in Unreal Editor]
+
+## Step 5 - Setting up Point Cloud Data for the Zone Graph for Traffic
+
+Now that you have a city you can work with, there are two Blueprint Spawners included with the level that configure and set up the city. This means you need to duplicate some Data Assets used with the Small City for your own city. These data assets rely on point cloud data you imported.
+
+- In the Level Viewport, use the **Show** dropdown menu to ensure that **Navigation** is enabled. [image: Level Viewport Show menu enable Navigation]
+
+- In the **Content Browser**, navigate to the **Content > AI > Traffic** folder. [image: Open the AI > Traffic Folder in the Content Browser]
+
+- In the **ParkingSpaces** folder, make a copy of the **CitySampleSmallCityParkingSpaces** Data Asset. Rename it, replacing "SmallCity" with the name of your city. For example, this guide uses **CitySampleMyCityParkingSpaces**. [image: Open the Parking Spaces Folder and make a copy of the asset]
+
+- Open the **CitySampleMyCityParkingSpace** Data Asset. In the **Parking Spaces Point Cloud** assignment slot, replace **City_cars_parked** with the one of the same name found in your city's **Content > City > [YourCityName] > PBC** folder. This guide uses `Content/City/MyCity/PBC`. [image: Assign the data asset to the PBC slot]
+
+- Return to the folder **Content > AI > Traffic**.
+
+- In the **TrafficLights** folder, make a copy of the **CitySampleSmallCityTrafficLights** Data Asset. Rename it, replacing "SmallCity" with the name of your city. For example, this guide uses **CitySampleMyCityTrafficLights**. [image: Open the TrafficLights Folder and make a copy of the asset]
+
+- Open the **CitySampleMyCityTrafficLights** Data Asset. In the **Traffic Lights Point Cloud** assignment slot, replace **City_traffic** with the one of the same name found in your city's **Content > City > [YourCityName] > PBC** folder. [image: Assign the data asset to the PBC slot]
+
+- In the **World Outliner**, enter "Builder" into the **Search** text field (1). This returns both the **CityTrafficBuilder_BP** and **FreewayTrafficBuilder_BP** Blueprints. Next to each of these line items, hover over each of them and click the **Pin** (2) icon next to their names to force them to load in the Level for purposes of editing it. [image: Search for the builder blueprints in the world outliner]
+
+- With the **CityTrafficBuilder_BP loaded, select it in the **World Outliner** (1). Use the **Details** panel to replace the existing point cloud data with the one you imported for your city. Under the section named **Mantle**, assign your **City_traffic** point cloud data to the **Epic Intersections Mantle Point Cloud** assignment slot (2). Click image for full size.
+
+- With the **FreewayTrafficBuilder_BP** loaded, select it in the **World Outliner** (1). Use the **Details** panel to replace the existing point cloud data with the one you imported for your city. Under the section named **Mantle**, assign your **Freeway_traffic_data** point cloud data to the **Epic Freeway Mantle Point Cloud** assignment slot (2). Click image for full size.
+
+- In the **World Outliner, search for and select **BP_MassTrafficIntersectionSpawner** (1). Use the **Details** panel and locate the **Traffic Light Instance Data** (2) assignment slot found under **Mass > Spawn Data Generators > Index [0] > Generator Instance > Traffic Lights**. Replace the Data Asset with the one you created earlier in this part of the guide named **CitySampleMyCityTrafficLights**. Click image for full size.
+
+- In the **World Outliner**, search for and select **BP_MassTrafficParkedVehicleSpawner** (1). Use the **Details** panel and locate the Parking Spaces** (2) assignment slot found under **Mass > Spawn Data Generators > Index [0] > Generator Instance > Entity Type to Parking Space Type**. Replace the Data Asset with the one you created earlier in this part of the guide named **CitySampleMyCityParkingSpaces**. Click image for full size.
+
+You should now have two Data Assets that are duplicates of the Parking Spaces and Traffic Lights ones used with the Small City. In these Data Assets, you have assigned your own city's point cloud data for use in the next section for Zone Graph Generation.
+
+## Step 6 - Running the Zone Graph Generation for Traffic
+
+At this point, you have created some Data Assets to use with the various Blueprint Spawners found in your city level. You've assigned some of the generated point cloud data from Houdini Engine to these Spawners through the Data Assets.
+
+In this step, you will use an Editor Utility Widget made specifically for performing tasks of generating a Zone Graph for lanes of traffic using the point cloud data you assigned to Data Assets and Blueprint Spawners in the previous section.
+
+- In the **Content Browser**, navigate to **Content > AI > ZoneGraphBuilder**. Right-click on the **Editor Utility Widget** named **WBP_CitySampleZoneGraphBuilder** and click on **Run Editor Utility Widget**. Click image for full size.
+
+- In the **Editor Utility Widget** window, click both buttons for **Build Zone Shapes** next to **City Traffic Builder** (1) and **Freeway Traffic Builder** (2), then click **Do All The Things!** (3). [image: Zone Graph Editor Utility Widget Interface]
+
+- In the **Content Browser**, navigate to the **Content > AI > Traffic > ParkingSpaces** folder. Open the **CitySampleMyCityParkingSpaces** Data Asset. [image: Content Browser Traffic / Parking Spaces folder data asset]
+
+- In the **Parking Spaces Point Cloud** assignment slot, replace the **City_cars_parked** (1) with the one from your city's **Content > City > [YourCityName] > PBC** folder, then click the **Populate Parking Spaces from Point Cloud** (2) button. [image: Data Asset Parking Spaces Point Cloud data assignment slot]
+
+- In the **Content Browser**, navigate to the **Content > AI > Traffic > TrafficLights** folder. Open the **CitySampleMyCityTrafficLights** Data Asset. [image: Content Browser Traffic / TrafficLights folder data asset]
+
+- In the **Traffic Lights Point Cloud** assignment slot, replace the **City_traffic** (1) with the one from your city's **Content > City > [YourCityName] > PBC** folder, then click the **Populate Traffic Lights from Point Cloud** (2) button. [image: Data Asset Traffic Lights Point Cloud data assignment slot]
+
+Once you have run the Zone Graph Editor Utility Widget and populated the data from both the Parking Spaces and Traffic Lights Data Assets, you can now visualize the navigation that is generated from that data inside the Level Viewport. If you do not see the navigation data (like below), use the Level Viewport's **Show** menu to ensure that **Navigation** is enabled, or press the hotkey **P** to toggle it on and off.
+
+ [image: Navigation Paths for traffic and pedestrians]
+
+## Step 7 - Generate World Partition HLODs for Your City
+
+An important part of building your city — no matter its size — is that it likely has parts that need to be seen from far distances. The World Partition system handles far distances through Hierarchical Level of Detail (or HLODs) that can combine many objects into single, large Actors that can be streamed in and out dynamically. See World Partition - Hierarchical Level of Detail (-> world-partition---hierarchical-level-of-detail-in-unreal-engine) to learn more about them.
+
+For your city, the next step is to generate your own HLODs that can be streamed in and out dynamically using World Partition. The size of your city can contribute to how long it takes for HLODs to be generated for your level. You can use the in-editor tools to do this through the Build menu, or by closing the project and using a Windows Command Prompt to do so, with the latter method taking less time.
+
+**Using Windows Command Prompt with Command Line Arguments**
+
+- In Windows, open a **Command Prompt** window.
+
+- Enter the following command into window, accounting for your own project's folder location: ```
+     "D:\Builds\UE_5.0\Engine\Binaries\Win64\UnrealEditor-Win64-DebugGame-Cmd.exe" D:\UE5 Test Projects\CitySample MyCity.umap -run=WorldPartitionBuilderCommandlet -AllowCommandletRendering -Builder=WorldPartitionHLODsBuilder -D3D11
+``` "D:\Builds\UE_5.0\Engine\Binaries\Win64\UnrealEditor-Win64-DebugGame-Cmd.exe" D:\UE5 Test Projects\CitySample MyCity.umap -run=WorldPartitionBuilderCommandlet -AllowCommandletRendering -Builder=WorldPartitionHLODsBuilder -D3D11
+
+- Press **Enter** to start the process. The command line arguments are set up as follows: ```
+     "[FilePathOfYourEngineBuild]" [FilePathOfYourCitySampleProject] [YourMapName].umap -run=WorldPartitionBuilderCommandlet -AllowCommandletRendering -Builder=WorldPartitionHLODsBuilder -D3D11
+``` "[FilePathOfYourEngineBuild]" [FilePathOfYourCitySampleProject] [YourMapName].umap -run=WorldPartitionBuilderCommandlet -AllowCommandletRendering -Builder=WorldPartitionHLODsBuilder -D3D11 The engine file path to the UnrealEditor-Win64-DebugGame-Cmd.exe
+
+- The file path to the CitySample project. If the project is located in the Engine directory, you can use just the name of the project.
+
+- The map file you want to open.
+
+- The remaining command arguments to run World Partition and build HLODs.
+
+**Using In-Editor Tools to Build HLODs**
+
+- From the main menu, click **Build** and select **Build HLODs** from the menu. [image: Build HLODs from the Editor main menu]
+
+- **Save** your Level.
+
+While working in the Level Editor, you may not notice anything has changed. This is because when you work with World Partition to edit the level, you are choosing what cells from the World Partition Editor to load in. However, if you were to **Play-in-Editor (PIE)** or **Simulate** prior to building the HLODs, you'd have seen that only objects within a certain distance are loading in. Anything beyond that distance is empty and not loaded for performance reasons.
+
+Once HLODs are built, they are dynamically loaded and unloaded by World Partition during PIE and Simulate modes. In the examples below, if HLODs are not built, you'll only see parts of the city loaded near the camera within a set range. However, once HLODs are built, World Partition will load the HLODs for anything beyond the set range.
+
+|  |  |
+| --- | --- |
+| [image: before HLODs have been built] | [image: After HLODs have been built] |
+| Before Building HLODs | After Building HLODs |
+
+## Step 8 - End Results
+
+In this final step, you'll place a Player Start in your City level where you want to spawn in when you launch the game.
+
+- Find a location in your city you want to designate as a starting location when you use Play-in-Editor (PIE) to launch the project.
+
+- Right-click in the **Level Viewport** near the ground and use the context menu to select **Place Actor > Player Start**. [image: Place Player Start] Depending on where you clicked in the scene, your placed Player Start may be intersecting another object or above the ground. Move the Player Start so that it doesn't display any error messages, such as "Bad Size." [image: Examples of properly and badly placed Player Starts] Left, good Player Start placement; Right, bad Player Start placement.
+
+- Using the **Level Viewport** controls, press the **Play-in-Editor** button. [image: Use the Level Editor Play Options to Play-in-editor] The first time you play-in-editor or simulate can take a moment to load. Subsequent times will load more quickly.
+
+At this point, you should have a city that you've successfully built using the source files provided for Houdini Engine for you to build a procedural city and be able to import and set it up in Unreal Engine 5. You should also be able to explore and play through your own city, similarly to how Small City and Big City have been set up.
+
+- rendering
+- lighting
+- optimization
+- global illumination
+- artificial intelligence
+- metasounds
+- vehicle physics
+- procedural generation
+
+On this page
+
+- Prerequisites for this Guide (-> city-sample-quick-start-for-generating-a-city-and-freeway-in-unreal-engine-5)
+- Additional Notes about this guide (-> city-sample-quick-start-for-generating-a-city-and-freeway-in-unreal-engine-5)
+- Step 1 - Project Setup and Configuration (-> city-sample-quick-start-for-generating-a-city-and-freeway-in-unreal-engine-5)
+- Step 2 - Importing the City Data into Unreal Engine 5 (-> city-sample-quick-start-for-generating-a-city-and-freeway-in-unreal-engine-5)
+- Step 3 - Preparing an Open World Level (-> city-sample-quick-start-for-generating-a-city-and-freeway-in-unreal-engine-5)
+- Step 4 - Running the Rule Processor Generation (-> city-sample-quick-start-for-generating-a-city-and-freeway-in-unreal-engine-5)
+- Step 5 - Setting up Point Cloud Data for the Zone Graph for Traffic (-> city-sample-quick-start-for-generating-a-city-and-freeway-in-unreal-engine-5)
+- Step 6 - Running the Zone Graph Generation for Traffic (-> city-sample-quick-start-for-generating-a-city-and-freeway-in-unreal-engine-5)
+- Step 7 - Generate World Partition HLODs for Your City (-> city-sample-quick-start-for-generating-a-city-and-freeway-in-unreal-engine-5)
+- Step 8 - End Results (-> city-sample-quick-start-for-generating-a-city-and-freeway-in-unreal-engine-5)

@@ -1,0 +1,51 @@
+# Blueprint Editor My Blueprint Panel
+
+https://dev.epicgames.com/documentation/en-us/unreal-engine/my-blueprint-panel-in-the-blueprints-visual-scripting-editor-for-unreal-engine?application_version=5.9
+
+> Hierarchical breakdown of the nodes within a Blueprint.
+
+[image: Blueprint Editor My Blueprint Panel]
+
+The **My Blueprint** tab displays a tree list of the graphs, scripts, functions, macros, etc. contained within the Blueprint. This is essentially an outline of the Blueprint that lets you easily view existing elements of the Blueprint, as well as create new ones.
+
+Different types of Blueprints will have different types of items shown in the **My Blueprint** tab tree list.
+
+ [image: My Blueprint Pane]
+
+For example, a normal Blueprint will always have a **ConstructionScript** and an **EventGraph**. In addition, any functions created within the Blueprint will be displayed. A Level Blueprint will only have an **EventGraph** and any functions created within it. An Interface will only display the functions created within it. A Macro Blueprint will display the macro functions created within it.
+
+## Creation Buttons
+
+The **My Blueprint** tab has shortcut buttons (the at the end of each heading) for creating new variables, functions, macros, event graphs, and event dispatchers.
+
+| **Button** | **Name** | **Description** |
+| --- | --- | --- |
+| [image: New Variable] | **New Variable** | Creates a new variable when clicked. The properties of that variable immediately appear in the **Details** tab. There, you can change the name, type, and other properties. |
+| [image: New Function] | **New Function** | Creates a new function, then immediately puts focus on the Name field of the **Details** tab so that it can be named. A new graph view will also be opened where you can define the node network for the function. |
+| [image: New Macro] | **New Macro** | Creates a new macro, then immediately puts focus on the Name field of the **Details** tab so that it can be named. A new graph view will also be opened where you can define the node network for the macro. |
+| [image: New Event Graph] | **New Event Graph** | Creates a new function, then immediately puts focus on the Name field of the **Details** tab so that it can be named. The new graph appears and is ready to have a node network defined within it. |
+| [image: New Event Dispatcher] | **New Event Dispatcher** | Creates a new event dispatcher, then immediately puts focus on the Name field of the **Details** tab so that it can be named. |
+
+These same buttons can also be accessed by **Right-clicking** in the **My Blueprint** tab. The **Right-click** menu also includes an option for creating a new enum asset.
+
+Finally, you can use the **Add New** button at the top of the **My Blueprint** Panel
+
+## My Blueprint Sections
+
+The **My Blueprint** tab is divided up into 6 sections: The **Add New**, Graphs, Functions, Macros, Variables, and Event Dispatchers sections.
+
+ [image: My Blueprint Pane]
+
+The 5 lower sections will organize elements of your Blueprint into their respective groups. While the top section gives you quick access to create new Graphs, Variables, etc... and search the entire **My Blueprint** panel.
+
+## Searching in My Blueprint
+
+The **My Blueprint** tab contains a text box used for searching the graphs belonging to the Blueprint. This works the same way as the contextual action menu that you use for adding new nodes, but is limited to searching items found within **My Blueprint**. You can search based on name, comment, and other data. So, if you know you have a node that is **SetActorHidden**, you can type that in the box, and the explorer will show you all the **SetActorHidden** nodes in your graph.
+
+- blueprints
+
+On this page
+
+- Creation Buttons (-> my-blueprint-panel-in-the-blueprints-visual-scripting-editor-for-unreal-engine)
+- My Blueprint Sections (-> my-blueprint-panel-in-the-blueprints-visual-scripting-editor-for-unreal-engine)
+- Searching in My Blueprint (-> my-blueprint-panel-in-the-blueprints-visual-scripting-editor-for-unreal-engine)
