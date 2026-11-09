@@ -1,5 +1,7 @@
 # Unreal Engine 5.9 documentation index
 
+> **Search this file, never open it whole** (it is about 2 MB, roughly 500k tokens): `rg -i "<term>" docs/ue59/INDEX.md | head -30`, then open only the page a hit names in `docs/ue59/pages/`. `docs/ue59/cards/` is the source data this file is built from: sessions don't need it.
+
 Every page of the 5.9 documentation's table of contents (see Coverage notes at the end), crawled 2026-11-09 by `gen/docs/crawl.ts`, extracted to `docs/ue59/pages/<slug>.md` by `gen/docs/extract.ts`, and read by summariser agents (the console-variable table and long pasted node graphs checked by search) whose cards (`docs/ue59/cards/*.jsonl`) this index is built from (`gen/docs/build_index.ts`).
 
 How to use: search this file for the topic or an exact name (a setting, console variable, class, function or plugin: each entry lists them after "keys:"), then open the page's text in `docs/ue59/pages/` (the full page, offline) or its URL. **[core]** = a small single-player jam game is likely to need it; [useful] = depth or a less common system; [skip] = not for this kind of project. **5.9:** = what the page itself says is new, changed or removed in 5.9 (grep "5.9:" for all of them). Gotchas are the page's own warnings and limits.
