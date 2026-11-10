@@ -351,8 +351,12 @@ project (its first run downloads ~16 GB and may show dialogs that block MCP).
    Kimodo and adapter repos are open) and a **Read** token. A fine-grained token needs read access to public gated
    repos. Never paste the token into a Claude session.
 2. **Plugins** (Edit > Plugins, Experimental): tick **AnimGenOffline** and **Kimodo**, and **Sequencer Anim Mixer
-   Toolset** so MCP can reach the mixer. Restart. If the editor offers to install Python packages for them (PyTorch
-   and friends), that is an install: read it and decide.
+   Toolset** so MCP can reach the mixer. Restart. On that start the editor pip-installs their Python packages
+   (PyTorch, numpy and the rest; an install: your call). **On the 5.9 Preview this failed** (2026-11-10): pip's strict
+   hash mode refused the whole install because one dependency (`colorama`, from `click`) isn't pinned, and Kimodo then
+   failed at once with `No module named 'numpy'`. Fix: Project Settings > Plugins > Python > Python Pip Install >
+   Advanced: untick **Pip Strict Hash Check**, restart (the install reruns on start-up, a few GB, slow). Pip then
+   still downloads from Epic's configured indexes but stops checking each package's hash: the director's call.
 3. **Token:** put it in the kit's `.env` as `HUGGINGFACE_ACCESS_TOKEN` and run `node gen\hf_token.ts` once: it copies
    it into Hugging Face's own token file (`%USERPROFILE%\.cache\huggingface\token`), which Kimodo reads when its own
    setting is empty; `--check` confirms it. (Or paste it into Editor Preferences > Plugins > **Kimodo** >
