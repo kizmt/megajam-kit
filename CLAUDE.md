@@ -167,7 +167,9 @@ director). **The target PC** is the machine the game is built and measured on (R
 
 ## Engine version (5.8 or 5.9)
 
-- **The project's `.uproject` `EngineAssociation` decides** ("5.8" or "5.9"). The kit's scripts follow it
+- **The project's `.uproject` `EngineAssociation` decides** ("5.8" or "5.9"; a GUID is an engine registered under
+  `HKCU\Software\Epic Games\Unreal Engine\Builds`: the 5.9 Preview on the target PC registered as
+  `{7FFA0ACD-...}` -> `UE_5.9`, so a GUID there is 5.9). The kit's scripts follow it
   (`Resolve-KitEngine` in `scripts/build.ps1`, `scripts/package.ps1`, `gen/test/game_common.ps1`), so 5.8 and 5.9
   projects work side by side with the same kit. `-EngineRoot` or `KIT_ENGINE_ROOT` override.
 - **5.9 is a Preview**: Epic says it is not fully tested. Which engine a project uses is the director's call; never
