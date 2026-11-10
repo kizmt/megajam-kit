@@ -219,7 +219,7 @@ Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls nee
 | `gen/blender/prep.py` | Size, pivot at base, texture budget, single mesh, UE-scaled FBX |
 | `gen/blender/inspect.py` | Stats JSON + preview render |
 | `gen/unreal/mcp.ts` | Call any Unreal MCP tool from scripts; `captureViewport()`. CLI: `toolsets`, `describe <toolset>`, `call <toolset> <tool> [json \| '@args.json']` |
-| `gen/unreal/py.ts` | Run a Python file (or `-c` code) in the editor via `run_python`; `--arg k=v` -> `ARGS` dict |
+| `gen/unreal/py.ts` | Run a Python file (or `-c` code) in the editor via `run_python`; `--arg k=v` -> `ARGS` dict. On 5.9 Epic's `execute_python` also exists (rules and when to use which: `docs/ue/editor-scripting.md`) |
 | `gen/unreal/shot.ts` | Viewport screenshot to PNG (`--wait N` for shader compiles) |
 | `gen/character.ts` | Concept -> rigged, PBR-textured, retargeted character (+ BP); see Characters |
 | `gen/views.ts` | Cut a four-view turnaround sheet into front/left/back/right images for Tripo multiview (Four views) |
@@ -251,7 +251,7 @@ Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls nee
 | `scripts/package.ps1` | Win64 package to `C:\dev\Builds\<Project>\` + `<ZipName>_<Project>.zip` (`-ZipName` required, `-EngineRoot` optional; the jam requires the default Development config) |
 | `scripts/upload.ps1` | itch.io upload of the zip with butler: dry run unless `-Push` (`-ZipName`, `-Target user/game`, `-Channel windows`) |
 | `scripts/init-repo.ps1` | Project Git + LFS setup and first commit (`SETUP.md` step 6; `-Message`, `-Trailer` set the commit text) |
-| `unreal/Plugins/MegajamTools` | Project plugin: MCP tools `import_sound`, `import_any`, `run_console_command`, `run_python`, `get_sound_info` |
+| `unreal/Plugins/MegajamTools` | Project plugin: MCP tools `import_sound`, `import_any`, `run_console_command`, `run_python`, `get_sound_info`. Each declares its access mode where the engine takes one (5.9's `tool_call(mode=...)`; the bare 5.8 decorator otherwise); registration on 5.9 is to confirm (`docs/ue/ue59.md`) |
 
 Shared modules, not run on their own: `gen/paths.ts` (kit and project paths, `.env`, ffmpeg), `gen/proc.ts`
 (processes, Tripo output and balance, ORM packing), `gen/unreal/python.ts` (editor Python over MCP),

@@ -71,7 +71,8 @@ Workflow: `CreateNiagaraSystem` from a **template system**, giving it an `FXS_` 
   `{name, type, defaultValue}`; passing `{variable: {name, type}, defaultValue}` returned `null` with no error but
   added a `User.None` of Unknown type ("Invalid parameter found ... User.None" on every compile), and the next
   `GetUserVariables` hit `Assertion failed: InCount > 0` (`NiagaraVariant.cpp`) and took the editor down. Check every
-  write against the `describe_toolset` schema; after `AddUserVariables` run `GetStackIssues` and grep the log for
+  write against the toolset's schema (`node gen\unreal\mcp.ts describe <toolset>`: `describe_toolset` on 5.8,
+  `describe_toolsets` with schemas on 5.9); after `AddUserVariables` run `GetStackIssues` and grep the log for
   "Invalid parameter"; never call `GetUserVariables` on a system that logged it. **Save a new system before editing
   it**, so a crash costs only the edits.
   - **5.9:** the tool-search meta-tools are `list_toolsets`, `describe_toolsets` (tools of one or more toolsets;

@@ -189,21 +189,22 @@ Order of authority (highest first):
 
 1. **What the engine actually does here**: compile result, Output Log (`EditorToolset.LogsToolset.GetLogEntries`),
    screenshots, property reads (`ObjectTools.get_properties`). This beats every document.
-2. **Exact-version API on disk** (the project's engine: `UE_5.8` or `UE_5.9` below, from the `.uproject`'s
-   `EngineAssociation`; "Engine version")
-   - C++ headers: `C:\Program Files\Epic Games\UE_5.8\Engine\Source\{Runtime,Editor,Developer}\` and
+2. **Exact-version API on disk** (`UE_<ver>` below is the project's engine, `UE_5.8` or `UE_5.9`, from the
+   `.uproject`'s `EngineAssociation`; "Engine version")
+   - C++ headers: `C:\Program Files\Epic Games\UE_<ver>\Engine\Source\{Runtime,Editor,Developer}\` and
      `...\Engine\Plugins\**\Source\`. Grep for the class/function before using it.
    - Python API stub: `<Project>\Intermediate\PythonStub\unreal.py` (generated when Editor Preferences >
      Plugins > Python > Developer Mode is on). Grep it before writing any `unreal.*` Python.
    - Epic C++ templates for working patterns (character, input, camera):
-     `C:\Program Files\Epic Games\UE_5.8\Templates\TP_ThirdPerson`, `TP_FirstPerson`, `TP_TopDown`, `TP_VehicleAdv`.
+     `C:\Program Files\Epic Games\UE_<ver>\Templates\TP_ThirdPerson`, `TP_FirstPerson`, `TP_TopDown`, `TP_VehicleAdv`.
      Reference only: the jam forbids lightly modified templates.
 3. **Epic's agent guidance**
    - In-editor Agent Skills via MCP: `ToolsetRegistry.AgentSkillToolset` > `ListSkills`, then `GetSkills`
      for the relevant one **before** working in that area (materials, Blueprints, outdoor lighting,
      Niagara, PCG, ...).
-   - `describe_toolset` before calling any MCP tool you have not used; schemas are strict and some
-     "optional" parameters are required.
+   - Read a tool's schema before calling any MCP tool you have not used (`describe_toolset` on 5.8;
+     `describe_toolsets` with `include_schemas: true` or `describe_tools` on 5.9; `node gen\unreal\mcp.ts describe
+     <toolset>` on either); schemas are strict and some "optional" parameters are required.
    - Claude Code `unreal-engine-skills-for-claude-code` plugin skills (unreal-mcp, create-toolset, unreal-skill).
 4. **Kit knowledge**: `PIPELINE.md` (tools and hard-won facts) and `docs/ue/` (curated notes verified on 5.8.4;
    lines starting **5.9:** say what differs on 5.9, from the 5.9 docs).
@@ -214,8 +215,8 @@ Order of authority (highest first):
    Epic's table of contents (`docs/ue59/sections.json` lists them): search them before web-searching. **Never
    open `docs/ue59/INDEX.md` (2 MB, ~500k tokens) or list/read `docs/ue59/pages/` or `docs/ue59/cards/` whole:
    search, e.g. `rg -i "virtual shadow" docs/ue59/INDEX.md | head -30` or `rg -il "<name>" docs/ue59/pages` (or
-   `docs/ue59/pages/rendering` to search one section), then open only the page a hit names.** On a 5.8 project, check that what a 5.9 page describes exists in 5.8
-   (a "5.9:" note may not).
+   `docs/ue59/pages/rendering` to search one section), then open only the page a hit names.** On a 5.8 project,
+   check that what a 5.9 page describes exists in 5.8 (a "5.9:" note may not).
 5. **Official docs**, always the project's version (append `?application_version=5.8` or `=5.9` to doc URLs; the
    kit's links say 5.8: change the number on a 5.9 project). Key links (Python and C++ API
    references, MCP, coding standard, packaging, console variables) are in `docs/ue/README.md` "Official references".

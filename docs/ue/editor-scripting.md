@@ -199,8 +199,9 @@ Blueprint function libraries can implement `IToolsetProvider` and expose tools w
 (`LevelSequenceEditorSubsystem`, `PCGEditorSubsystem`, `WidgetBlueprintEditorSubsystem`)
 (docs/ue59/pages/ai-features/unreal-mcp-in-unreal-editor.md, docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md).
 
-**Keep "Enable Tool Search" on** (Editor Preferences > General > Model Context Protocol; default on). With it off,
-`tools/list` returns every tool schema instead of the 3 meta-tools `mcp.ts` expects. The server speaks HTTP/SSE only
+**Keep "Enable Tool Search" on** (Editor Preferences > General > Model Context Protocol; on 5.9 Agentic Workflows >
+Model Context Protocol; default on). With it off, `tools/list` returns every tool schema instead of the meta-tools
+`mcp.ts` expects (3 on 5.8, 4 on 5.9). The server speaks HTTP/SSE only
 (no stdio) on `http://127.0.0.1:8000/mcp` and has "no authentication layer": keep it on localhost.
 
 - **5.9: MCP settings moved and grew.** Editor Preferences > **Agentic Workflows > Model Context Protocol**: Auto

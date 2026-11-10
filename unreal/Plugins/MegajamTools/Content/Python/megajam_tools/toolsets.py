@@ -7,9 +7,29 @@ import unreal
 
 import toolset_registry
 from toolset_registry.registration import Registration
-from editor_toolset.toolsets.asset import import_asset
+
+# Epic's import helper (verified on 5.8.4). Not in the 5.9 docs: if the module moved, only the two import tools fail,
+# with this message, instead of the whole toolset failing to register.
+try:
+    from editor_toolset.toolsets.asset import import_asset
+except ImportError as _e:
+    _IMPORT_ASSET_ERROR = str(_e)
+
+    def import_asset(*_args, **_kwargs):
+        raise RuntimeError(f"editor_toolset.toolsets.asset.import_asset is not available in this engine "
+                           f"({_IMPORT_ASSET_ERROR}); update megajam_tools/toolsets.py")
 
 from megajam_tools.refs import referencers_outside
+
+
+def _tool(mode: str):
+    """The tool decorator with an access mode where the engine takes one. 5.9 documents
+    tool_call(mode=unreal.ToolAccessMode.READ|WRITE|EXECUTE) on every tool (sent to clients as readOnlyHint; the
+    default is Execute); the kit's 5.8.4 tools used the bare decorator, so fall back to it if mode isn't accepted."""
+    try:
+        return toolset_registry.tool_call(mode=getattr(unreal.ToolAccessMode, mode))
+    except (AttributeError, TypeError):
+        return toolset_registry.tool_call
 
 
 def _delete_if_exists(folder_path: str, asset_name: str) -> bool:
@@ -60,7 +80,7 @@ class MegajamTools(unreal.ToolsetDefinition):
     """Extra tools for the megajam-kit pipeline: importing sounds and other files
     that the built-in toolsets cannot import, and running editor console commands."""
 
-    @toolset_registry.tool_call
+    @_tool("WRITE")
     @staticmethod
     def import_sound(folder_path: str, asset_name: str, source_file: str,
                      looping: bool = False, replace: bool = True) -> unreal.SoundWave:
@@ -85,7 +105,7 @@ class MegajamTools(unreal.ToolsetDefinition):
         unreal.EditorAssetLibrary.save_loaded_asset(sound)
         return sound
 
-    @toolset_registry.tool_call
+    @_tool("WRITE")
     @staticmethod
     def import_any(folder_path: str, asset_name: str, source_file: str,
                    replace: bool = True) -> list[unreal.Object]:
@@ -104,7 +124,7 @@ class MegajamTools(unreal.ToolsetDefinition):
         """
         return _import(folder_path, asset_name, os.path.normpath(source_file), replace)
 
-    @toolset_registry.tool_call
+    @_tool("EXECUTE")
     @staticmethod
     def run_console_command(command: str) -> bool:
         """Runs an editor console command, e.g. 'Scalability 2' or 'stat unit'.
@@ -119,7 +139,7 @@ class MegajamTools(unreal.ToolsetDefinition):
         unreal.SystemLibrary.execute_console_command(world, command)
         return True
 
-    @toolset_registry.tool_call
+    @_tool("EXECUTE")
     @staticmethod
     def run_python(code: str) -> str:
         """Runs a Python script in the editor and returns its printed output. Use for one-off
@@ -144,7 +164,7 @@ class MegajamTools(unreal.ToolsetDefinition):
                 traceback.print_exc(file=buffer)
         return f"{status}\n{buffer.getvalue()}".rstrip()
 
-    @toolset_registry.tool_call
+    @_tool("READ")
     @staticmethod
     def get_sound_info(sound: unreal.SoundWave) -> str:
         """Returns duration, channel count, sample rate and looping for a SoundWave.

@@ -271,7 +271,7 @@ Facts behind the table:
 - `MegajamTools.run_console_command` can issue these from scripts.
 - **5.9:** Unreal MCP adds engine toolsets including **Console** and **Perf** (CSV and GPU profiler, Stats); both have
   runtime-callable tools (docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md,
-  docs/ue59/pages/ai-features/unreal-mcp-in-unreal-editor.md). Run `describe_toolset` on them before use.
+  docs/ue59/pages/ai-features/unreal-mcp-in-unreal-editor.md). Run `describe_toolsets` on them before use (`node gen\unreal\mcp.ts describe <toolset>`).
 - Final truth is the **packaged** build on the target PC (Epic: profile on target hardware). Package daily from day 2.
 - Deep dive: Unreal Insights (CPU/GPU timing per frame), RenderDoc (single GPU frame).
 

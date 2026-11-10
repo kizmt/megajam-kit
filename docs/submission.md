@@ -56,8 +56,8 @@ of the page has to sell the game and get it running.
 - **How to play:** the controls (keyboard/mouse, gamepad only if tested), the goal in one sentence, the play time
   (e.g. "about 8 minutes").
 - **How to run it:** download, unzip, run `<Game>.exe`; the unsigned-build note (`SETUP.md` 9 step 5). The
-  hardware it was tested on (the target PC) and the lowest settings preset for weaker PCs. Requirements (Epic's 5.8
-  spec page): Windows 10 22H2 or Windows 11, 64-bit; a DirectX 12 GPU with current drivers (Nanite and Lumen need
+  hardware it was tested on (the target PC) and the lowest settings preset for weaker PCs. Requirements (Epic's spec
+  page, the same on 5.8 and 5.9): Windows 10 22H2 or Windows 11, 64-bit; a DirectX 12 GPU with current drivers (Nanite and Lumen need
   D3D12 SM6). Recommend a driver update: it fixes most D3D12 start-up crashes. Say the first launch prepares
   shaders for up to a minute (`docs/ue/production.md` "First launch: PSO warm-up").
 - **Theme:** one or two sentences on how the theme shapes the play, not only the setting.

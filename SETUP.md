@@ -10,6 +10,8 @@ uses is the director's call (CLAUDE.md "Engine version"); the kit's scripts foll
 - Unreal Engine 5.8.4 and, for 5.9 projects, the 5.9 Preview (Epic launcher installs; they sit side by side in
   `C:\Program Files\Epic Games\UE_5.8` and `UE_5.9`)
 - Visual Studio 2026 (18.10.x) with the "Game development with C++" workload — verified compiling on 5.8.4
+  - **5.9:** also the **MSVC Build Tools v14.50** component (Visual Studio Installer > Modify > Individual
+    components). 5.9's UnrealBuildTool needs 14.50.35717 and refuses MSVC 14.51.x (`docs/ue/ue59.md`)
 - Git + Git LFS (`git lfs version` → 3.7.1)
 - Claude Code
 - **Windows Smart App Control off** (Windows Security > App & browser control > Smart App Control settings).
@@ -46,7 +48,7 @@ The theme window runs before the project exists (`prompts/concept.md`). Check it
 ## 2. Plugins (2 min)
 
 1. Edit → Plugins → enable **Unreal MCP** and **All Toolsets**. (Python Editor Script Plugin is already on by
-   default.)
+   default.) **5.9:** Unreal MCP is on by default; All Toolsets still needs enabling.
 2. Restart Now.
    **Launcher plugin updates can arrive mid-jam.** If a build or `package.ps1` fails with `RulesError` naming
    `FabToolset` (a Fab plugin update added a module the installed engine's precompiled rules don't know), set
@@ -80,7 +82,8 @@ The theme window runs before the project exists (`prompts/concept.md`). Check it
 ## 3. MCP server (1 min)
 
 1. Edit → Editor Preferences → General → Model Context Protocol → tick **Auto Start Server** (port 8000, path
-   `/mcp`). Do not use "Set as Default".
+   `/mcp`). Do not use "Set as Default". **5.9:** the page is Editor Preferences → **Agentic Workflows** → Model
+   Context Protocol, and Auto Start Server is on by default; step 2 is then only needed if the log shows no server.
 2. Console: Window → Output Log → the **Cmd** box at the bottom (backtick is a dead key on some layouts). Run:
 
    ```
@@ -93,8 +96,8 @@ The theme window runs before the project exists (`prompts/concept.md`). Check it
    ModelContextProtocol.GenerateClientConfig ClaudeCode
    ```
 
-4. Check: the Output Log shows `Created new HttpListener on 127.0.0.1:8000` and ~52 "Registering Toolset" lines, and
-   `.mcp.json` exists in the project root.
+4. Check: the Output Log shows `Created new HttpListener on 127.0.0.1:8000` and ~52 "Registering Toolset" lines
+   (5.8.4; not yet counted on 5.9, which adds toolsets), and `.mcp.json` exists in the project root.
 
 ## 4. Starting level (2 min)
 
@@ -150,7 +153,8 @@ The Blank template opens a temporary Open World level (Landscape, World Partitio
    it **before** the first session starts: Claude Code hot-reloads `.claude\agents\` only if the folder existed when
    the session started.
 4. With the editor already open: `cd C:\dev\<ProjectName>` → `claude` → approve `unreal-mcp`.
-5. `/mcp` should list only `unreal-mcp` (3 tools: tool search mode).
+5. `/mcp` should list only `unreal-mcp` (tool search mode: 3 tools on 5.8; 4 on 5.9, `list_toolsets`,
+   `describe_toolsets`, `describe_tools`, `call_tool`).
 6. Test: "What actors are in the current level?" — should list the Basic level's actors.
 
 ## 6. Kit scripts, plugin + Git (2 min)
@@ -315,7 +319,9 @@ scored); download them now, retarget them onto the game's characters during the 
    it answers 403) and note it with the listing URL and the date in `C:\dev\AnimLibrary\SOURCED_ASSETS.md`; the
    game's `SOURCED_ASSETS.md` copies those lines.
 2. Create a library project `C:\dev\AnimLibrary` (Blank, UE 5.8.4) and add those packs to it from the launcher's
-   Library tab ("Add to Project"). Not tracked in any game repo.
+   Library tab ("Add to Project"). Not tracked in any game repo. For a 5.9 game, keep the library on 5.8.4: an
+   engine loads assets from older versions, so its folders should migrate into 5.9 (not yet tried: check the first
+   migration), while a library saved in 5.9 could never feed a 5.8 game.
 3. Optional, for a game with combat or stunts: an Adobe ID for Mixamo (rolls, knockdowns, get-ups, extra deaths);
    a paid melee pack for parries.
 4. During the jam, migrate only the folders you need into the game (Migrate keeps each pack's `/Game/<Pack>/` path)
