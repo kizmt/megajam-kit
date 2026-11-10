@@ -120,7 +120,11 @@ can't hide weak audio. No averaging away a red flag:
 - **Build risk:** anything needing a system the kit hasn't proven (networking, physics-driven gameplay at scale,
   large open spaces, dialogue trees) scores 1-2. A generated hero and up to three generated characters are **not**
   a risk: the kit has the pipeline (`gen/character.ts`, retargeting, Kimodo on 5.9) and the budget is there to be
-  used. Only more than three, or one that needs a custom rig (quadruped, many limbs), counts. Any 1 here needs a
+  used. Only more than three counts, or a **hero that isn't a
+  biped** (a fish, a quadruped, a creature with many limbs, a blob): the retarget and Kimodo are for human-shaped
+  rigs only, so that concept must say how the hero moves (a generated model split into moving parts with
+  `gen/parts.ts` and driven by code, a bend in the material, or Tripo's own rig for animals) and scores 3 at most
+  until a spike has shown it moving. A 2026-11-11 rehearsal scored a whale-calf hero 3 without naming any of this. Any 1 here needs a
   named fallback. Build risk never outweighs Theme meaning or Memorability on its own: a safe forgettable game
   loses the jam as surely as a broken one.
 - **Placement, and the Development Continuation Grants that follow it, come from the total across all seven
