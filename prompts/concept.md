@@ -88,6 +88,9 @@ tells "the concept and why it won" (`docs/submission.md`). Each, in this format:
 - **Look and sound:** what makes it beautiful and what makes it sound good, in one line each.
 - **Signature assets:** the hero (the protagonist, generated: `gen/character.ts`, or a generated hero object
   for a game without a body) and 3 assets the game is remembered by (a creature, a landmark, a set-piece prop).
+  Say which of them moves when the player uses it (a lid, a lever, a gate, a wheel) and what the player sees it do:
+  a part that answers the core verb is feedback the player reads at once, and a generated prop only moves if it is
+  planned as parts (`gen/parts.ts`, `PIPELINE.md` "Moving parts"). One is enough; a concept with none says why.
 - **Build list:** what the kit makes it from (props `gen/asset.ts`, characters `gen/character.ts`, effects
   `gen/vfx/vfx.ts`, animation: Kimodo on 5.9, libraries, Uthana; audio) and the hardest engine feature it needs.
 - **Biggest risk:** the one thing most likely to fail, and the fallback if it does.
