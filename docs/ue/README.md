@@ -73,5 +73,6 @@ If a note and the engine disagree, the engine wins. In a game session, add an en
 its table of contents; the rest redirect or timed out, see `../ue59/notes.md`). Agents read every page and gave each a
 relevance tag, a summary, the exact names to search for, the page's own warnings and what it says is new in 5.9 (the
 console-variable table and long pasted node graphs were checked by search, not line by line). The full text of every
-page is in [../ue59/pages/](../ue59/pages/): `grep -ril "<name>" docs/ue59/pages` finds it offline. Rebuild with
+page is in [../ue59/pages/](../ue59/pages/), one folder per top-level section of Epic's table of contents
+(`<section>/<slug>.md`): `grep -ril "<name>" docs/ue59/pages` finds it offline. Rebuild with
 `gen/docs/` (README there).

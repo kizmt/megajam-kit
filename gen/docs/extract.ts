@@ -29,7 +29,8 @@ const jsonl = join(inDir, 'pages.jsonl');
 if (existsSync(jsonl)) for (const l of readFileSync(jsonl, 'utf8').split('\n')) if (l.trim()) { const p = JSON.parse(l) as Crawled; if (p.status === 200) crawled.set(p.slug, p); }
 
 // The server-rendered breadcrumb has no hierarchy, so each page's section comes from the link graph: a breadth-first
-// walk from the root, each page's section being the root's child it was first reached through.
+// walk from the root, each page's section being the root's child it was first reached through. A rough guess only:
+// group.ts replaces it with the page's section in the official table of contents.
 const rootSlug = [...crawled.keys()].find((s) => /^unreal-engine-\d+-\d+-documentation$/.test(s));
 const sectionOf = new Map<string, string>();
 const parentOf = new Map<string, string>();
