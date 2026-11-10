@@ -75,6 +75,15 @@ Researched 2026-10-26/28; prices and terms change, so re-check a source before r
     animation to an animation sequence asset"), **Create Auto-Generated Retargeter Assets**; progress shows
     "Downloading Llama 3 weights", "Downloading Kimodo weights", "Quantizing Llama 3 to NF4"; the plugin shows
     **VRAM Used**.
+  - Prompting (tested 2026-11-10): "a person walks forward and waves" walked but never waved; "a person walks forward
+    while waving their right hand above their head" did both. Name simultaneous actions explicitly, with the limb
+    and where it goes; for actions in sequence, key the **Anim Description** channel over time (or Multi-Prompt
+    Transitions) so each stretch has one action, as Kimodo's training data is described moment by moment. Variations
+    2-3 and Quality High for clips that will ship.
+  - **Show Retarget Debug** draws only on Pose Targets you key (the poses given to the model); with none it draws
+    nothing. To tell a retarget problem from a model one, play the same seed and prompt on Kimodo's own
+    `soma_neutral` mesh (Content Browser > Settings > Show Plugin Content > Kimodo Content > Characters > Soma) next
+    to the character.
 
 ### Claude as the fallback generator (any engine; APIs checked in the 5.9 stub, not yet run)
 
