@@ -129,25 +129,40 @@ $needEditorStart = $false
 if ($kimodo) {
     $py = Join-Path $Project 'Intermediate\PipInstall\Scripts\python.exe'
     if (Test-Path $py) {
-        $have = (& $py -m pip list 2>$null) -join "`n"
+        # pip writes notices to stderr; under 'Stop' Windows PowerShell 5.1 turns those into a terminating error.
+        $ErrorActionPreference = 'Continue'
+        $have = (& $py -m pip list 2>&1 | Out-String)
         if ($have -match '(?im)^omegaconf\s' -and $have -match '(?im)^antlr4-python3-runtime\s') { Kept "Kimodo's two extra Python packages" }
         else {
-            & $py -m pip install --no-deps antlr4-python3-runtime==4.9.3 omegaconf==2.3.0 2>&1 | Select-Object -Last 2 | ForEach-Object { Write-Host "         $_" }
-            if ($LASTEXITCODE -eq 0) { Done "Kimodo's two extra Python packages installed" } else { Write-Host '  FAIL   pip install of antlr4-python3-runtime / omegaconf (SETUP 10b step 3)'; exit 1 }
+            $out = (& $py -m pip install --no-deps antlr4-python3-runtime==4.9.3 omegaconf==2.3.0 2>&1 | Out-String)
+            $code = $LASTEXITCODE
+            $out.Trim().Split("`n") | Select-Object -Last 2 | ForEach-Object { Write-Host "         $($_.Trim())" }
+            if ($code -eq 0) { Done "Kimodo's two extra Python packages installed" } else { Write-Host '  FAIL   pip install of antlr4-python3-runtime / omegaconf (SETUP 10b step 3)'; exit 1 }
         }
+        $ErrorActionPreference = 'Stop'
     } else { $needEditorStart = $true }
 }
 
+# ---------- what is left: only the steps that are not done yet
+$todo = @()
+$envLine = Select-String -LiteralPath (Join-Path $Kit '.env') -Pattern '^\s*MEGAJAM_PROJECT\s*=' -ErrorAction SilentlyContinue | Select-Object -First 1
+$envProj = if ($envLine) { ($envLine.Line -split '=', 2)[1].Trim().Trim('"').TrimEnd('\') } else { '' }
+if ($envProj -ine $Project) { $todo += "Kit .env: MEGAJAM_PROJECT=$Project" }
+$opened = Test-Path (Join-Path $Project 'Intermediate\PipInstall\Scripts\python.exe')
+if ($kimodo -and -not $opened) { $todo += "Open the project and let it finish: the first start with the new plugins installs Kimodo's Python packages (a few GB, several minutes)." }
+if (-not (Test-Path (Join-Path $Project 'Content\Characters\Mannequins'))) { $todo += 'Content Drawer > Add > Add Feature or Content Pack > Third Person (SETUP 2.5)' }
+$engineIni = Join-Path $config 'DefaultEngine.ini'
+$mapsSet = (Test-Path $engineIni) -and ((Get-Content -Raw $engineIni) -match '(?m)^GameDefaultMap=/Game/Maps/Main') -and ((Get-Content -Raw $engineIni) -match '(?m)^EditorStartupMap=/Game/Maps/Main')
+if (-not (Test-Path (Join-Path $Project 'Content\Maps\Main.umap')) -or -not $mapsSet) { $todo += 'File > New Level > Basic, save as Content\Maps\Main; Project Settings > Maps & Modes: Editor Startup Map and Game Default Map = Main (SETUP 4)' }
+$gameIni = Join-Path $config 'DefaultGame.ini'
+if (-not ((Test-Path $gameIni) -and ((Get-Content -Raw $gameIni) -match 'GameFeatureData'))) { $todo += 'Project Settings > Game > Asset Manager > Primary Asset Types to Scan: + GameFeatureData / GameFeatureData / /Game/Unused (SETUP 2.3)' }
+if (-not (Test-Path (Join-Path $Project 'Intermediate\PythonStub\unreal.py'))) { $todo += 'Editor Preferences > Plugins > Python > Developer Mode on, then restart the editor (SETUP 2.4)' }
+$todo += "Check once: Editor Preferences > Performance > 'Use Less CPU when in Background' is off (SETUP 8.2; preflight reads it)"
+if (-not (Test-Path (Join-Path $Project '.mcp.json'))) { $todo += 'Output Log Cmd box: ModelContextProtocol.GenerateClientConfig ClaudeCode   (writes .mcp.json, SETUP 3.3)' }
+if ($needEditorStart) { $todo += "After that first start, close the editor and run this script again: it then installs Kimodo's two extra packages." }
+if ($kimodo) { $todo += 'Kimodo, once per project: a Level Sequence with the mannequin (SKM_Manny_Simple) added through Sequencer''s AnimGenOffline drop-down > Add Character (SETUP 10b step 4). The script can''t see whether this is done.' }
+if (-not (Test-Path (Join-Path $Project '.git'))) { $todo += "$Project\scripts\init-repo.ps1" }
+$todo += "With the editor open: C:\dev\megajam-kit\scripts\preflight.ps1 -Project $Project   then: cd $Project; claude"
 Write-Host ''
 Write-Host 'Left for you (SETUP.md has the detail):'
-$n = 1
-Write-Host "  $n. Kit .env: MEGAJAM_PROJECT=$Project"; $n++
-Write-Host "  $n. Open the project. First start with the new plugins$(if ($kimodo) { ' installs Kimodo''s Python packages (a few GB, several minutes)' })."; $n++
-Write-Host "  $n. Content Drawer > Add > Add Feature or Content Pack > Third Person (SETUP 2.5)"; $n++
-Write-Host "  $n. File > New Level > Basic, save as Content\Maps\Main; Project Settings > Maps & Modes: both maps = Main (SETUP 4)"; $n++
-Write-Host "  $n. Project Settings > Game > Asset Manager > Primary Asset Types to Scan: + GameFeatureData / GameFeatureData / /Game/Unused (SETUP 2.3)"; $n++
-Write-Host "  $n. Editor Preferences: Python Developer Mode on (2.4); 'Use Less CPU when in Background' off (8.2). Both are per user: check, they usually carry over."; $n++
-Write-Host "  $n. Output Log Cmd box: ModelContextProtocol.GenerateClientConfig ClaudeCode   (writes .mcp.json, SETUP 3.3)"; $n++
-if ($needEditorStart) { Write-Host "  $n. Close the editor and run this script again: it then installs Kimodo's two extra packages (the editor makes the Python environment on its first start)."; $n++ }
-if ($kimodo) { Write-Host "  $n. Kimodo: a Level Sequence with the mannequin added through the AnimGenOffline drop-down > Add Character (SETUP 10b step 4), once."; $n++ }
-Write-Host "  $n. $Project\scripts\init-repo.ps1, then C:\dev\megajam-kit\scripts\preflight.ps1 -Project $Project (editor open), then: cd $Project; claude"
+for ($i = 0; $i -lt $todo.Count; $i++) { Write-Host "  $($i + 1). $($todo[$i])" }
