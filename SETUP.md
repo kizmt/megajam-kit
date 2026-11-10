@@ -335,7 +335,8 @@ scored); download them now, retarget them onto the game's characters during the 
 ## 11. Autonomous practice run (no director input; `prompts/autonomous.md`)
 
 The director does the human-only steps once, then doesn't type until the final report.
-1. **Project:** steps 1-6 as usual (name it for the test, e.g. `AutoRun1`; the session renames nothing), including
+1. **Project:** steps 1-6 as usual (give it a neutral code with no meaning, e.g. `MJT59`: the name is in every path the session reads, and a
+   word like `AutoRun` pulled a concept towards running; the session renames nothing), including
    the Third Person pack (step 2.5), `MEGAJAM_PROJECT` in the kit's `.env`, `CLAUDE.md` and the critic copied in
    (step 5.3). Leave the editor open with the MCP server running.
 2. **Run card:** create `C:\dev\<Project>\AUTONOMOUS.md` with the run card table from `prompts/autonomous.md`, filled
