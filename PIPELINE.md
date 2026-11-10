@@ -251,7 +251,7 @@ Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls nee
 | `scripts/package.ps1` | Win64 package to `C:\dev\Builds\<Project>\` + `<ZipName>_<Project>.zip` (`-ZipName` required, `-EngineRoot` optional; the jam requires the default Development config) |
 | `scripts/upload.ps1` | itch.io upload of the zip with butler: dry run unless `-Push` (`-ZipName`, `-Target user/game`, `-Channel windows`) |
 | `scripts/init-repo.ps1` | Project Git + LFS setup and first commit (`SETUP.md` step 6; `-Message`, `-Trailer` set the commit text) |
-| `unreal/Plugins/MegajamTools` | Project plugin: MCP tools `import_sound`, `import_any`, `run_console_command`, `run_python`, `get_sound_info`. Each declares its access mode where the engine takes one (5.9's `tool_call(mode=...)`; the bare 5.8 decorator otherwise); registration on 5.9 is to confirm (`docs/ue/ue59.md`) |
+| `unreal/Plugins/MegajamTools` | Project plugin: MCP tools `import_sound`, `import_any`, `run_console_command`, `run_python`, `get_sound_info`. Each declares its access mode where the engine takes one (5.9's `tool_call(mode=...)`; the bare 5.8 decorator otherwise); registration on 5.9 is to confirm (`docs/ue/ue59.md`). On 5.9 it also carries the kit's Markdown skills (`Skills/`) |
 
 Shared modules, not run on their own: `gen/paths.ts` (kit and project paths, `.env`, ffmpeg), `gen/proc.ts`
 (processes, Tripo output and balance, ORM packing), `gen/unreal/python.ts` (editor Python over MCP),

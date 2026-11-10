@@ -354,6 +354,21 @@ them to `AgentSkillToolset.GetSkills`); relative links in `SKILL.md` become abso
 opened. Python skill classes are "discovered automatically, so you do not need to register them"; C++ ones derive
 from `UAgentSkill` (docs/ue59/pages/ai-features/unreal-mcp-in-unreal-editor.md,
 docs/ue59/pages/ai-features/using-python-with-ai-agents-in-unreal-engine.md).
+**5.9: the kit's own skills.** `unreal/Plugins/MegajamTools/Skills/` holds `megajam-editor-scripting` (this note's
+editor-script rules: saving, freezes, PIE, Blueprint defaults) and `megajam-assets` (pipeline, names, materials,
+import, placement), so any agent on the editor, the Unreal Assistant panel included, loads them like Epic's. They are
+short summaries pointing back here: when a rule changes in a note, change the skill in the same commit. On 5.8 the
+folder is ignored.
+**5.9: project Instructions.** The kit's core editor rules, sent to every agent on connect, are in
+`agents/mcp-instructions.md` (pasted at SETUP step 3).
+**5.9: the Unreal Assistant panel** runs Claude Code, Codex, Cursor, OpenCode or another ACP agent inside the editor,
+connected to that editor's MCP (docs/ue59/pages/ai-features/run-external-ai-agents-in-the-unreal-assistant-panel-in-unreal-engine.md).
+The kit doesn't use it: the session runs in a terminal in the project folder, where `CLAUDE.md` loads, and only that
+session calls MCP. An agent in the panel would be a second client sending calls into the same serial queue: don't
+run one while the session works. The project Instructions cover it if it is used anyway.
+**Semantic Search** (an editor plugin; Epic: shipped with 5.8 or later) adds AI search of the project's assets, and
+the MCP workflow can use it. Epic's PCG guide finds it faster for the director to search the Content Browser and select
+the assets, so the agent works on the selection (docs/ue59/pages/ai-features/working-with-pcg-and-llms-using-unreal-mcp-in-unreal-engine.md).
 
 Template for our own skill, as a Python class (version-controlled with the plugin, which is better than a UAsset
 from `CreateSkill`). **Not created yet:** the plugin has no `skills/` package; add it only if editor sessions need it.

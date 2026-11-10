@@ -64,7 +64,7 @@ director). **The target PC** is the machine the game is built and measured on (R
   predefined agent teams; the one role subagent is the blind critic (`agents/critic.md`, copied into the project by
   SETUP step 5). Claude may spin up a helper agent on its own judgement (research, docs lookups, work outside the
   editor such as Blender generation, audio and images), but only the main session calls Unreal MCP (tool calls run
-  one at a time on the game thread anyway). Parallel helpers each own their own output files; no two write the same
+  one at a time on the game thread anyway; no agent in the editor's Unreal Assistant panel alongside it). Parallel helpers each own their own output files; no two write the same
   file.
 - **Blind critic for visual and level work.** The builder doesn't grade its own look. After a visual or level change,
   give the `critic` subagent the screenshots and the references (or the rubric) with labels hidden, briefed per
@@ -201,7 +201,8 @@ Order of authority (highest first):
 3. **Epic's agent guidance**
    - In-editor Agent Skills via MCP: `ToolsetRegistry.AgentSkillToolset` > `ListSkills`, then `GetSkills`
      for the relevant one **before** working in that area (materials, Blueprints, outdoor lighting,
-     Niagara, PCG, ...).
+     Niagara, PCG, ...). On 5.9 the kit's own skills list there too (`/Skills/MegajamTools/...`, summaries of
+     `docs/ue/editor-scripting.md` and the asset rules).
    - Read a tool's schema before calling any MCP tool you have not used (`describe_toolset` on 5.8;
      `describe_toolsets` with `include_schemas: true` or `describe_tools` on 5.9; `node gen\unreal\mcp.ts describe
      <toolset>` on either); schemas are strict and some "optional" parameters are required.

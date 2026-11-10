@@ -98,6 +98,10 @@ The theme window runs before the project exists (`prompts/concept.md`). Check it
 
 4. Check: the Output Log shows `Created new HttpListener on 127.0.0.1:8000` and ~52 "Registering Toolset" lines
    (5.8.4; not yet counted on 5.9, which adds toolsets), and `.mcp.json` exists in the project root.
+5. **5.9 only:** Edit → Project Settings → Agentic Workflows → Model Context Protocol → **Instructions**: paste the
+   one-line text from the kit's `agents/mcp-instructions.md` (the kit's core editor rules, sent to every agent that
+   connects, including the editor's Unreal Assistant panel). It is saved in `Config\DefaultGame.ini`. 5.8 has no
+   such setting.
 
 ## 4. Starting level (2 min)
 
@@ -172,7 +176,8 @@ The Blank template opens a temporary Open World level (Landscape, World Partitio
 
    Check: Output Log shows `Registering Toolset megajam_tools.toolsets.MegajamTools`.
    (Adds `import_sound`, `import_any`, `run_console_command`, `run_python` and `get_sound_info` to MCP. Enabled by
-   default; no prompt.)
+   default; no prompt.) **5.9:** the plugin also carries the kit's skills (`Skills\megajam-editor-scripting`,
+   `Skills\megajam-assets`): `AgentSkillToolset` `ListSkills` should list them as `/Skills/MegajamTools/...`.
 2. `.\scripts\init-repo.ps1` → writes Unreal `.gitignore` + `.gitattributes`, runs `git init`, enables LFS,
    makes the first commit. Binaries/Intermediate/Saved/DerivedDataCache are ignored; `.uasset`/`.umap`,
    images, models and audio go through LFS.

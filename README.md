@@ -48,6 +48,7 @@ video editing), Node 24 (the kit's TypeScript runs directly), Git + Git LFS.
 | `prompts/style-lock.md` | Procedure for agreeing and writing down the game's visual style |
 | `prompts/playtest.md` | Brief for a fresh agent reviewing a recorded first-time play |
 | `agents/critic.md` | The blind critic subagent (Read only, no CLAUDE.md); SETUP step 5 copies it into the project's `.claude\agents\` |
+| `agents/mcp-instructions.md` | 5.9: the kit's core editor rules as Unreal MCP project Instructions, sent to every agent that connects (SETUP step 3) |
 | `prompts/autonomous.md` | Practice run with no director: the session decides on evidence, within a spend card |
 | `prompts/critic.md` | Brief for a blind critic agent that scores screenshots against references or a rubric |
 | `gen/image.ts` | Concept image generation |
@@ -62,7 +63,7 @@ video editing), Node 24 (the kit's TypeScript runs directly), Git + Git LFS.
 | `gen/perf/` | Benchmarking of the packaged build: CSV profile summaries and settings comparisons |
 | `gen/test/` | `-game` tests: scripted tests, posted-key input, camera-set captures, a shimmer meter, trailer shots, a route walker; foreground key tests (with approval) and safe recording |
 | `scripts/` | PowerShell: C++ build (fails on warnings), packaging + itch.io zip, itch.io upload (butler), project Git/LFS setup |
-| `unreal/Plugins/MegajamTools` | The kit's small editor plugin (Python tools exposed to Unreal MCP) |
+| `unreal/Plugins/MegajamTools` | The kit's small editor plugin (Python tools exposed to Unreal MCP; on 5.9 also the kit's editor skills) |
 
 All generated files go into the game project (`<Project>/Generated/`), never into this kit.
 
