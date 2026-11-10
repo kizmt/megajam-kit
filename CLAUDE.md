@@ -210,10 +210,11 @@ Order of authority (highest first):
    `docs/ue/README.md` says which note to read before each kind of work; read that note before starting
    work in the area. `docs/ue/INDEX-docs.md` maps the whole 5.8 doc site with URLs. `docs/ue59/INDEX.md` maps
    every page of the 5.9 (Preview) docs with a summary, exact setting/API names and warnings, and
-   `docs/ue59/pages/<slug>.md` holds each page's full text offline: search them before web-searching. **Never
+   `docs/ue59/pages/<section>/<slug>.md` holds each page's full text offline, one folder per top-level section of
+   Epic's table of contents (`docs/ue59/sections.json` lists them): search them before web-searching. **Never
    open `docs/ue59/INDEX.md` (2 MB, ~500k tokens) or list/read `docs/ue59/pages/` or `docs/ue59/cards/` whole:
-   search, e.g. `rg -i "virtual shadow" docs/ue59/INDEX.md | head -30` or `rg -il "<name>" docs/ue59/pages`,
-   then open only the page a hit names.** On a 5.8 project, check that what a 5.9 page describes exists in 5.8
+   search, e.g. `rg -i "virtual shadow" docs/ue59/INDEX.md | head -30` or `rg -il "<name>" docs/ue59/pages` (or
+   `docs/ue59/pages/rendering` to search one section), then open only the page a hit names.** On a 5.8 project, check that what a 5.9 page describes exists in 5.8
    (a "5.9:" note may not).
 5. **Official docs**, always the project's version (append `?application_version=5.8` or `=5.9` to doc URLs; the
    kit's links say 5.8: change the number on a 5.9 project). Key links (Python and C++ API
