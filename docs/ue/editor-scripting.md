@@ -198,6 +198,13 @@ toolsets agents may use, and an MCP Client toolset manages a list of external MC
 Blueprint function libraries can implement `IToolsetProvider` and expose tools without a wrapper
 (`LevelSequenceEditorSubsystem`, `PCGEditorSubsystem`, `WidgetBlueprintEditorSubsystem`)
 (docs/ue59/pages/ai-features/unreal-mcp-in-unreal-editor.md, docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md).
+**5.9: what All Toolsets covers** (its `.uplugin`, read 2026-11-10): an aggregator that enables 41 toolset plugins as
+dependencies, so the Plugins window shows them unticked though they are on (Niagara, Physics, PCG, Blueprint,
+Editor, Console, Perf, GAS, StateTree, NavMesh, MetaSound, Input, LiveCoding, SceneCapture, Media, MovieRenderPipeline
+and the rest). Not included, enable separately when needed: **Geometry Toolset** (v0.1, editor-only: DynamicMesh
+actors from boxes, cylinders, spheres, cones, tori and discs, combined with booleans; blockout shapes such as cut
+doorways), **Sequencer Anim Mixer Toolset** (for AnimGenOffline, `animation-library.md`), Knowledge Base Toolset,
+the MetaHuman toolsets.
 
 **Keep "Enable Tool Search" on** (Editor Preferences > General > Model Context Protocol; on 5.9 Agentic Workflows >
 Model Context Protocol; default on). With it off, `tools/list` returns every tool schema instead of the meta-tools
