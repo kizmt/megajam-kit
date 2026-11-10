@@ -188,7 +188,7 @@ try {
   if (o.tris) pargs.push('--tris', o.tris);
   const prep = parsePrep(await run('blender', pargs, 'blender prep'));
   manifest.steps.prep = { ...prep, time: secs(t) };
-  // Roughness + metallic (+ AO) -> one ORM texture for M_PBR_Master v2.
+  // Roughness + metallic (+ AO) -> one ORM texture for M_PBR_Master.
   manifest.steps.orm = await packOrm(KIT, join(dir, `${name}_tex`), name);
   console.log(`    ${fbx}  ${prep.size_m.join(' x ')} m, ${prep.triangles_out} tris, ${prep.fbx_mb} MB`);
   // Style mask (edges, occlusion, height) for the master's shared style layer (MPC_Style). Non-fatal: without it

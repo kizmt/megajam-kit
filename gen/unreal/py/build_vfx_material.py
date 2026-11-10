@@ -45,7 +45,15 @@ def node(mat, cls, x, y, **props):
     return n
 
 
+# A Dynamic Parameter's outputs are named after its parameters on 5.9 (Param1..Param4, plus RGB and RGBA); 5.8.4
+# accepts the channel letters. Try the 5.9 name first, then the letter.
+DYN_OUT = {"R": "Param1", "G": "Param2", "B": "Param3", "A": "Param4"}
+
+
 def link(a, a_out, b, b_in):
+    if isinstance(a, unreal.MaterialExpressionDynamicParameter) and a_out in DYN_OUT:
+        if mel.connect_material_expressions(a, DYN_OUT[a_out], b, b_in):
+            return
     if not mel.connect_material_expressions(a, a_out, b, b_in):
         raise RuntimeError(f"connect failed: {a.get_name()}.{a_out!r} -> {b.get_name()}.{b_in!r}")
 

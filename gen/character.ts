@@ -285,7 +285,7 @@ try {
     await run('blender', ['-b', '--factory-startup', '--python', BL('extract_pbr.py'), '--', pbrSource, texDir, name, '--tex', o.tex], 'blender extract_pbr'),
     'PBR_JSON');
   manifest.steps.pbr = pbr;
-  manifest.steps.orm = await packOrm(KIT, texDir, name); // roughness + metallic -> ORM for M_PBR_Master v2
+  manifest.steps.orm = await packOrm(KIT, texDir, name); // roughness + metallic -> ORM for M_PBR_Master
   console.log(`    ${Object.keys(pbr.maps).join(', ')}${pbr.missing.length ? ` (missing: ${pbr.missing.join(', ')})` : ''}`);
 
   // 4. Blender: real height + facing applied into the armature, cm export (root bone scale 1), no textures
