@@ -72,6 +72,13 @@ director). **The target PC** is the machine the game is built and measured on (R
   playable, the hero and the signature assets exist; after that, spend on whatever the critics and the director say
   looks weakest. Every paid batch is still quoted first and the director's cap still holds ("Money, keys and
   installs"); never re-roll blind.
+- **One look across everything generated.** Props and characters from different generations look like different
+  games until they share a style: the style lock sets the shared style layer once (`MPC_Style`: palette pull,
+  cavity colour, base gradient, edge highlight; `docs/ue/materials.md` "One look for every generated asset") and
+  every `M_PBR_Master` instance follows. Fix a prop that looks off-style there or with its instance, not by
+  re-generating.
+- **Things the player uses should move.** A lid that opens, a lever that throws, a wheel that turns: split the
+  generated prop with `gen/parts.ts` (`PIPELINE.md` "Moving parts") instead of faking it with a static mesh.
 - **Judge the look by memory, not only by checks:** at each review ask "what would a judge remember about this
   screen?" If the answer is "nothing in particular", that is the next task, whatever the benches say.
 

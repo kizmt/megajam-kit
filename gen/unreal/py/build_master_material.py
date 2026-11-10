@@ -1,4 +1,5 @@
-# Build (or upgrade in place) the kit master material M_PBR_Master, version 3 (v3 adds the UseTintMask switch).
+# Build (or upgrade in place) the kit master material M_PBR_Master, version 4 (v3 added the UseTintMask switch; v4
+# adds the shared style layer: the StyleMask texture and the MPC_Style collection).
 # Run by gen/unreal/materials.ts ensureMaster(); default textures are imported there first and passed in ARGS.
 # Rebuilds the graph INSIDE the existing asset (delete_all_material_expressions) because material instances
 # reference it: deleting a referenced asset opens a modal dialog that blocks the editor (PIPELINE.md).
@@ -10,14 +11,21 @@
 #   Surface:  RoughnessScale = 1, RoughnessOffset = 0, MetallicOverride = 0 (lerp to MetallicValue), MetallicValue = 0,
 #             NormalStrength = 1, AOStrength = 1
 #   Emissive: EmissiveColor = (1,1,1), EmissiveStrength = 0, UseEmissiveTexture = false (static switch)
+#   Style:    StyleMask (gen/blender/bake_style.py: R = convex edges, G = occlusion, B = height; TC_Masks, linear),
+#             StyleAmount = 1 (per instance: 0 takes one prop out of the shared style). The strengths and colours
+#             live in MPC_Style (ARGS mpc), so one change restyles every prop: PaletteStrength/PaletteColor (pull
+#             the texture's grey value towards one colour), CavityStrength/CavityColor (multiply in crevices),
+#             GradientStrength/GradientColor (multiply towards the base), EdgeStrength/EdgeColor (blend on convex
+#             edges). All strengths default to 0: until the style lock sets them, v4 renders exactly like v3.
+#             Existing collection values are kept on a rebuild; set them with `materials.ts style`.
 #   Feedback: FlashAmount (Custom Primitive Data index 0; C++: Mesh->SetCustomPrimitiveDataFloat(0, x)),
 #             FlashColor = (1,1,1), FlashStrength = 20
-# ARGS: path, tex_basecolor, tex_normal, tex_orm, tex_black, [force=1]. Prints MASTER_JSON={...}.
+# ARGS: path, mpc, tex_basecolor, tex_normal, tex_orm, tex_black, tex_style, [force=1]. Prints MASTER_JSON={...}.
 # No exit()/SystemExit here: run_python would report it as ERROR. Finish through normal control flow.
 import json
 import unreal
 
-VERSION = "3"
+VERSION = "4"
 mel = unreal.MaterialEditingLibrary
 eal = unreal.EditorAssetLibrary
 MP = unreal.MaterialProperty
@@ -49,8 +57,45 @@ def clear_graph(mat):
             raise RuntimeError(f"could not clear the graph of {mat.get_path_name()} ({n} nodes left)")
 
 
+STYLE_SCALARS = {"PaletteStrength": 0.0, "CavityStrength": 0.0, "GradientStrength": 0.0, "EdgeStrength": 0.0}
+STYLE_VECTORS = {"PaletteColor": (1.0, 1.0, 1.0), "CavityColor": (0.25, 0.2, 0.35), "GradientColor": (0.35, 0.35, 0.4),
+                 "EdgeColor": (1.0, 1.0, 1.0)}
+
+
+def ensure_style_collection(path):
+    """MPC_Style with every parameter the master reads. Missing ones are added; existing values are left alone."""
+    mpc = unreal.load_asset(path)
+    if mpc is None:
+        folder, asset_name = path.rsplit("/", 1)
+        mpc = unreal.AssetToolsHelpers.get_asset_tools().create_asset(
+            asset_name, folder, unreal.MaterialParameterCollection, unreal.MaterialParameterCollectionFactoryNew())
+    changed = False
+    scalars = list(mpc.get_editor_property("scalar_parameters"))
+    have = {str(p.get_editor_property("parameter_name")) for p in scalars}
+    for name, value in STYLE_SCALARS.items():
+        if name not in have:
+            p = unreal.CollectionScalarParameter()
+            p.set_editor_property("parameter_name", name)
+            p.set_editor_property("default_value", value)
+            scalars.append(p); changed = True
+    vectors = list(mpc.get_editor_property("vector_parameters"))
+    have = {str(p.get_editor_property("parameter_name")) for p in vectors}
+    for name, rgb in STYLE_VECTORS.items():
+        if name not in have:
+            p = unreal.CollectionVectorParameter()
+            p.set_editor_property("parameter_name", name)
+            p.set_editor_property("default_value", unreal.LinearColor(rgb[0], rgb[1], rgb[2], 1.0))
+            vectors.append(p); changed = True
+    if changed:
+        mpc.set_editor_property("scalar_parameters", scalars)
+        mpc.set_editor_property("vector_parameters", vectors)
+        eal.save_loaded_asset(mpc)
+    return mpc
+
+
 def build(mat):
     clear_graph(mat)
+    mpc = ensure_style_collection(ARGS["mpc"])
 
     def tex_param(name, tex_path, sampler, x, y, group="Textures"):
         return node(mat, unreal.MaterialExpressionTextureSampleParameter2D, x, y, parameter_name=name, group=group,
@@ -88,7 +133,63 @@ def build(mat):
     desat = op(unreal.MaterialExpressionDesaturation, -850, -520)
     link(tm_switch, "", desat, "")
     link(sat_inv, "", desat, "Fraction")
-    out(desat, "", MP.MP_BASE_COLOR)
+
+    # v4 style layer (strengths and colours from MPC_Style, each strength times the instance's StyleAmount):
+    #   palette  lerp(c, grey(c) * PaletteColor, PaletteStrength)
+    #   cavity   lerp(c, c * CavityColor, (1 - mask.G) * CavityStrength)
+    #   gradient lerp(c, c * GradientColor, (1 - mask.B) * GradientStrength)
+    #   edge     lerp(c, EdgeColor, mask.R * EdgeStrength)
+    mask = tex_param("StyleMask", ARGS["tex_style"], ST.SAMPLERTYPE_MASKS, -1400, -1500, group="Style")
+    amount = scalar("StyleAmount", 1.0, -1400, -1280, "Style")
+
+    def style_scalar(name, x, y):
+        n = op(unreal.MaterialExpressionCollectionParameter, x, y)
+        n.set_editor_property("collection", mpc)
+        n.set_editor_property("parameter_name", name)
+        m = op(unreal.MaterialExpressionMultiply, x + 250, y)
+        link(n, "", m, "A")
+        link(amount, "", m, "B")
+        return m
+
+    def style_colour(name, x, y):
+        n = op(unreal.MaterialExpressionCollectionParameter, x, y)
+        n.set_editor_property("collection", mpc)
+        n.set_editor_property("parameter_name", name)
+        rgb = op(unreal.MaterialExpressionComponentMask, x + 250, y, r=True, g=True, b=True, a=False)
+        link(n, "", rgb, "")
+        return rgb
+
+    def lerp(a_node, b_node, alpha_node, x, y):
+        n = op(unreal.MaterialExpressionLinearInterpolate, x, y)
+        link(a_node, "", n, "A")
+        link(b_node, "", n, "B")
+        link(alpha_node, "", n, "Alpha")
+        return n
+
+    def mul(a_node, a_out, b_node, x, y):
+        n = op(unreal.MaterialExpressionMultiply, x, y)
+        link(a_node, a_out, n, "A")
+        link(b_node, "", n, "B")
+        return n
+
+    def inv(a_node, a_out, x, y):
+        n = op(unreal.MaterialExpressionOneMinus, x, y)
+        link(a_node, a_out, n, "")
+        return n
+
+    grey = op(unreal.MaterialExpressionDesaturation, -600, -1000, )
+    link(desat, "", grey, "")
+    one = op(unreal.MaterialExpressionConstant, -800, -960, r=1.0)
+    link(one, "", grey, "Fraction")
+    pal = lerp(desat, mul(grey, "", style_colour("PaletteColor", -1100, -1100), -400, -1050),
+               style_scalar("PaletteStrength", -1100, -1000), -200, -900)
+    cav = lerp(pal, mul(pal, "", style_colour("CavityColor", -1100, -1300), 0, -1150),
+               mul(inv(mask, "G", -600, -1400), "", style_scalar("CavityStrength", -1100, -1200), -400, -1300), 200, -900)
+    grad = lerp(cav, mul(cav, "", style_colour("GradientColor", -1100, -1500), 400, -1150),
+                mul(inv(mask, "B", -600, -1600), "", style_scalar("GradientStrength", -1100, -1400), -400, -1500), 600, -900)
+    edge = lerp(grad, style_colour("EdgeColor", -1100, -1700),
+                mul(mask, "R", style_scalar("EdgeStrength", -1100, -1600), -400, -1700), 1000, -900)
+    out(edge, "", MP.MP_BASE_COLOR)
 
     # Normal: FlattenNormal(Normal, 1 - NormalStrength)
     nrm = tex_param("Normal", ARGS["tex_normal"], ST.SAMPLERTYPE_NORMAL, -1400, -100)

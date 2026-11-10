@@ -96,6 +96,9 @@ Mesh->OnComponentHit.AddDynamic(this, &AMyProp::OnHit);   // in BeginPlay (not t
 
 ## Constraints (doors, hinges, ropes)
 
+- **The moving part needs its own mesh.** A generated prop is one fused mesh: split it first with `gen/parts.ts`
+  (`PIPELINE.md` "Moving parts"), which gives each part its pivot on the hinge or axle and its relative location.
+
 - `UPhysicsConstraintComponent` between two primitives. Component1 = frame (or `nullptr` = the world),
   Component2 = the simulating part. Place the constraint at the pivot (door hinge edge), not the mesh centre.
 - Door: linear all Locked; Swing1 Limited 90 deg, Swing2 Locked, Twist Locked. Spring shut: angular orientation drive

@@ -49,7 +49,9 @@ generated crates and shelves with a baked timber texture (5 meshes + texture set
 - **Cheap wear:** a corner colour attribute (`mesh.color_attributes.new("Wear", 'BYTE_COLOR', 'CORNER')`): white on
   bevelled convex loops, black on flat areas, times seeded noise. In UE, lerp an edge-wear layer by
   `VertexColor.R` (Nanite supports vertex colour). Optional: G = dirt, B = tint mask. **Only if the material reads
-  vertex colour:** the kit's `M_PBR_Master` (v3) doesn't, so without a material change this step does nothing.
+  vertex colour:** the kit's `M_PBR_Master` doesn't. For kit pieces with unique UVs, prefer the master's style mask
+  instead (`gen/blender/bake_style.py` on the exported FBX, then `materials.ts apply`; `materials.md` "One look for
+  every generated asset"): edges, crevices and height then follow the same shared style as the generated props.
 - **Variants:** `rng = random.Random(f"{piece}_{seed}")` per piece, never the global `random`. Put the seed in the
   name (`SM_Wall_400x300_v03`).
 - **Before writing:** `remove_doubles(dist=0.0001)`, `recalc_face_normals`, `dissolve_degenerate`; optionally

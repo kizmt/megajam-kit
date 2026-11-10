@@ -22,7 +22,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { KIT, errorMessage, generatedDir, pascal } from './paths.ts';
-import { packOrm, parseMarkedJson, parseTripo, readTripoTask, requireTripoCredits, run, secs, type OrmResult } from './proc.ts';
+import { bakeStyleMask, packOrm, parseMarkedJson, parseTripo, readTripoTask, requireTripoCredits, run, secs, type OrmResult, type StyleMaskResult } from './proc.ts';
 import { applyPbr, type ApplyPbrResult } from './unreal/materials.ts';
 import { McpUnreachableError } from './unreal/mcp.ts';
 import { assetExists, deleteAsset } from './unreal/ue.ts';
@@ -107,6 +107,7 @@ interface Manifest {
     rig?: { fbx: string; task?: string; credits?: number; time?: string; supplied?: boolean };
     pbr?: PbrResult;
     orm?: OrmResult;
+    styleMask?: StyleMaskResult;
     prep?: PrepRigResult & { time: string };
     import?: ImportResult;
     material?: ApplyPbrResult;
@@ -314,6 +315,13 @@ try {
   o.rot = String(prep.rot);
   manifest.steps.prep = { ...prep, time: secs(t) };
   console.log(`    ${skFbx}  ${prep.bones} bones, ${prep.size_m.join(' x ')} m (export mode ${prep.mode})`);
+  // Style mask for the master's shared style layer (MPC_Style), so the character takes the same look as the props.
+  // Baked on the prepped mesh in its rest pose. Non-fatal: without it only the palette part of the style applies.
+  try {
+    manifest.steps.styleMask = await bakeStyleMask(KIT, skFbx, texDir, name);
+  } catch (e) {
+    console.log(`    style mask failed (non-fatal): ${errorMessage(e).slice(-300)}`);
+  }
 
   // 5-7. Unreal
   if (o['no-unreal']) {

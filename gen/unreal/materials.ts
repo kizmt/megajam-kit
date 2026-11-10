@@ -1,10 +1,15 @@
 // PBR material setup through Unreal MCP.
-//   ensureMaster()  -> builds / upgrades /Game/Kit/Materials/M_PBR_Master (v3, gen/unreal/py/build_master_material.py)
+//   ensureMaster()  -> builds / upgrades /Game/Kit/Materials/M_PBR_Master (v4, gen/unreal/py/build_master_material.py)
+//                      and /Game/Kit/Materials/MPC_Style, the shared style every instance reads
+//   setStyle({...}) -> reads or sets MPC_Style (one change restyles every prop)
 //   applyPbr({...}) -> imports an asset's textures (basecolor, normal, orm, emissive), makes (or on a re-run reuses) MI_<Name>, assigns it
 //
 // v3 parameters: BaseColor, Normal, ORM (R=AO G=Roughness B=Metallic), EmissiveTexture; Tint, Saturation, UseTintMask;
 // RoughnessScale/Offset, MetallicOverride/Value, NormalStrength, AOStrength; EmissiveColor/Strength,
 // UseEmissiveTexture (static switch); FlashAmount (Custom Primitive Data 0), FlashColor, FlashStrength.
+// v4 adds StyleMask (gen/blender/bake_style.py: R edges, G occlusion, B height) and StyleAmount; the strengths and
+// colours are in MPC_Style: PaletteStrength/Color, CavityStrength/Color, GradientStrength/Color, EdgeStrength/Color
+// (all strengths 0 by default = the v3 look).
 // ORM comes from gen/blender/pack_orm.py (packs T_<Name>_roughness/metallic/ao).
 //
 // Normal maps are read as DirectX (Y-) like Unreal's. Blender-made maps are OpenGL (Y+): pass openGlNormals
@@ -14,6 +19,7 @@
 //
 // CLI: node gen/unreal/materials.ts master [--force]
 //      node gen/unreal/materials.ts apply <Name> <textureDir> [/Game/Props] [--opengl-normals]
+//      node gen/unreal/materials.ts style [EdgeStrength=0.6 EdgeColor=#ffd9a0 PaletteStrength=0.3 ...]   (no arguments: print)
 
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -27,12 +33,13 @@ import { runPythonFileOrThrow } from './python.ts';
 
 
 export const MASTER = '/Game/Kit/Materials/M_PBR_Master';
+export const STYLE = '/Game/Kit/Materials/MPC_Style';
 const KIT_TEX = '/Game/Kit/Textures';
 
 export { ref };
 
 type Rgb = readonly [number, number, number];
-export type MapKey = 'basecolor' | 'normal' | 'orm' | 'emissive';
+export type MapKey = 'basecolor' | 'normal' | 'orm' | 'emissive' | 'style';
 interface TextureProps {
   SRGB: boolean;
   CompressionSettings: 'TC_Default' | 'TC_Normalmap' | 'TC_Masks';
@@ -49,6 +56,8 @@ const MAPS = {
   // AO 1, roughness 0.6, metallic 0
   orm: { param: 'ORM', props: { SRGB: false, CompressionSettings: 'TC_Masks' }, fill: [255, 153, 0], defaultName: 'T_Kit_Default_ORM' },
   emissive: { param: 'EmissiveTexture', props: { SRGB: true, CompressionSettings: 'TC_Default' }, fill: [0, 0, 0], defaultName: 'T_Kit_Default_Black' },
+  // no edge, fully open, top of the gradient: a prop without a baked mask gets only the palette part of the style
+  style: { param: 'StyleMask', props: { SRGB: false, CompressionSettings: 'TC_Masks' }, fill: [0, 255, 255], defaultName: 'T_Kit_Default_Style' },
 } as const satisfies Record<MapKey, MapSpec>;
 
 const MAP_KEYS = Object.keys(MAPS) as MapKey[];
@@ -102,11 +111,36 @@ export async function ensureMaster({ force = false }: { force?: boolean } = {}):
   }
   const result = parseMarkedJson<MasterResult>(
     await runPythonFileOrThrow(join(KIT, 'gen', 'unreal', 'py', 'build_master_material.py'), {
-      path: MASTER, tex_basecolor: defaults.basecolor, tex_normal: defaults.normal, tex_orm: defaults.orm,
+      path: MASTER, mpc: STYLE, tex_style: defaults.style, tex_basecolor: defaults.basecolor, tex_normal: defaults.normal, tex_orm: defaults.orm,
       tex_black: defaults.emissive, ...(force ? { force: '1' } : {}),
     }),
     'MASTER_JSON');
   return result;
+}
+
+export interface StyleValues { scalars: Record<string, number>; vectors: Record<string, [number, number, number]> }
+
+/** sRGB hex (#rrggbb) to linear 0-1, the form material colours are stored in. */
+function hexToLinear(hex: string): [number, number, number] {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex);
+  if (!m?.[1]) throw new Error(`not a colour: ${hex} (want #rrggbb or r,g,b in linear 0-1)`);
+  const lin = (i: number): number => {
+    const c = parseInt((m[1] ?? '').slice(i, i + 2), 16) / 255;
+    return Number((c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4).toFixed(4));
+  };
+  return [lin(0), lin(2), lin(4)];
+}
+
+/**
+ * Read (no arguments) or set MPC_Style. Scalars are numbers; colours are '#rrggbb' (sRGB, as in the style lock's
+ * palette) or [r, g, b] linear. Saved into the collection asset, so it holds in the packaged game.
+ */
+export async function setStyle(values: Record<string, number | string | [number, number, number]> = {}): Promise<StyleValues> {
+  const json: Record<string, number | [number, number, number]> = {};
+  for (const [k, v] of Object.entries(values)) json[k] = typeof v === 'string' ? hexToLinear(v) : v;
+  return parseMarkedJson<StyleValues>(
+    await runPythonFileOrThrow(join(KIT, 'gen', 'unreal', 'py', 'set_style.py'), { mpc: STYLE, json: JSON.stringify(json) }),
+    'STYLE_SET_JSON');
 }
 
 export interface ApplyPbrOptions {
@@ -149,7 +183,7 @@ export async function applyPbr({ name, texDir, dest = '/Game/Props', mesh, kind 
     // texture, and the old texture is unreferenced when importTexture replaces it.
     if (reuse) await setInstanceTexture(inst, m.param, ref(`${KIT_TEX}/${m.defaultName}`));
     if (!existsSync(file)) continue;
-    const props: TextureProps = { ...m.props, MaxTextureSize: maxTextureSize };
+    const props: TextureProps = { ...m.props, MaxTextureSize: key === 'style' ? Math.min(maxTextureSize || 1024, 1024) : maxTextureSize };
     if (key === 'normal' && openGlNormals) props.bFlipGreenChannel = true;
     const tex = await importTexture(folder, `T_${name}_${key}`, file, props);
     await setInstanceTexture(inst, m.param, tex);
@@ -173,6 +207,17 @@ if (isMain(import.meta.url)) {
   try {
     if (cmd === 'master') console.log(JSON.stringify(await ensureMaster({ force: a === '--force' })));
     else if (cmd === 'apply' && a && b) console.log(JSON.stringify(await applyPbr({ name: a, texDir: resolve(b), dest: c ?? '/Game/Props', openGlNormals })));
-    else { console.log('usage: materials.ts master [--force] | apply <Name> <textureDir> [/Game/Props] [--opengl-normals]'); process.exit(2); }
+    else if (cmd === 'style') {
+      const values: Record<string, number | string | [number, number, number]> = {};
+      for (const kv of argv.slice(1)) {
+        const [k, v] = kv.split('=');
+        if (!k || v === undefined) throw new Error(`bad style argument ${kv}: want Name=value`);
+        const parts = v.split(',').map(Number);
+        values[k] = v.startsWith('#') ? v : parts.length === 3 ? [parts[0] ?? 0, parts[1] ?? 0, parts[2] ?? 0] : Number(v);
+      }
+      await ensureMaster();
+      console.log(JSON.stringify(await setStyle(values), null, 2));
+    }
+    else { console.log('usage: materials.ts master [--force] | apply <Name> <textureDir> [/Game/Props] [--opengl-normals] | style [Name=value ...]'); process.exit(2); }
   } catch (e) { console.error(`FAIL: ${errorMessage(e)}`); process.exit(1); }
 }

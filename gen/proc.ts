@@ -117,6 +117,14 @@ export async function packOrm(kit: string, texDir: string, name: string): Promis
   return parseMarkedJson<OrmResult>(out, 'ORM_JSON');
 }
 
+export interface StyleMaskResult { file: string; size: number[]; mean: { edge: number; occlusion: number; height: number } }
+
+/** Bake T_<Name>_style.png (R edges, G occlusion, B height) from a prepped mesh into texDir (gen/blender/bake_style.py). */
+export async function bakeStyleMask(kit: string, mesh: string, texDir: string, name: string, size = 1024): Promise<StyleMaskResult> {
+  const out = await run('blender', ['-b', '--factory-startup', '--python', join(kit, 'gen', 'blender', 'bake_style.py'), '--', mesh, texDir, name, '--size', String(size)], 'blender bake_style');
+  return parseMarkedJson<StyleMaskResult>(out, 'STYLE_JSON');
+}
+
 /** Find the JSON payload of a `KEY=...` line printed by a Blender script. */
 export function parseMarkedJson<T>(out: string, key: string): T {
   const line = out.split('\n').find((l) => l.startsWith(`${key}=`));

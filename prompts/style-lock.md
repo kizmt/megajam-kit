@@ -40,6 +40,10 @@ Concrete and checkable, never vague adjectives:
   mode and stencil value table (e.g. 1 = interactable, 2 = hazard), and whether Substrate Toon is in (only if a
   practice run proved it). Details: `docs/ue/materials.md` "Stylized looks", `docs/ue/lighting.md` "Post-process look".
 - **Materials:** one master material approach (flat, toon, painted, PBR). Roughness range.
+- **Shared style values** for everything generated (`docs/ue/materials.md` "One look for every generated asset"):
+  `PaletteStrength` and `PaletteColor`, `CavityStrength` and `CavityColor`, `GradientStrength` and `GradientColor`,
+  `EdgeStrength` and `EdgeColor`, with colours from the palette above. Write the exact `materials.ts style ...`
+  line here: it is the one place the look of every prop and the hero is set.
 - **Shape language:** proportions, silhouette rules, level of detail, scale of what the player controls (if
   anything) vs the world.
 - **Asset prompt prefix:** the exact text prepended to every image-to-3D concept prompt.
@@ -54,6 +58,8 @@ being tuned on grey boxes (a practice run spent six light passes while every cri
 First apply `SETUP.md` 7b ("All paths" plus the chosen path; `scripts\preflight.ps1` lists any 7b setting still
 missing): every capture and bench before it measures the wrong picture. The Basic level has no post-process volume: build an unbound one here, and on the Lumen path set its
 `LumenMaxRoughnessToTraceReflections` to 0.25 (`SETUP.md` 7b).
+Set the shared style values from the spec (`node gen/unreal/materials.ts style ...`) once the hero and the signature
+assets are in, and tune them on those in the key frames' light: the test is that the assets read as one set.
 Place 4-6 fixed cameras (`art/camera-set.md`: the gameplay view plus key spots; CameraActors tagged `CamSet` and
 `cam:<Name>`), capture them with `gen/test/camset.ps1` and compare with the key art.
 - **At most two passes of light and post only.** After that, or as soon as the critic's flaws are about shape,

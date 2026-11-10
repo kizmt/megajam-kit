@@ -57,7 +57,8 @@ video editing), Node 24 (the kit's TypeScript runs directly), Git + Git LFS.
 | `gen/views.ts` | Cuts a four-view turnaround sheet into front/left/back/right images for Tripo's multiview-to-3D |
 | `gen/balances.ts`, `gen/tripo.ts` | Every paid service's balance in one call; the `tripo` CLI with the kit `.env` loaded |
 | `gen/audio.ts` | Sound effects, music and voice, converted and imported into the editor |
-| `gen/blender/` | Headless Blender scripts: size/pivot/texture prep, rig prep, PBR map extraction, ORM packing, previews |
+| `gen/parts.ts` | Split a generated prop into movable parts (lid, lever, wheel) with pivots on the hinge, imported next to the prop |
+| `gen/blender/` | Headless Blender scripts: size/pivot/texture prep, rig prep, PBR map extraction, ORM packing, previews, style-mask bake, part splitting |
 | `gen/vfx/` | VFX building blocks: procedural mask/noise textures, the master VFX material and instances, effect meshes |
 | `gen/unreal/` | Editor automation over MCP: master material + material instances, skeletal import checks, retargeting, screenshots, running editor Python |
 | `gen/perf/` | Benchmarking of the packaged build: CSV profile summaries and settings comparisons |

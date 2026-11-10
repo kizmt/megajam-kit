@@ -56,6 +56,11 @@ Python stub or headers before writing an API call from memory.
   modal "Would you like to reload these assets?" window per modified package; the game thread waits on it and every
   MCP call times out while the editor still shows "Responding". To undo a scripted preview, set the old values back
   (read them first) or preview on a throwaway duplicate. Recovery: `debugging.md` B (MCP timeouts).
+- **An editor killed with unsaved changes blocks MCP on its next start.** It opens a modal "restore packages"
+  window before the first frame: the MCP session initialises, every tool call then waits (the log stays on frame
+  `[  0]`; seen on 5.9, 2026-11-11, after a `Stop-Process` with one unsaved level). Close the editor normally. If it
+  had to be killed and the unsaved work isn't wanted: with the editor closed, move
+  `<Project>\Saved\Autosaves\PackageRestoreData.json` aside and start it again.
 - **Assert every `load_asset`.** It returns None for a wrong path, and many setters then do nothing silently (a
   material instance with a None parent renders the engine's grey checker with no error; a CDO property set to
   `load_asset(wrong_path)` became None with no error).

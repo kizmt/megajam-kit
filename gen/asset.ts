@@ -14,7 +14,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { basename, extname, join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { KIT, errorMessage, generatedDir, pascal } from './paths.ts';
-import { packOrm, parseMarkedJson, parseTripo, requireTripoCredits, run, secs, type OrmResult } from './proc.ts';
+import { bakeStyleMask, packOrm, parseMarkedJson, parseTripo, requireTripoCredits, run, secs, type OrmResult, type StyleMaskResult } from './proc.ts';
 import { applyPbr, type ApplyPbrResult } from './unreal/materials.ts';
 import { McpUnreachableError, type CameraTransform } from './unreal/mcp.ts';
 import { assetExists, captureView, convexCollisions, deleteAsset, importStaticMesh, placeAsset, setNanite, setViewportCamera } from './unreal/ue.ts';
@@ -47,6 +47,7 @@ const { values: o, positionals } = parseArgs({
     yaw: { type: 'string', default: '0' },
     hulls: { type: 'string' },
     'no-unreal': { type: 'boolean', default: false },
+    'no-mask': { type: 'boolean', default: false },
     help: { type: 'boolean', short: 'h', default: false },
   },
 });
@@ -55,7 +56,7 @@ const prompt = positionals.join(' ').trim();
 if (o.help || (!prompt && !o.image && !o.sheet && !o.views && !o.model)) {
   console.log(`usage: node gen/asset.ts "<prompt>" --name Name [--max 0.8 | --height 1.8]
        [--concepts N] [--image file] [--turnaround | --sheet file | --views f,l,b,r] [--model file] [--provider gemini|openai] [--style file] [--ref img]
-       [--tex 2048] [--faces 30000] [--tris N] [--dest /Game/Props] [--place x,y,z | --no-place] [--yaw deg] [--hulls 4-8] [--no-unreal]
+       [--tex 2048] [--faces 30000] [--tris N] [--dest /Game/Props] [--place x,y,z | --no-place] [--yaw deg] [--hulls 4-8] [--no-unreal] [--no-mask]
   --turnaround  the concept is a 2x2 four-view sheet (front, left, back, right) sent to Tripo's multiview-to-3D:
              for props whose back or sides matter (seen all round, asymmetric); --sheet/--views start from one
   --hulls N  replace the default collision with N convex hulls (props the player pushes, picks up or
@@ -78,6 +79,7 @@ interface Manifest {
     tripo?: { model: string; supplied?: boolean; credits?: number; task?: string; time?: string };
     prep?: PrepResult & { time: string };
     orm?: OrmResult;
+    styleMask?: StyleMaskResult;
     preview?: string;
     material?: ApplyPbrResult;
     nanite?: boolean;
@@ -189,6 +191,15 @@ try {
   // Roughness + metallic (+ AO) -> one ORM texture for M_PBR_Master v2.
   manifest.steps.orm = await packOrm(KIT, join(dir, `${name}_tex`), name);
   console.log(`    ${fbx}  ${prep.size_m.join(' x ')} m, ${prep.triangles_out} tris, ${prep.fbx_mb} MB`);
+  // Style mask (edges, occlusion, height) for the master's shared style layer (MPC_Style). Non-fatal: without it
+  // the prop still takes the palette, only not the edge, cavity and gradient parts.
+  if (!o['no-mask']) {
+    try {
+      manifest.steps.styleMask = await bakeStyleMask(KIT, fbx, join(dir, `${name}_tex`), name);
+    } catch (e) {
+      console.log(`    style mask failed (non-fatal): ${errorMessage(e).slice(-300)}`);
+    }
+  }
 
   // 4. Preview render
   step(4, 'Blender preview');

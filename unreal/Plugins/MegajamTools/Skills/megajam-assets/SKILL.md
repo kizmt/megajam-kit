@@ -23,6 +23,11 @@ MATERIALS
 - Every generated asset uses an instance (MI_<Name>) of M_PBR_Master. The FBX importer's own materials drop the
   metallic map and can fail to compile: don't keep them.
 - Fit off-palette textures with the instance's Tint, Saturation and RoughnessOffset; never re-generate for colour.
+- The shared look of every generated asset lives in /Game/Kit/Materials/MPC_Style (palette, cavity, gradient and
+  edge strengths and colours), set by the kit's `materials.ts style` from the style lock. Don't edit it per prop:
+  take one prop out of the style with its instance's StyleAmount. Each asset's T_<Name>_style mask feeds it.
+- A prop with a part that moves (lid, lever, wheel, door leaf) is split by the kit's gen/parts.ts, run by the main
+  session: SM_<Name>_<Part> meshes with pivots on the hinge, placed at the relative locations it prints.
 - Blender-made normal maps are OpenGL (Y+): apply them with flipped green (materials.ts apply ... --opengl-normals).
 - After material or Nanite changes, wait for shader compiles (about 20 s) before judging a screenshot.
 

@@ -38,16 +38,16 @@ Masked variant would need its own master too (or one static switch, see below).
 - Metallic is binary (0/1) except rust/dust; very matte = high Roughness, not Specular 0; leave Specular at 0.5
   (Epic PBR page). AI textures often have grey "metallic" noise: clamp or override per MI if props look dirty-chrome.
 
-## Master material (v3: built 2026-10-24, `UseTintMask` switch added 2026-10-25)
+## Master material (v4: shared style layer added 2026-11-11; v3 2026-10-25)
 
-**Built:** items 1, 3, 4, 5, 6, 7, 9 below, by `gen/unreal/py/build_master_material.py` (`VERSION = "3"`),
+**Built:** items 1, 3, 4, 5, 6, 7, 9 below, by `gen/unreal/py/build_master_material.py` (`VERSION = "4"`),
 called from `materials.ts ensureMaster()`. Parameters by group (these are the real names; use them exactly):
 Textures `BaseColor`, `Normal`, `ORM`, `EmissiveTexture` · Color `Tint`, `Saturation`, `UseTintMask` (static switch,
 see "Tint mask" below) · Surface `RoughnessScale`, `RoughnessOffset`, `MetallicOverride` (lerp alpha) +
 `MetallicValue`, `NormalStrength` (FlattenNormal), `AOStrength` · Emissive `EmissiveColor`, `EmissiveStrength`,
 `UseEmissiveTexture` (static switch) · Feedback `FlashAmount` (Custom Primitive Data 0), `FlashColor`,
-`FlashStrength` (20). Two static switches in total.
-Texture samples: 3 (colour, normal, ORM), +1 only with `UseEmissiveTexture`. Both pipelines pack the ORM
+`FlashStrength` (20) · Style `StyleMask`, `StyleAmount` (v4, next section). Two static switches in total.
+Texture samples: 4 (colour, normal, ORM, style mask), +1 only with `UseEmissiveTexture`. Both pipelines pack the ORM
 (`gen/blender/pack_orm.py`). Not built: 2 (HueShift), 8 (Wetness MPC), 10 (triplanar); add when a game needs them.
 
 - **Upgrading:** the script tags the asset `MegajamMasterVersion` and rebuilds the graph **in place**
@@ -151,6 +151,41 @@ default material.
   them, so their light pops when off-screen).
 - Rule: emissive for **glow + bloom + soft fill on large surfaces**; a real Movable light (no/limited shadows) where
   gameplay needs reliable light. Emissive values > 1 drive bloom; keep strength a parameter.
+
+## One look for every generated asset: the shared style layer (master v4)
+
+Generated props each arrive with their own texture style; side by side they read as assets from different games,
+and Visuals is judged on "a strong, consistent look". The master's style layer pulls them together from **one
+place**, `/Game/Kit/Materials/MPC_Style`, without touching any prop's own assets. Verified on the 5.9 Preview
+(2026-11-11): one command recoloured the edges and palette of a placed Tripo prop.
+
+- **The mask.** `gen/blender/bake_style.py` bakes `T_<Name>_style.png` in the mesh's own UVs (Cycles CPU, about 6 s
+  at 1024 px for a 28k-triangle prop): **R** convex edges and corners, **G** occlusion (1 open, 0 crevice), **B**
+  height (0 base, 1 top). `asset.ts` and `character.ts` bake it and `applyPbr` imports it (TC_Masks, sRGB off, capped
+  at 1024) into the instance's `StyleMask`. An asset without one uses a neutral default (no edge, open, top), so it
+  still takes the palette. `--no-mask` on `asset.ts` skips the bake; `bake_style.py --edge 0.7` softens the edge mask
+  on bumpy meshes.
+- **The layer** (after the instance's Tint and Saturation, base colour only), each strength from `MPC_Style` times
+  the instance's `StyleAmount`:
+
+  | Step | Formula | Use |
+  |---|---|---|
+  | Palette | `lerp(c, grey(c) * PaletteColor, PaletteStrength)` | Pull every texture toward one hue family; 0.2-0.5 unifies, 1 is a duotone |
+  | Cavity | `lerp(c, c * CavityColor, (1 - G) * CavityStrength)` | Coloured shadow in crevices (a cool or warm dark, never black) |
+  | Gradient | `lerp(c, c * GradientColor, (1 - B) * GradientStrength)` | Ground the base of every prop in the floor's tone |
+  | Edge | `lerp(c, EdgeColor, R * EdgeStrength)` | Painted edge highlights or worn metal on every rim and rivet |
+
+- **Set it once, in the style lock:** `node gen/unreal/materials.ts style EdgeStrength=0.5 EdgeColor=#ffd9a0
+  PaletteStrength=0.3 PaletteColor=#7fb4d8 CavityStrength=0.8 CavityColor=#2a1a4a` (hex is sRGB, as in the palette;
+  no arguments prints the current values). It writes the collection's defaults and saves the asset, so the packaged
+  game has them. All strengths start at 0: until they are set, v4 renders exactly like v3.
+- **One prop out of line:** its instance's `StyleAmount` (0 = untouched, e.g. a glowing pickup or a UI-like object).
+- **At runtime** the same parameters can be driven from C++ (`UKismetMaterialLibrary::SetScalarParameterValue` on
+  `MPC_Style`): a world that warms, drains of colour or gilds as the game progresses costs one call.
+- **Limits:** base colour only (roughness and metallic keep the texture's values); the mask needs non-overlapping
+  UVs; blockout meshes and Megascans don't use `M_PBR_Master`, so they don't take the style (grade those with the
+  post-process volume). A master rebuild keeps the collection's values (`ensure_style_collection` only adds missing
+  parameters).
 
 ## Global effects: Material Functions and MPCs
 

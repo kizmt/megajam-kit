@@ -57,6 +57,37 @@ concepts (even with a "style only, no fog or scenery" prefix), and half of the c
 cartoon style. Generate one subject with the key art, get it approved, then send that concept as the first `--ref`
 (a subject on plain grey: the style anchor) and at most one key-art frame after it, for palette only.
 
+## Moving parts: one fused mesh into parts with pivots (tested 2026-11-11, UE 5.9 Preview, Blender 5.3)
+
+A generator returns one fused mesh, so a chest can't open and a wheel can't turn. `gen/parts.ts` cuts the prop's
+prepped mesh into parts, puts each pivot on its hinge or axle, and imports them next to the prop.
+
+```powershell
+node gen\parts.ts Chest --list                                   # size and loose shells: choose the cuts
+node gen\parts.ts Chest --part "Lid:z>0.62:pivot=0,-0.25,0.62"   # lid above 0.62 m, hinged along the back edge
+node gen\parts.ts Cart --part "WheelL:x<-0.4:pivot=-0.45,0,0.2" --part "WheelR:x>0.4:pivot=0.45,0,0.2" --place=600,0,0
+```
+
+- **Run `asset.ts` for the prop first.** The cuts are made on `Generated/assets/<name>/SM_<Name>.fbx` and the parts
+  reuse `MI_<Name>` (same UVs, so textures and the style mask still fit). No credits; about 3 s plus the import.
+- **Coordinates** are the prepped mesh's: metres, origin at the base centre, +Z up. Read them off `--list` (bounds)
+  and `preview.png`. Selectors: `x>v x<v y>v y<v z>v z<v` (everything on that side of the plane; the cut is capped
+  with faces textured from the cut's edge) or `shell=i,j` (whole loose shells from `--list`, no cut). Parts are taken
+  in order from what is left; the remainder is `--rest` (default `Body`), pivot at the original origin.
+- **Pivot** = where the part turns or slides: a lid's hinge line, a wheel's axle centre, a lever's base. Default: the
+  centre of the part's bounds at its lowest point.
+- **Slivers:** a plane also slices things that only dip across it (the bottom of a hanging ball). Small capped
+  slivers go back to the side they came from (reported as "sliver(s) moved back"); `--keep-bits` turns that off. If
+  a cut still can't separate the part cleanly, re-generate the prop with the part apart from the body (prompt
+  "lid open", "wheel beside the cart") or generate the part as its own prop.
+- **Result:** `<dest>/<Name>/SM_<Name>_<Part>` per part (Nanite, `--hulls N` convex collision each) and a table of
+  relative locations in Unreal cm (`parts.json`). Build the actor with one `StaticMeshComponent` per part at that
+  location under the root: assembled, it matches the original prop exactly (checked: the parts' combined bounds
+  equal the whole's, also with an off-centre pivot); each part then rotates or slides about its own origin.
+  `--place=x,y,z` spawns the parts assembled as a check.
+- A re-run replaces the parts unless something still uses them (a level actor, a Blueprint): it refuses with the
+  list instead of opening the editor's modal delete dialog.
+
 ## Four views: Tripo multiview-to-3D (tested 2026-11-04 on one character)
 
 With one front image Tripo guesses the back and sides. Given front, left, back and right views it builds the
@@ -221,6 +252,9 @@ Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls nee
 | `gen/unreal/mcp.ts` | Call any Unreal MCP tool from scripts (waits out 5.9's slow-task refusals). CLI: `toolsets`, `describe <toolset>`, `call <toolset> <tool> [json \| '@args.json']` |
 | `gen/unreal/ue.ts` | Editor operations for the generators on either engine (5.8 toolsets, 5.9 plain Python): import, Nanite, collision, place, materials, `captureView()` |
 | `gen/unreal/py.ts` | Run a Python file (or `-c` code) in the editor via `run_python`; `--arg k=v` -> `ARGS` dict. On 5.9 Epic's `execute_python` also exists (rules and when to use which: `docs/ue/editor-scripting.md`) |
+| `gen/parts.ts` | Split a generated prop into movable parts (lid, door leaf, lever, wheel) with pivots, import them; see Moving parts |
+| `gen/blender/bake_style.py` | Style mask (edges, occlusion, height) for the master's shared style layer; `asset.ts` and `character.ts` run it |
+| `gen/unreal/materials.ts style` | Read or set `MPC_Style`: one look for every generated asset (`docs/ue/materials.md`) |
 | `gen/unreal/shot.ts` | Viewport screenshot to PNG (`--wait N` for shader compiles) |
 | `gen/character.ts` | Concept -> rigged, PBR-textured, retargeted character (+ BP); see Characters |
 | `gen/views.ts` | Cut a four-view turnaround sheet into front/left/back/right images for Tripo multiview (Four views) |
