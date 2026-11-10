@@ -289,7 +289,9 @@ with Play Sound and Play Niagara Effect handlers, StateTree conditions (Animatio
 Remaining) and updated Chooser, Pose Search, Warping, Mirroring and Control Rig integrations. A new **UAF AnimGen**
 plugin adds AI-driven animation generation, and Chooser tables can be built and edited from Blueprint or Python
 (docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md). The offline 5.9 docs have no UAF or AnimGen page beyond the
-release notes, so none of it is a documented replacement for the ABP path here; the decision stands.
+release notes, so none of it is a documented replacement for the ABP path here; the decision stands. AnimGenOffline
++ Kimodo (5.9) generates clips, not an animation system: it is a source of clips for this ABP path
+(`animation-library.md` "Generated animation").
 
 ## Recommended path for a generated character
 

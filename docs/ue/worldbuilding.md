@@ -90,6 +90,30 @@ Nanite settings for plants (Voxelize vs Preserve Area, wind): `performance.md` "
   `collision_enabled` (there is no `set_collision_profile_name` in Python).
 - Thin grass goes black against the sun with Default Lit: `materials.md` "Lessons from a prototype".
 
+## 5.9: Trees from PVE (Procedural Vegetation Editor), scripted
+
+Facts read in the installed 5.9 Preview's plugin sources on 2026-11-10 and the PVE page (docs/ue59/pages/worlds/procedural-vegetation-editor-in-unreal-engine.md):
+- Plugin **Procedural Vegetation Editor**: Experimental, off by default (Edit > Plugins > Experimental > Other); needs
+  Dataflow, Geometry Scripting, PCG and Dynamic Wind. A node graph built on PCG grows plants (Grower node), meshes them
+  (Mesh Builder), adds foliage (Foliage Distributor) and **exports** them: Nanite Foliage (skeletal, wind through
+  Dynamic Wind) or a plain Static Mesh. Place only exported assets, never graph output. 5.7 assets don't open in 5.8.
+- **Scriptable on 5.9:** `ProceduralVegetationEditorSubsystem` exposes AI-callable functions: `CreateGraph(Name, Path,
+  Source)` (a copy of a shipped sample when Source is given), `ListAssets` (samples under `/ProceduralVegetationEditor`),
+  `ListDataAssets` (grower presets, growth data, plant profiles), `ListNodeTypes` / `DescribeNode` / `GetNodeSchema` /
+  `SuggestPinConnections` / `AddNode` (PCG's add-node tool refuses PVE nodes), `ExecuteGraph` and `Export` /
+  `ExportWithSettings` (async results; `GetExecutionState` / `GetExportState` after a timed-out call; over MCP pass
+  complete export settings, since a missing field gets its default, not the node's), `GetExportSupport`.
+- Ships `DeciduousTree_01`, `ConiferTree_01`, `Plant_01` and 10 presets. Start from the nearest sample (Epic's own
+  advice for PCG: adapt an example graph), change the grower parameters, export, and keep the graph script in
+  `Tools\`. The samples' bark and leaf textures are Epic content: declare them in `SOURCED_ASSETS.md`, or swap in the
+  game's own.
+- Epic's "Botanical Converter" article (Oyvind Fiksdal, Nov 2026) describes an internal tool on top of PVE (an agent
+  picks a region's species, a C++ converter maps them to seven archetypes and writes PVE presets). It is not shipped;
+  the shipped part is PVE and the functions above. The same article's advice matches the kit's: have the agent look for
+  existing engine functions before writing its own.
+- Distance and density: `performance.md` (Nanite thin-leaf loss, `VOXELIZE` for trees). Experimental: try it in the
+  5.9 test, never first on jam day.
+
 ## Quixel Megascans: available, supporting art only (Fab library, audited 2026-11-09)
 
 The director's Fab account holds 22,611 free Megascans listings (Fab Standard License, any engine), all marked

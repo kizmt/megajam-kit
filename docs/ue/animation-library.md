@@ -42,6 +42,33 @@ Researched 2026-10-26/28; prices and terms change, so re-check a source before r
 - **5.9:** a new **UAF AnimGen** plugin brings AI-driven animation generation into the Unreal Animation Framework
   (UAF). The 5.9 docs have no page on it beyond the release notes: check its output and terms before relying on it
   (docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md).
+- **5.9: AnimGenOffline + Kimodo: text-to-motion inside Sequencer, local and free per clip** (read in the installed 5.9 Preview's plugin sources on 2026-11-10, and
+  the plugin author's post, John van der Burg, Epic; no doc page yet). Not the UAF AnimGen plugin above, which trains
+  motion-matching models.
+  - Plugins: **AnimGenOffline** ("offline generated animations inside sequencer") and **Kimodo** (its first pose
+    generator: NVIDIA's Kimodo motion-diffusion model, vendored in the engine), both under
+    `Engine/Plugins/Experimental/Animation/`, Experimental, off by default. The author: guide motion with splines the
+    character follows, a text style, and target key poses set with Control Rig; retargeting is automatic; an agent can
+    be asked to generate a clip and save it as an Animation Sequence. Fastest on a GeForce 30-series or newer; Windows.
+  - Why it matters here: the output is generated content (scored), where library clips are sourced (not scored), and
+    it costs no credits (Uthana is ~$0.40 per 4 s clip).
+  - Licences: Kimodo's code is Apache-2.0; its SOMA and G1 weights use the NVIDIA Open Model License, the SMPL-X one an
+    NVIDIA R&D licence (don't use it); training data is Bones Rigplay mocap, which Kimodo's README calls
+    "commercially-friendly". The text encoder is Meta's gated **Llama 3 8B Instruct** (Llama 3 licence), so it needs
+    a Hugging Face read token from an account granted access to `meta-llama/Meta-Llama-3-8B-Instruct`. The director
+    reads and accepts these; the session never does.
+  - Setup (per user): the token goes in Editor Preferences > Plugins > Kimodo (stored in
+    `EditorPerProjectUserSettings.ini`; or the `HF_TOKEN` environment variable). Weights download on the first
+    Generate: do that before the jam, not on jam day. Never print or commit the token.
+  - Memory: Kimodo's README says ~17 GB of VRAM, mostly the text encoder. The plugin keeps the encoder in system RAM by
+    default (the diffusion model on the GPU), can quantize it to NF4 (cached under `Intermediate`), and unloads the
+    model after 15 idle minutes. Whether it fits the RTX 4060's 8 GB with the editor open is to measure.
+  - Errors open a **modal dialog** (`KimodoSettings.h` ShowErrorDialog), which blocks the game thread and every MCP
+    call: set the token and download the weights before scripting it.
+  - Scripting: the only AI- or Python-callable function found is `AddGeneratedAnimationSectionAsync` (adds a
+    Generated Animation section to an Animation Mixer track). Setting the prompt, generating and baking to an Animation
+    Sequence from a script is unverified: try it in the 5.9 test (`ue59.md`). Its output skeleton is Kimodo's SOMA
+    77-joint rig, retargeted to the character.
 
 ### Uthana text-to-motion (tested: 3 clips; API, cost and output format in `PIPELINE.md`)
 

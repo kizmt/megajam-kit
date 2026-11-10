@@ -58,6 +58,10 @@ covers single-player, so skip it.
 Editor (grows Nanite foliage assemblies), Fog Screen Space Scattering ("only a single blur quality level and may exhibit
 visual artifacts"), Direct Mesh Controls, Animation Mixer in Sequencer, MetaHuman Crowds/Collections, Fast Geometry
 Streaming and Spatially Aware Retargeting. Control Rig Physics is Beta but needs a hand-authored rig.
+**5.9:** two of these are worth a pre-jam trial on a 5.9 project instead (still Experimental, so tried in the 5.9
+test, never first on jam day): the **Procedural Vegetation Editor**, now scriptable over MCP (`worldbuilding.md`
+"Trees from PVE"), and **AnimGenOffline + Kimodo** text-to-motion in Sequencer (`animation-library.md` "Generated
+animation").
 **5.9:** the spatially aware retarget sub-operations (Relative IK Retarget, Body Intersect Goals) are still
 experimental and need the Spatially Aware Retarget Ops plugin
 (docs/ue59/pages/animation/retargeting-operation-stack-in-unreal-engine-5-8.md); 5.9 adds Proximity IK, Pelvis Volume and Limb
