@@ -5,20 +5,29 @@
 //   node gen/perf/bench.ts                                  # built-in render-path comparison
 //   node gen/perf/bench.ts --variant "check:"               # the build as it ships (or --only current)
 //   node gen/perf/bench.ts --variant "a:" --variant "b:r.AllowOcclusionQueries=0"
-//   options: --exe <path> (default C:\dev\Builds\<Project>\Windows\<Project>.exe, else <Project>\Builds\...)  --res 3840x2160 | native
+//   options: --exe <path> (default C:\dev\Builds\<Project>\Windows\<Project>.exe, else <Project>\Builds\...)
+//            --res native (default: the game's own window, what a fresh install opens) | 1920x1080 (a window of that
+//              size: -windowed -ResX -ResY; without -windowed a borderless game ignores the size)
 //            --frames 1200  --skip 200  --only name1,name2  --no-warmup  --force (run even if the GPU is busy)
 //            --target-fps 60 (the game's target from DECISIONS.md; sets the hitch limit and the PASS/FAIL column)
+//            --runs N (each variant N times: tells a repeatable hitch from one stray frame)
+//            --keep-settings (bench with the build's saved GameUserSettings.ini instead of setting it aside)
+// The output size printed is MEASURED from the game's window (gen/perf/window_size.ps1), never the request: a
+// practice run reported five "1080p" runs that were 4K, and 4K numbers that were a stretched 1440p (SETUP 7b).
+// The build folder's Saved\Config\...\GameUserSettings.ini survives packaging and holds whatever an earlier test
+// run of the game saved (a quality preset there set native 4K: 75 fps where a fresh install got 124). So it is set
+// aside for the bench and put back afterwards, unless --keep-settings.
 // -DPCVars also sets game cvars registered at runtime (non-cheat), so an autoplay switch works as part of a variant.
 // The game window takes the screen for ~25 s per variant. Don't touch the mouse/keyboard while it runs.
 // Facts behind the defaults (PIPELINE.md "Hard-won facts"): the first launch after packaging reads ~13% low
 // (shader/PSO warm-up), so one discarded warm-up launch runs first; a fresh exe sometimes never starts (likely being
 // scanned), so a launch that writes no log within 30 s, or no capture within 240 s, is killed and retried once.
 import { spawn, execFileSync, type ChildProcess } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, renameSync, statSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { fail, projectDir } from '../paths.ts';
-import { barCheck, hitches, summarise, type CsvSummary } from './csv_report.ts';
+import { KIT, fail, projectDir } from '../paths.ts';
+import { barCheck, hitchList, hitches, summarise, type CsvSummary } from './csv_report.ts';
 
 const LUMEN = 'r.DynamicGlobalIlluminationMethod=1,r.ReflectionMethod=1';
 const NO_LUMEN = 'r.DynamicGlobalIlluminationMethod=0,r.ReflectionMethod=2,r.AmbientOcclusionLevels=0,r.DistanceFieldAO=0';
@@ -39,7 +48,9 @@ const PRESETS: [string, string][] = [
 const { values: o } = parseArgs({
   options: {
     exe: { type: 'string' },
-    res: { type: 'string', default: '3840x2160' },
+    res: { type: 'string', default: 'native' },
+    runs: { type: 'string', default: '1' },
+    'keep-settings': { type: 'boolean', default: false },
     frames: { type: 'string', default: '1200' },
     skip: { type: 'string', default: '200' },
     variant: { type: 'string', multiple: true },
@@ -66,7 +77,7 @@ if (!existsSync(exe)) fail(`packaged exe not found: ${exe} (run scripts\\package
 const saved = join(exe, '..', proj, 'Saved');
 const csvDir = join(saved, 'Profiling', 'CSV');
 const logFile = join(saved, 'Logs', `${proj}.log`);
-// --res native: pass no resolution, so the game uses its saved/default settings (what a fresh install sees).
+// --res native: pass no resolution, so the game opens the window a fresh install would.
 const native = o.res === 'native';
 const [resX, resY] = (o.res ?? '').split('x');
 if (!native && (!resX || !resY)) fail('--res must look like 3840x2160, or be "native"');
@@ -137,7 +148,7 @@ const logText = (): string => (existsSync(logFile) ? readFileSync(logFile, 'utf8
 function launch(name: string, cvars: string, frames: string): { child: ChildProcess; started: number; exit: { code: number | null } } {
   const started = Date.now();
   const args = [`-csvCaptureFrames=${frames}`, '-csvGpuStats', `-csvMetadata=variant=${name}`];
-  if (!native) args.unshift(`-ResX=${resX}`, `-ResY=${resY}`);
+  if (!native) args.unshift('-windowed', `-ResX=${resX}`, `-ResY=${resY}`);
   if (cvars) args.push(`-DPCVars=${cvars}`);
   const exit: { code: number | null } = { code: null };
   const child = spawn(exe, args, { stdio: 'ignore', detached: false });
@@ -145,15 +156,46 @@ function launch(name: string, cvars: string, frames: string): { child: ChildProc
   return { child, started, exit };
 }
 
+interface WindowInfo { client: [number, number]; display: [number, number]; borderless: boolean }
+let windowInfo: WindowInfo | null = null;
+/** The running game's real window size (physical pixels). Read once per variant, a few seconds into the run. */
+function readWindow(): WindowInfo | null {
+  try {
+    const out = execFileSync('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', join(KIT, 'gen', 'perf', 'window_size.ps1'), '-Dir', join(exe, '..')], { encoding: 'utf8' });
+    const line = out.split(/\r?\n/).find((l) => l.startsWith('WINDOW_JSON='));
+    return line ? (JSON.parse(line.slice('WINDOW_JSON='.length)) as WindowInfo | null) : null;
+  } catch {
+    return null;
+  }
+}
+
+// Saved settings of the packaged game (see the header). Set aside for the bench, restored at the end and on a crash.
+const userSettings = join(saved, 'Config', 'Windows', 'GameUserSettings.ini');
+const userSettingsAside = `${userSettings}.bench-aside`;
+function restoreSettings(): void {
+  if (!existsSync(userSettingsAside)) return;
+  try { renameSync(userSettingsAside, userSettings); } catch { /* the game rewrote it: keep the aside copy */ }
+}
+function savedResolutionQuality(): string | undefined {
+  if (!existsSync(userSettings)) return undefined;
+  return /^sg\.ResolutionQuality=(.+)$/m.exec(readFileSync(userSettings, 'utf8'))?.[1]?.trim();
+}
+
 async function runVariant(name: string, cvars: string, frames = o.frames ?? '1200'): Promise<CsvSummary> {
   for (let attempt = 1; attempt <= 2; attempt++) {
     const { child, started, exit } = launch(name, cvars, frames);
+    let measuredThisRun = false;
     try {
       for (let waited = 0; waited < 240_000; waited += 1000) {
         await sleep(1000);
         if (waited >= 30_000 && !logTouchedSince(started)) {
           if (attempt === 1) { console.log(`    no log after 30 s (exit code ${exit.code ?? 'none yet'}): relaunching once`); break; }
           throw new Error(`the game never started (${name}); exit code ${exit.code ?? 'none'}`);
+        }
+        // Early, so the PowerShell start-up falls in the skipped warm-up frames; retried until the window exists.
+        if (!measuredThisRun && waited >= 3000 && waited % 2000 === 1000) {
+          const w = readWindow();
+          if (w) { windowInfo = w; measuredThisRun = true; }
         }
         if (logTouchedSince(started) && logText().includes('CSV finalize time')) {
           const csv = newestCsv(started);
@@ -178,6 +220,21 @@ if (gpu && gpu.util >= 40 && !gpu.idle && !o.force) {
   fail(`the GPU is already ${gpu.util}% busy: another program would distort the numbers. Close it or ask first, then rerun (or pass --force).`);
 }
 
+// A previous bench that was killed left the settings aside: put them back before looking at them.
+restoreSettings();
+const rq = savedResolutionQuality();
+if (rq !== undefined && Number(rq) !== 0) {
+  console.log(`saved settings: sg.ResolutionQuality=${rq} in ${userSettings} (an earlier run of the game saved it; a fresh install has none)`);
+}
+if (!o['keep-settings'] && existsSync(userSettings)) {
+  renameSync(userSettings, userSettingsAside);
+  console.log('saved settings set aside for the bench (restored at the end; --keep-settings benches with them)');
+} else if (o['keep-settings'] && existsSync(userSettings)) {
+  console.log('benching WITH the saved settings (--keep-settings): not what a fresh install runs');
+}
+process.on('exit', restoreSettings);
+process.on('SIGINT', () => { restoreSettings(); process.exit(130); });
+
 if (!o['no-warmup']) {
   const [wName, wCvars] = variants[0] ?? ['warmup', ''];
   process.stdout.write(`warm-up (discarded)  ${wName}\n`);
@@ -186,16 +243,29 @@ if (!o['no-warmup']) {
 
 const results: { name: string; s: CsvSummary }[] = [];
 // Say which runs are the shipped game: a director watching a comparison path otherwise judges its artifacts as the game's.
+const runs = Math.max(1, Number(o.runs) || 1);
 for (const [i, [name, cvars]] of variants.entries()) {
   const kind = cvars ? 'a comparison render path, not what ships' : 'the game as it ships';
-  process.stdout.write(`run ${i + 1} of ${variants.length}: ${name.padEnd(16)} ${cvars || '(no overrides)'}  [${kind}]\n`);
-  results.push({ name, s: await runVariant(name, cvars) });
+  for (let r = 1; r <= runs; r++) {
+    const label = runs > 1 ? `${name}#${r}` : name;
+    process.stdout.write(`run ${i + 1} of ${variants.length}${runs > 1 ? ` (${r}/${runs})` : ''}: ${label.padEnd(16)} ${cvars || '(no overrides)'}  [${kind}]\n`);
+    results.push({ name: label, s: await runVariant(label, cvars) });
+  }
 }
 
 const g = (s: CsvSummary, pass: string): string => (s.gpuPasses.find((p) => p.name === pass)?.avg ?? 0).toFixed(2).padStart(5);
 const t = (s: CsvSummary, k: string, w: number): string => (s.threads[k]?.avg ?? 0).toFixed(2).padStart(w);
-console.log(`\noutput ${o.res}, ${o.frames} frames, first ${o.skip} skipped${gpu ? `; before the run: ${gpu.text}` : ''}`);
-console.log('(CSV "systemresolution" metadata is recorded before DPI awareness and can say 2560x1440 on a 4K screen: ignore it)');
+const w = windowInfo as WindowInfo | null;
+const measured = w ? `${w.client[0]}x${w.client[1]}${w.borderless ? ' borderless' : ' window'}` : 'NOT MEASURED (no game window found: treat the numbers as unlabelled)';
+console.log(`\noutput ${measured} (measured; asked for ${o.res}), display ${w ? w.display.join('x') : '?'}, ${o.frames} frames, first ${o.skip} and the last one left out${gpu ? `; before the run: ${gpu.text}` : ''}`);
+if (w && native && (w.client[0] !== w.display[0] || w.client[1] !== w.display[1])) {
+  console.log(`WARNING: the game's window is ${w.client.join('x')} on a ${w.display.join('x')} display: these are not full-resolution numbers. ` +
+    'Check SETUP 7b (bAllowHighDPIInGameMode=True) and the saved window settings.');
+}
+if (w && !native && (String(w.client[0]) !== resX || String(w.client[1]) !== resY)) {
+  console.log(`WARNING: asked for ${o.res}, the window is ${w.client.join('x')}: label the numbers with the measured size.`);
+}
+console.log('(the CSV "systemresolution" metadata and the log\'s "LogWindows: resolution" are requests or the scaled desktop, not the window: ignore them)');
 console.log(`the bar (docs/ue/performance.md) at the game's target of ${targetFps} fps: p95 >= ${targetFps}, 1% low within 20% of avg, ` +
   `no hitch (frame > ${(2000 / targetFps).toFixed(1)} ms)`);
 console.log('variant            fps  p95fps  1%low  hitches   GPU ms   RT ms   GT ms   TSR  Lumen  bar');
@@ -211,4 +281,13 @@ for (const { name, s } of results) {
 for (const { name, s } of results) {
   const bar = barCheck(s, targetFps);
   if (!bar.pass) console.log(`  ${name}: ${bar.notes.join('; ')}`);
+  // Where each hitch fell, to match it to a game event without adding a logger to the game.
+  for (const h of hitchList(s, targetFps).slice(0, 8)) console.log(`    hitch at capture frame ${h.frame} (${h.atS.toFixed(2)} s into the measured frames): ${h.ms.toFixed(1)} ms`);
+}
+if (runs > 1) {
+  for (const [name] of variants) {
+    const mine = results.filter((r) => r.name.startsWith(`${name}#`));
+    const withHitch = mine.filter((r) => hitches(r.s, targetFps) > 0).length;
+    console.log(`  ${name}: a hitch in ${withHitch} of ${mine.length} runs${withHitch > 0 && withHitch < mine.length ? ' (not repeatable: compare the hitch frames above before chasing it)' : ''}`);
+  }
 }

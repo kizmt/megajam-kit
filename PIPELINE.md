@@ -51,6 +51,14 @@ The per-image cost depends on size and quality: estimate it with the calculator 
 
 Known limits: master material is opaque (glass renders dark).
 
+**A model from another generator (Hyper3D Rodin, Meshy):** generate it in that tool's web app, export FBX or GLB with
+textures, then `node gen\asset.ts --model <file> --name <Name> [--max 0.8]`: the same prep, material, style mask,
+Nanite and placement as a Tripo model, no Tripo credits. For a character, rig it with Tripo (`character.ts --task`
+needs a Tripo task, so a Rodin character is a prop unless it is rigged elsewhere). Log the tool in the game's
+credits and in the submission's "Tools you used" field: Hyper3D's $10,000 pool is split among winning teams that
+used Rodin (`docs/submission.md`). Rodin Business credits (208) and Meshy Pro (1,000) come with the jam's partner
+perks; both are the director's accounts.
+
 **Style references for a set of subjects (a cast, a bestiary):** a painted key-art scene is a weak `--ref` for an
 isolated subject. In the rehearsal it leaked haze and scenery into 3 of 9 creature concepts and 7 of 24 character
 concepts (even with a "style only, no fog or scenery" prefix), and half of the clean ones came out in a flatter
@@ -252,9 +260,11 @@ Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls nee
 | `gen/unreal/mcp.ts` | Call any Unreal MCP tool from scripts (waits out 5.9's slow-task refusals). CLI: `toolsets`, `describe <toolset>`, `call <toolset> <tool> [json \| '@args.json']` |
 | `gen/unreal/ue.ts` | Editor operations for the generators on either engine (5.8 toolsets, 5.9 plain Python): import, Nanite, collision, place, materials, `captureView()` |
 | `gen/unreal/py.ts` | Run a Python file (or `-c` code) in the editor via `run_python`; `--arg k=v` -> `ARGS` dict. On 5.9 Epic's `execute_python` also exists (rules and when to use which: `docs/ue/editor-scripting.md`) |
+| `gen/unreal/kimodo.ts` | 5.9: text to an Animation Sequence with Kimodo, by script (prompt, wait, bake); needs the character's Kimodo sequence (`SETUP.md` 10b) |
 | `gen/parts.ts` | Split a generated prop into movable parts (lid, door leaf, lever, wheel) with pivots, import them; see Moving parts |
 | `gen/blender/bake_style.py` | Style mask (edges, occlusion, height) for the master's shared style layer; `asset.ts` and `character.ts` run it |
 | `gen/unreal/materials.ts style` | Read or set `MPC_Style`: one look for every generated asset (`docs/ue/materials.md`) |
+| `gen/perf/bench.ts` | Bench a packaged build per variant: measured window size, saved settings set aside, hitch positions, `--runs N` (`docs/ue/performance.md`) |
 | `gen/unreal/shot.ts` | Viewport screenshot to PNG (`--wait N` for shader compiles) |
 | `gen/character.ts` | Concept -> rigged, PBR-textured, retargeted character (+ BP); see Characters |
 | `gen/views.ts` | Cut a four-view turnaround sheet into front/left/back/right images for Tripo multiview (Four views) |

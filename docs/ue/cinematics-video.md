@@ -325,6 +325,26 @@ game has test hooks that can stage its moments.
 - **Can't do:** the game's audio (`-nosound`; build the mix in the edit from the log's event times, D4) or spawning
   actors from Python. It films the editor build's `-game`, not the packaged build.
 
+**D3b lessons from the 5.9 practice run (2026-11-10):**
+- **Plan the capture as a 20-minute block.** `shots.ps1 -ShowUI -KeepFrames` at 1080p60 wrote 3.8-4.7 frames per
+  second on the target PC (86 s of game = 5,160 frames = 18-25 minutes), and no other `-game` test can run
+  meanwhile. Check the cut first with a dry run at `-Fps 15`.
+- A shot's `exec` runs before its unsaved `settle` frames (default 60): a shot that starts gameplay with `exec` loses
+  its first second unless it sets `"settle": 1`.
+- The log's frame counter is printed modulo 1000, and `PROOF shot done name=X frames=N` is logged on the frame after
+  the shot's last saved frame: saved frame i of a shot is engine frame (done frame - N + i) once the counter is
+  unwrapped. That mapping lets an edit script place sound effects from the game's own event lines.
+- **Hide the build stamp for captures.** `-game` captures show "build editor" in the stamp, and a judge on the
+  practice run's panel read it as debug text. Give the game a switch (a cvar or a command-line flag) that hides the
+  stamp, and set it in the shot list.
+- The capture is deterministic to the hundredth of a second: with a best-time save on, a second take ties the first
+  one's record ("0.00 s behind"). Clear saved records before the final take.
+- **ffmpeg 9 traps:** `-vsync` is gone (`-fps_mode`); this build has no `-pattern_type glob` (use `-start_number N -i
+  f_%05d.png`); `alimiter` levels its output back up to 0 dB unless `level=disabled`; the AAC encode adds about
+  0.5 dB of true peak, so normalise to -2.0 dB to land under -1.5; `loudnorm`'s JSON is followed by another log
+  line (cut the text at the last closing brace before parsing); an audio graph ending `amix=...,apad,atrim=0:T`
+  never finishes when every input ends just before T: use `apad=whole_dur=T,atrim=0:T`.
+
 ### D4. The edit
 
 - Cut on the music's beat grid: find bpm and the first downbeat (onset autocorrelation), express clips as in-points

@@ -33,7 +33,9 @@ param(
     [double]$QuitAfter = 25,
     [int]$ShotEvery = 15,
     [double]$ReadyTimeoutSec = 150,
-    [string]$GameArgs = ''
+    [string]$GameArgs = '',
+    # Print only the start and DONE lines: a 300-key sequence otherwise floods the session's context.
+    [switch]$Quiet
 )
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'game_common.ps1')
@@ -100,7 +102,7 @@ foreach ($s in $steps) {
         'up'   { $held.Remove($s.Name); [KitPostKeys]::Up($hwnd, $s.Key) }
         'tap'  { $a = [KitPostKeys]::Down($hwnd, $s.Key); Start-Sleep -Milliseconds 80; $b = [KitPostKeys]::Up($hwnd, $s.Key); $a -and $b }
     }
-    Write-Host ("{0,6:N2}s {1,-4} {2,-9} posted={3} (sent at {4:N3}s)" -f $s.At, $s.Action, $s.Name, $ok, ((Get-Date) - $t0).TotalSeconds)
+    if (-not $Quiet -or -not $ok) { Write-Host ("{0,6:N2}s {1,-4} {2,-9} posted={3} (sent at {4:N3}s)" -f $s.At, $s.Action, $s.Name, $ok, ((Get-Date) - $t0).TotalSeconds) }
 }
 foreach ($k in @($held.Keys)) { [void][KitPostKeys]::Up($hwnd, $held[$k]); Write-Host "released held key $k" }
 if (-not $p.WaitForExit([int](($QuitAfter + 40) * 1000))) { Write-Host 'the game did not quit by itself: stopping it'; Stop-Process -Id $p.Id -Force }

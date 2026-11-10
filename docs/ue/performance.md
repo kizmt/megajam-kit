@@ -35,11 +35,56 @@ play. The right frame rate depends on the game, so the bar has a fixed part and 
   120 or more for fast action. Until it's chosen, use 60.
 - **Low-end check:** the same target on the Low preset at 1080p output (`--res 1920x1080` plus a variant setting the
   `sg.*` groups to 0). The target PC on Low is still far faster than a low-end PC; this checks that the settings
-  really scale. (Unverified: that `-DPCVars` applies `sg.*`. Confirm it the first time in the game log or with a
-  visible difference. If it doesn't, use `-ExecCmds="scalability 0"` instead, also untested.)
+  really scale. `-DPCVars` does apply `sg.*` groups (confirmed on 5.9: `LogDeviceProfileManager: Setting CommandLine
+  Device Profile CVar: [[sg.ShadowQuality:0]]`, GPU 7.7 -> 3.5 ms). **Run the variant twice and judge the second
+  run:** the first launch on a new set of quality settings pays for pipeline states this PC has not cached (one
+  34 ms frame, then none); report the first as the first-time cost.
+- **A quality preset must not change the resolution (the trap that bites a one-key preset and a slider alike;
+  confirmed on 5.9).** `SetOverallScalabilityLevel(n)` + `ApplySettings(false)` also sets `sg.ResolutionQuality` to
+  100 / 87 / 71 / 50 for Epic / High / Medium / Low (`Scalability.cpp` `SetFromSingleQualityLevel`), which writes
+  `r.ScreenPercentage`, while a fresh launch has both at 0 (internal 1080p on a 4K display by
+  `r.ScreenPercentage.Default.Desktop.Mode`). Measured on a packaged title screen at 3840x2160: launch 129 fps,
+  High 111, Medium 153, Low 287, **Epic 79 (native 4K), and the value is saved**
+  (`[ScalabilityGroups] sg.ResolutionQuality=100`), so every later launch is native 4K. A judge who presses "Epic"
+  halves the frame rate for good. To do it right:
+  - set the groups one by one (`SetViewDistanceQuality` ... ) or call `SetOverallScalabilityLevel` and then put the
+    resolution back; a resolution quality of 0 is a no-op (`SetResolutionQualityLevel`), so going back to the default
+    also needs `r.ScreenPercentage` set to 0 (set with `ECVF_SetByScalability`, it takes);
+  - `GetOverallScalabilityLevel()` returns -1 whenever the resolution scale is not the preset's own: read the
+    current level from one group (`GetViewDistanceQuality()`);
+  - test it by frame rate, never by the event line ("quality set to HIGH" passed for six hours in a practice run):
+    on the packaged build read the fps at launch and after each preset, and after a relaunch run
+    `-ExecCmds="r.ScreenPercentage,sg.ResolutionQuality"` (prints both with what set them). It is a final-pass check
+    (`production.md`).
+  - A preset switch can cost one slow frame (42 ms and 34 ms seen): never switch presets inside a bench's measured
+    frames.
 
 (`node gen/perf/bench.ts` launches the packaged build per variant, cvars via `-DPCVars`, no repackage;
 `node gen/perf/csv_report.ts <csv> --target-fps <target>` summarises a single run.)
+
+**What the bench's numbers mean (changed 2026-11-11 after a practice run reported 124 fps for a true 76):**
+- **The output size it prints is measured** from the game's window (`gen/perf/window_size.ps1`), never the request.
+  Default `--res native`: the window a fresh install opens (borderless at the display's size). `--res 1920x1080`
+  opens a real window of that size (`-windowed`; without it a borderless game ignores `-ResX/-ResY`, which is how
+  five "1080p" runs were 4K). A WARNING line says when the window is not the display's size: that is SETUP 7b
+  (`bAllowHighDPIInGameMode=True`) missing, and every number is then a stretched lower resolution.
+- **Saved settings are set aside.** The build folder's `Saved\` survives packaging, so
+  `GameUserSettings.ini` holds whatever an earlier test run saved (one preset key press there: 75 fps where a fresh
+  install got 124). The bench moves it aside and puts it back; `--keep-settings` benches with it. The editor's
+  `-game` runs share `Saved\Config\WindowsEditor\GameUserSettings.ini` the same way: after testing a settings menu
+  in `-game`, captures render at whatever it saved.
+- **Hitches come with their place**: "hitch at capture frame N (t s into the measured frames)", to match against the
+  game's own event log. `--runs N` repeats each variant and reports "a hitch in k of N runs": one stray frame is
+  not a repeatable hitch. The capture's last frame is left out (it is the profiler stopping and writing the file,
+  44-109 ms); an in-game hitch logger will also see one long frame when the capture starts and one when it ends:
+  both are the bench's, outside the measured frames.
+- The warm-up is skipped by frames, not seconds (200 frames = 1.6 s at 124 fps, 0.8 s at 250 fps).
+- **A packaged build deletes its `Saved\Config\Windows\Engine.ini` override when it exits** (seen three times): for
+  an A/B through that file, copy it in before every launch, or use `-DPCVars` (the bench's way).
+- `-ExecCmds="shot showui"` on a packaged Development build writes a screenshot at the true back-buffer size to
+  `Saved\Screenshots\Windows\`: the cheapest proof of what a build really renders.
+- **At true 4K the engine-default TSR history (200% at Epic) costs 5.6 ms of a 12.8 ms GPU frame** on the RTX 4060;
+  `r.TSR.History.ScreenPercentage=100` makes it 2.4 ms (103 fps against 77). SETUP 7b sets it; check the look once.
 
 ## Display + render defaults (measured 2026-10-24 on an empty test level, packaged, RTX 4060, 4K monitor)
 

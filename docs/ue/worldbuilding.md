@@ -357,6 +357,23 @@ meshes (harmless). **Shallows tint:** the water material's `Absorption` vector i
   plugin's dependency). Water bodies stream with World Partition like any actor: re-collect them, don't cache them
   once at BeginPlay. In Python, `get_water_body_type()` is on the `WaterBody` actor, not its component.
 
+## Findings from the 5.9 practice run (2026-11-10)
+
+- **Painted sky dome: use `/Engine/EngineSky/SM_SkySphere`, not a scaled `/Engine/BasicShapes/Sphere`.** A basic
+  sphere scaled to 100 km stopped the pawn from spawning in `-game` ("SpawnActor failed because of collision at the
+  spawn location", "NO PLAYERSTART with positive rating") even with the component set to NoCollision: the cooked
+  spawn test still sees its simple collision. `SM_SkySphere` has no collision shapes.
+- **Sign text (Text Render actors):** the default text material is lit, so coloured text takes the lamp's colour (a
+  gold sign rendered green under cyan lamps) and goes dark outdoors. A hand-built unlit material masked by a Font
+  Sample's alpha drew every glyph as a solid block on 5.9. What works: duplicate
+  `/Engine/EngineMaterials/UnlitText` and multiply its vertex colour by a glow parameter.
+- **Bright emissive colours shift hue under the tone curve:** red #FF3B30 x 5 read as salmon and orange #FF8200 x 5
+  as lemon yellow to the blind critic, with the material values as set. Deeper colour at lower strength (#FF271D x
+  3, #FF4C00 x 1.5) fixed both. Check a glow colour by screenshot; lower the strength before changing the hue.
+- **Any game with unbounded movement gets a world-edge rule** (a kill volume or a wrap) and triggers as tall as the
+  player can get: a run holding forward and mashing jump flew over every checkpoint and 16 km out of the level with
+  no fail. Check it with that masher run (`docs/design.md` "Playtesting").
+
 ## Sources (5.8)
 
 - Level Designer Quick Start: https://dev.epicgames.com/documentation/en-us/unreal-engine/level-designer-quick-start-in-unreal-engine?application_version=5.8

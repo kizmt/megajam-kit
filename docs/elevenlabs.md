@@ -23,6 +23,8 @@ ElevenLabs changes models often: if something here fails, check the linked page 
   generation. `audio.ts` moves an earlier take with the same name to `old\` instead of overwriting it.
 - **Credits:** `audio.ts` prints the remaining credits and plan before a batch (`/v1/user/subscription`; *tested*
   2026-11-01, Creator plan). Quote them when asking the director to approve a batch.
+- **Measured (2026-11-10 practice run):** 16 sound effects and five music cues moved the balance by 4,620 credits;
+  4 of the 16 effects came back near-silent (`audio.ts` prints each take's peak: re-roll those, they still cost).
 - **Prices to quote** (check the pricing page before a batch): SFX with a set length 40 credits per second; music about
   $0.15 per minute; a composition plan is free; Voice Design charges only the preview text's characters; Voice
   Changer and Voice Isolator 1,000 credits per minute.

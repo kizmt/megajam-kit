@@ -547,6 +547,14 @@ generated level mesh"), and give decoration `NoCollision`.
   its frame filled by a rock. A 16 x 9 grid of rays over the FOV, counting hits short of the subject, picked clear
   spots (1-5% of rays blocked).
 
+- **5.9 practice run (2026-11-10):**
+  - `PointLightComponent.set_light_color` wants a `LinearColor`; an `unreal.Color` raises "Cannot nativize 'Color' as
+    'LinearColor'".
+  - The Python stub (`Intermediate\PythonStub\unreal.py`) is not regenerated when the project's C++ classes change:
+    a new project class is missing from the stub although `unreal.<Class>` works at runtime. Trust the runtime.
+  - MCP answers 12-35 s after `Start-Process UnrealEditor.exe` on a warm project; about 2 minutes on the first start
+    with shader work. Tool calls during start-up tasks are refused, not queued (`mcp.ts` waits and retries).
+
 ## Kit issues found while writing this
 
 - `MegajamTools.run_console_command` returns `True` as a status, which goes against Epic's "return data, raise on

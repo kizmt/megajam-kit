@@ -412,6 +412,28 @@ no foreground needed), `gen/test/camset.ps1` (camera-set frames), `gen/test/stab
 - **Logging timed states:** when a timed state ends (a grab, a stun), log how long it lasted and why it ended. It turns
   "it doesn't work" into a measurable report.
 
+### Posted-key and capture lessons from the 5.9 practice run (2026-11-10)
+
+- **Start the sequence from a ready line the game logs, not from the capture start.** The first ~22 frames of a cold
+  `-game` start took 9.5 s (shader work), so two timed Space taps merged and a jump test "passed" with no jump. Have
+  the game log a ready line after N smooth frames (the run used 12 frames under 50 ms) and name it in
+  `-StartPattern`. A small `-ShotEvery` can starve that check: each captured frame hitches, so with `-ShotEvery 4`
+  the ready line never came (`-ShotEvery 15` works; a 45-smooth-frame rule never fires at `-ShotEvery 30` either).
+- **`postkeys.ps1` is open-loop** (a fixed timed sequence): a timing error of 0.1 s is 1-3 m on a fast character.
+  Log the position in every fail event so each failed try calibrates the next; plan from rest, one key at a time,
+  and use a wall as a position reset. Check which world axis a key moves along with a one-key run first (on a
+  runway facing -X, D moved the character toward -Y). `-Quiet` prints only the start and DONE lines.
+- **Frames from `postkeys.ps1`, `camset.ps1` and `frame_capture.py` have no Slate or UMG** (`shot ... -nosuffix`):
+  they can't prove a HUD element. For that: `shots.ps1 -ShowUI` (a HUD proof of one beat in 75 s), or a
+  `game_test.ps1` script that places the pawn (`set_actor_location`) and runs `shot showui` (HUD states the bot
+  never reaches, in 12 s).
+- **Posted keys also drive the packaged Development build** (started with `-windowed -abslog=<log>`; the log is
+  written promptly enough to drive from): the practice run played a whole game on the shipped exe that way. The kit's
+  `postkeys.ps1` only launches `-game`; for the packaged build the keys go to the inner process's window
+  (`<Build>\<Project>\Binaries\Win64\<Project>.exe`).
+- A reviewer on contact sheets (400 px tiles) can't see the HUD, text under about 20 px, or colour (a red beacon read
+  as orange): give it two or three full-size frames per beat as well (`prompts/playtest.md`).
+
 ## Recording the screen safely
 
 The kit's single statement of this rule (`cinematics-video.md` links here). Record only with

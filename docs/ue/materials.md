@@ -362,6 +362,13 @@ rebuilt with `character.ts --rig --pbr` (its mask lines up with the re-textured 
   rock), use `BLEND_MODULATE` + Unlit.
 - Water plugin materials on plain meshes: `worldbuilding.md` "Waterfalls and custom bodies".
 
+- **5.9, Custom-node HLSL:** the camera position as a plain float3 is
+  `WSHackToFloat(GetWorldCameraOrigin(Parameters))` (large-world types don't convert by themselves), and
+  `fwidth`/`ddx` must stay outside branches (compute first, mask the result with `step`).
+- **5.9, Dynamic Parameter:** its outputs are named `Param1`..`Param4` (plus `RGB`, `RGBA`); connecting by `R`/`G`/
+  `B`/`A` fails there (5.8.4 accepts the letters). `MaterialEditingLibrary.get_material_expression_output_names`
+  lists a node's real output names: read them before `connect_material_expressions` on a node type not used before.
+
 ## Lessons from a prototype
 
 - **Thin Default Lit grass goes black when seen against the sun.** Two Sided Foliage shading with a subsurface colour

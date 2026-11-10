@@ -197,6 +197,7 @@ protected:
 | `C2027 use of undefined type` / incomplete type | Forward-declared only: `#include` the header in the `.cpp` |
 | `cannot open include file` | Wrong path (5.8 headers: `"GameFramework/Character.h"`, `"Components/StaticMeshComponent.h"`) or missing module |
 | Crash on pointer that "was fine" | Missing `UPROPERTY()` (GC'd) or destroyed actor: `IsValid()` |
+| **5.9:** `C2280` on `UEnhancedInputComponent::BindKey` (a deleted function) | The old key bindings sit behind `ENHANCED_INPUT_ALLOW_LEGACY_BINDING`. Use an Input Action; for a one-off key without one, read it in `APlayerController::PlayerTick` with `WasInputKeyJustPressed(EKeys::F)` (verified with a posted-key run) |
 | Editor DLL locked / "Unable to build while Live Coding is active" | Close editor (or use Live Coding for body-only edits) |
 
 Grep the 5.8 headers for the exact include path and signature before using any engine API.

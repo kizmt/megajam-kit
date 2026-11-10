@@ -30,6 +30,10 @@ history. Its findings become tuning and layout tasks; the director's calls (`DEC
 > attempts), any fail whose cause was not visible beforehand, and anything that blocks reaching the end.
 > Finish with the three changes that would most improve the next run. Be specific; don't praise.
 
+**Give the reviewer two or three full-size frames per beat next to the contact sheets.** On 400 px tiles it can't see
+the HUD, text under about 20 px, or colour (it read a red beacon as orange): findings about any of those need the
+full-size frames.
+
 ## After the reviewer answers
 
 - Check each problem against the evidence (frame, log line). Drop any the evidence doesn't support.

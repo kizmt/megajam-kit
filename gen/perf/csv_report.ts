@@ -19,6 +19,8 @@ export interface CsvSummary {
   fps1Low: number;
   /** Every analysed frame time (ms), for hitch counting against a target. */
   frameMs: number[];
+  /** Frames left out at the start (warm-up); frameMs[i] is capture frame skipped + i. */
+  skipped: number;
   gpuPasses: { name: string; avg: number }[];
   metadata: Record<string, string>;
 }
@@ -48,7 +50,23 @@ export function barCheck(s: CsvSummary, targetFps: number): { pass: boolean; not
   return { pass: notes.length === 0, notes };
 }
 
-/** Parse a CSV profile. Cells that are not numbers (e.g. the events column) are ignored per column. */
+/** Each hitch with where it happened: the capture's frame number and the seconds of measured play before it. */
+export function hitchList(s: CsvSummary, targetFps: number): { frame: number; atS: number; ms: number }[] {
+  const limit = 2000 / targetFps;
+  const out: { frame: number; atS: number; ms: number }[] = [];
+  let t = 0;
+  s.frameMs.forEach((ms, i) => {
+    if (ms > limit) out.push({ frame: s.skipped + i, atS: t / 1000, ms });
+    t += ms;
+  });
+  return out;
+}
+
+/**
+ * Parse a CSV profile. Cells that are not numbers (e.g. the events column) are ignored per column.
+ * The capture's last frame is left out: it is the frame on which the profiler stops and writes the file (44-109 ms
+ * in a practice run's logs), and it failed the hitch check on runs with no hitch in the game.
+ */
 export function summarise(file: string, skip = 120): CsvSummary {
   const lines = readFileSync(file, 'utf8').split(/\r?\n/).filter((l) => l.length > 0);
   const header = (lines[0] ?? '').split(',');
@@ -61,7 +79,8 @@ export function summarise(file: string, skip = 120): CsvSummary {
     rows.push(cells);
   }
   // Skip the warm-up frames, but never more than a quarter of the capture (a short capture keeps 3/4 of its frames).
-  const data = rows.slice(Math.min(skip, Math.floor(rows.length / 4)));
+  const skipped = Math.min(skip, Math.floor(rows.length / 4));
+  const data = rows.slice(skipped, rows.length > skipped + 1 ? -1 : undefined);
   const col = (i: number): number[] => {
     const out: number[] = [];
     for (const r of data) {
@@ -97,6 +116,7 @@ export function summarise(file: string, skip = 120): CsvSummary {
     fpsLow: ft.p95 ? 1000 / ft.p95 : 0,
     fps1Low: ft.p99 ? 1000 / ft.p99 : 0,
     frameMs: ftCol >= 0 ? col(ftCol) : [],
+    skipped,
     gpuPasses,
     metadata,
   };
@@ -111,6 +131,7 @@ export function printSummary(s: CsvSummary, top = 15, targetFps = 60): void {
   console.log(`fps: avg ${s.fps.toFixed(0)}, p95-frame ${s.fpsLow.toFixed(0)}, 1% low ${s.fps1Low.toFixed(0)}`);
   const bar = barCheck(s, targetFps);
   console.log(`the bar at ${targetFps} fps: ${bar.pass ? 'PASS' : `FAIL: ${bar.notes.join('; ')}`}`);
+  for (const h of hitchList(s, targetFps).slice(0, 10)) console.log(`  hitch: frame ${h.frame}, ${h.atS.toFixed(2)} s into the measured frames, ${h.ms.toFixed(1)} ms`);
   if (s.gpuPasses.length) {
     console.log('\ntop GPU passes (avg ms):');
     for (const g of s.gpuPasses.slice(0, top)) console.log(`  ${f(g.avg)}  ${g.name}`);

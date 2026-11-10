@@ -159,6 +159,41 @@ if ($throttle -contains 'True') { Fail '"Use Less CPU when in Background" is ON:
 elseif ($throttle -contains 'False') { Pass '"Use Less CPU when in Background" is off' }
 else { Warn '"Use Less CPU when in Background" not found in the settings files (the default is on): untick it in Editor Preferences (SETUP step 8.2)' }
 
+# ---------- generator tools and keys (the first paid generation must not be where these are found missing) ----------
+$bl = (& blender --version 2>$null | Select-Object -First 1)
+if ($bl -match 'Blender (\d+)\.(\d+)') {
+    if ([int]$Matches[1] -gt 5 -or ([int]$Matches[1] -eq 5 -and [int]$Matches[2] -ge 2)) { Pass "$bl on PATH" }
+    else { Fail "$bl on PATH: the kit's Blender scripts are verified on 5.2 and 5.3 (SETUP: Requirements)" }
+} else { Fail 'blender not on PATH (asset.ts, character.ts, parts.ts and the style-mask bake run it headless)' }
+$ff = Get-Command ffmpeg -ErrorAction SilentlyContinue
+$ffWinget = Get-ChildItem (Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Packages') -Filter 'Gyan.FFmpeg*' -Directory -ErrorAction SilentlyContinue
+if ($ff -or $ffWinget) { Pass 'ffmpeg found' } else { Fail 'ffmpeg not found (audio conversion, capture, video): SETUP Requirements' }
+if (Get-Command tripo -ErrorAction SilentlyContinue) { Pass 'tripo CLI on PATH' } else { Fail 'tripo CLI not on PATH (image-to-3D, rigging): SETUP Requirements' }
+# Keys: only whether each line has a value. Never print a value.
+$envFile = Join-Path $Kit '.env'
+function HasKey([string]$name) {
+    $l = Select-String -LiteralPath $envFile -Pattern "^\s*$name\s*=\s*\S" -ErrorAction SilentlyContinue | Select-Object -First 1
+    return [bool]$l
+}
+foreach ($k in @(@('GEMINI_API_KEY', 'concept images'), @('TRIPO_API_KEY', '3D models and rigs'), @('ELEVENLABS_API_KEY', 'sound, music, voice'))) {
+    if (HasKey $k[0]) { Pass "$($k[0]) set in the kit's .env" } else { Fail "$($k[0]) is empty in the kit's .env ($($k[1])): the director adds it" }
+}
+if (-not (HasKey 'OPENAI_API_KEY')) { Warn 'OPENAI_API_KEY is empty (only needed for --provider openai images)' }
+if ($is59) {
+    $kim = @('AnimGenOffline', 'Kimodo') | Where-Object { $n = $_; -not ($plugins | Where-Object { $_.Name -eq $n -and $_.Enabled }) }
+    $hf = Join-Path $env:USERPROFILE '.cache\huggingface\token'
+    if ($kim) { Warn "Kimodo animation not set up in this project: plugin(s) $($kim -join ', ') off (SETUP 10b; the hero's motion on 5.9)" }
+    elseif (-not (Test-Path $hf)) { Warn 'Kimodo plugins are on but there is no Hugging Face token file: node gen\hf_token.ts (SETUP 10b)' }
+    else { Pass 'Kimodo: plugins on, Hugging Face token file present' }
+}
+$butler = (Get-Command butler -ErrorAction SilentlyContinue) -or (Test-Path 'C:\butler\butler.exe')
+if (-not $butler) { Warn 'butler (itch.io upload) not installed: SETUP 9, before the last day' }
+elseif (-not (Test-Path (Join-Path $env:USERPROFILE '.config\itch\butler_creds'))) { Warn 'butler is installed but not logged in: butler login (SETUP 9)' }
+else { Pass 'butler installed and logged in' }
+$drive = Get-PSDrive -Name ($Project.Substring(0, 1)) -ErrorAction SilentlyContinue
+if ($drive -and $drive.Free -lt 40GB) { Warn ("only {0:N0} GB free on {1}: (a 5.9 project with a packaged build, captures and a zip needs 40+)" -f ($drive.Free / 1GB), $drive.Name) }
+elseif ($drive) { Pass ("{0:N0} GB free on {1}:" -f ($drive.Free / 1GB), $drive.Name) }
+
 # ---------- machine ----------
 $node = (& node --version 2>$null)
 if ($node -match '^v(\d+)' -and [int]$Matches[1] -ge 24) { Pass "node $node" } else { Fail "node 24+ needed, found '$node'" }

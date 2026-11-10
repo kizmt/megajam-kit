@@ -67,15 +67,29 @@ Researched 2026-10-26/28; prices and terms change, so re-check a source before r
   - Errors open a **modal dialog** (`KimodoSettings.h` ShowErrorDialog), which blocks the game thread and every MCP
     call. With the setup done none appeared in the test; a session still saves before generating and treats a
     stalled MCP call as a possible dialog (`debugging.md` B).
-  - **Scripting (not yet tried; the session finds out):** AI-callable is only `AddGeneratedAnimationSectionAsync`
-    (adds a Generated Animation section to an Animation Mixer track). The section and its pose generator are ordinary
-    objects, so Python can likely set their properties (prompt, Movement Source, quality, variations, seed; names via
-    `get_editor_property` and the stub). Unknown: whether a script can trigger a generation (the toolbar's Generate
-    runs the editor command `GenerateAllAnimations`, not a scripting function) and add pose or foot keys (plugin
-    channels). Baking can use the standard `SequencerTools.export_anim_sequence`. Probe these in one short spike; if
-    generation can't be triggered by script after two tries, ask the director to press Generate (in the jam) or use
-    the other sources (autonomous run). Its output skeleton is Kimodo's SOMA 77-joint rig, retargeted automatically
-    to the character.
+  - **Scripting: works, with the kit's tool** (proven in the 2026-11-10 practice run, shipped 2026-11-11):
+    `node gen\unreal\kimodo.ts "<prompt>" --name A_Hero_Wave --seq /Game/.../LS_HeroKimodo [--seed N] [--dest ...]`
+    opens the sequence, sets the prompt, waits for the generation and saves the clip as an Animation Sequence for the
+    character's skeleton: 18-26 s per 5 s clip once the models are loaded (about 1-2 min for the first after an
+    editor start). `--state` lists the sections with their prompts and seeds. No UI step, no C++. What it relies on
+    (`gen/unreal/py/kimodo.py`):
+    - The plugin has no "generate" call. Its edit mode regenerates a section about 0.4 s after an editor
+      **transaction** touches the section or its pose generator, while the sequence is **open in Sequencer** and Live
+      Update and the section's auto-generate are on (defaults). The script edits inside
+      `unreal.ScopedEditorTransaction` after `section.modify()` and `pose_generator.modify()`.
+    - Property names are **CamelCase** (`AnimDescriptionOverride`, `RandomSeed`): `KimodoPoseGenerator` has no Python
+      type, so the snake_case forms raise "Failed to find property".
+    - Done line in the Output Log: `LogAnimGenOffline: GenerationTiming ... Stage=CleanupAndPostGenerate`.
+    - Export: `ControlRigSequencerLibrary.export_anim_sequence_from_sequencer(anim, AnimSeqExportOption(), binding,
+      False)` into an AnimSequence made with `AnimSequenceFactory(target_skeleton=...)`. The character is found from
+      the binding (`LevelSequenceEditorBlueprintLibrary.get_bound_objects(seq.get_binding_id(binding))`: a plain
+      Actor with one SkeletalMeshComponent).
+    - Traps: generator sections can have open ranges (`has_start_frame()` before `get_start_frame()`); the edit
+      dirties the sequence, so closing the editor asks to save it; an error opens the modal dialog above.
+    - **Still by hand, once per character:** the sequence itself, made with the plugin's **Add Character** (SETUP
+      10b; the workflow below). Not tried by script: `AddGeneratedAnimationSectionAsync`, clips longer than the
+      section (150 frames in the test), pose and foot keys, splines. Variations: run the tool with 2-3 seeds and keep
+      the take with the least foot slide.
   - **What an agent does better than the UI:** measure foot slide from the baked clip (foot bone positions per frame,
     in cm, as `characters.md` does for retargets), generate 2-3 variations and keep the one with the least slide, and
     hide the rest with runtime foot IK.

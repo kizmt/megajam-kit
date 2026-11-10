@@ -341,7 +341,8 @@ SetInputMode(Mode); SetShowMouseCursor(true); SetPause(true);
   shipped per-group values (not `SetOverallScalabilityLevel(3)`), and shows "Custom" once the player changes a
   group. The menu never calls `RunHardwareBenchmark` / `ApplyHardwareBenchmarkResults` (they overwrite the benched
   mix); the only use is the optional first-launch check in `performance.md` "The bar" (applied only below High).
-- **Resolution scale can undo the bench's internal resolution** (unverified in 5.8.4). SETUP pins it with
+- **Resolution scale can undo the bench's internal resolution** (confirmed on 5.9, and a quality *preset* does it
+  too: `performance.md` "The bar", "A quality preset must not change the resolution"). SETUP pins it with
   `r.ScreenPercentage.Default`; the menu's scale writes `r.ScreenPercentage`, which may override it, so a slider saved
   at 100% could render native 4K (about 4x the benched pixels). After `ApplySettings`, type `r.ScreenPercentage` in
   the console to see the value and what set it. Start the slider at the shipped percentage, label it in %, cap it

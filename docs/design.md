@@ -186,6 +186,13 @@ Pass/fail checks for each playtest round (report before and after):
 - Each beat names its one new idea, and the log shows the player passed that idea's gate in 3 attempts or fewer.
 - The set-piece shot named in `design/concept.md` exists in the game and in the video.
 
+**Two scripted runs before every cold playtest** (from the 5.9 practice run):
+- **Keys only, no mouse, the whole route.** A camera-relative game hides a first-time-player trap the autoplay bot
+  can't show: the bot sets its own view, so a route that doubles back behind the camera looked fine in every capture.
+- **A masher stretch:** hold forward and mash the main verb. Bots and targeted key tests follow the route, so
+  neither leaves it; the masher flew over every checkpoint and out of the level (`docs/ue/worldbuilding.md`, the
+  world-edge rule).
+
 ## Mapping to the judging categories
 
 The jam page defines each category in one line (as of 2026-11-11; recheck at kickoff and copy all seven into

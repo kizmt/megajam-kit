@@ -43,6 +43,10 @@ opinion of the result.
 >
 > Be specific and blunt. Ignore UI text, debug text and the build stamp. About 120 words per camera, 600 words at most.
 
+**For an unrequested addition, write the keep-or-remove rule before the test** (e.g. "kept only if the critic names
+it among the frame's three strongest elements without being asked"), in `DECISIONS.md`. A practice-run round with
+the rule written first took 65 s and settled an addition the builder liked.
+
 ## After the critic answers
 
 - Unblind it yourself. If the game lost to the reference, or the new version lost to the old, the ranked flaws

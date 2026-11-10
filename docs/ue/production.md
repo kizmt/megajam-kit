@@ -167,7 +167,14 @@ folder, never on PIE.
   at startup (e.g. from the game mode, `#if !UE_BUILD_SHIPPING`; unverified in 5.8.4). It hides
   `AddOnScreenDebugMessage` text too.
 - **Starts right:** opens in the intended window mode at the monitor's native resolution, mouse captured, first
-  gameplay within seconds; a missing save or settings file doesn't break the first launch.
+  gameplay within seconds; a missing save or settings file doesn't break the first launch. Evidence, not the log
+  (5.9's log doesn't name the window mode, and its `LogWindows: resolution` is the scaled desktop):
+  `gen\perf\window_size.ps1 -Dir <Build>\Windows` while the game runs prints the window's real size and whether it
+  is borderless; `-ExecCmds="shot showui"` saves a frame at the true back-buffer size.
+- **The settings menu doesn't wreck the frame rate:** read the fps at launch and after each quality preset, quit,
+  relaunch and read `r.ScreenPercentage` and `sg.ResolutionQuality`
+  (`-ExecCmds="r.ScreenPercentage,sg.ResolutionQuality"`). A preset that leaves native 4K saved is the trap in
+  `performance.md` "The bar". Then delete the build's `Saved\Config` so the zip's first launch is a fresh one.
 - **Cold first launch:** delete `<Build>\<Project>\Saved\` and run with `-clearPSODriverCache`: the warm-up screen
   ends within about a minute, and the first 30 s of play show no pop-in and no hitch over twice the frame time. Start
   it once in Windows Sandbox or on a second PC for missing DLLs ("Packaging and what gets shipped").
