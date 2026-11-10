@@ -29,7 +29,7 @@ in the morning; the window fits either.
   2026 at 2:00 PM to November 16th 2026 at 10:59 AM", JST). Check them against the ET times in the page text and
   the rules (00:00 EST Nov 12 to 20:59 EST Nov 15).
 - **Prizes this entry can win** (`docs/submission.md` "What a solo Unreal Engine entry can win"): Best Overall,
-  Solo Driver, Render Royalty, Glass Box, and the NVIDIA RTX Award if its conditions fit. Read the submission form's
+  Solo Driver, Render Royalty, Glass Box (the NVIDIA RTX Award needs DLSS 4.5, NvRTX or ACE: not on the 5.9 Preview). Read the submission form's
   questions now (the NVIDIA ones included) and note anything a prize needs from the game or the dev log.
 - **Partner credits** (emailed on Nov 10; the list and claim deadlines are in `docs/submission.md` "Partner credits").
   Ask the director which are claimed and their balances: they change the paid-generation budget (CLAUDE.md "Money,

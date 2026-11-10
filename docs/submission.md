@@ -13,8 +13,8 @@ CLAUDE.md "Shipping" and `SETUP.md` 9, the video in `docs/ue/cinematics-video.md
       (20:59 ET Nov 15). Late or broken entries are not accepted, and "proof of submission is not proof of receipt".
 - [ ] Packaged for Windows, playable on Windows 10/11, needing **no additional software** (rules 1, 7(f)): the
       VC++ runtime check in Windows Sandbox (`docs/ue/production.md` "Packaging and what gets shipped").
-- [ ] A **development build** (jam page, Unreal Engine teams, as of 2026-11-11: "Desktop or mobile: Windows, macOS,
-      Android, or iOS (development build). Windows builds must run on Windows 10 or 11."): `package.ps1` without
+- [ ] A **development build** (jam page, Unreal Engine teams, as of 2026-11-11: "Desktop or mobile: Windows 10 or 11,
+      macOS, Android, or iOS (development build)."): `package.ps1` without
       `-Config`, never Shipping. Zip named `TeamName_GameName`, under 1 GB (bigger: butler, which `upload.ps1`
       uses anyway), uploaded to our own itch.io account, then submitted to the jam.
       The page also offers an experimental **web** build (5.9 MegaJam Preview, Shipping, `index.html` at the zip's
@@ -51,7 +51,7 @@ that meet the modifier's condition.
 | Solo Driver | best game by a solo developer | $2,500 | **Yes** (solo entry): say so on the form. Partners: Rokoko headcam and gloves, fal $1,000 credits, an Intel laptop |
 | Render Royalty | best visuals, photoreal or stylized | $2,500 | **Yes**: the style lock and the shared style are aimed here. Partners: PBRgen $500, fal $1,000 credits, Rokoko, NetApp (US only) |
 | Glass Box | best dev log of how the game was built | $2,500 | **Yes**, only with the dev log link submitted with the game (below). Partner: AMD handheld |
-| NVIDIA RTX Award | a GeForce RTX 5090; the form has NVIDIA questions to answer | hardware | **To confirm at kickoff:** the page ties it to "Tools you used" and names the NvRTX engine branch as "one way to qualify". See the note below |
+| Render Royalty: NVIDIA RTX Award | "Best Render Royalty entry built in Unreal Engine that uses at least one feature from NvRTX (such as RTX Mega Geometry, RTX Direct Illumination, RTX Indirect Illumination (ReSTIR GI), RTX Path Tracing (ReSTIR PT), or LSS Hair), DLSS 4.5 (Unreal Engine), or NVIDIA ACE." | none: one GeForce RTX 5090 | **Not on the 5.9 Preview as things stand** (note below). Needs the NVIDIA questions answered on the form |
 | Best Team | a team of two or more | $5,000 | No (solo) |
 | Best Student Project | every entrant enrolled in higher education | $7,500 / $5,000 / $2,500 | Only if the director is enrolled |
 | Pocket Powerhouse | best mobile game | $2,500 | No (Windows build) |
@@ -60,18 +60,22 @@ that meet the modifier's condition.
 Every winning team also gets: Hyper3D Rodin Business for a year (and a share of the $10,000 pool if Rodin was used
 and listed), Tripo Max for a month or a Tripo Teams plan, Meshy Pro for a year.
 
-**NVIDIA RTX Award: what we know and don't.** The kit's copy of the page (2026-11-11) shows the RTX 5090 and "Answer
-the NVIDIA questions when you submit", the "Tools you used" field as needed for it, and the NvRTX branch of Unreal
-Engine as "one way to qualify"; the director reads it as sitting with Render Royalty. The page doesn't list the other
-ways. Don't switch engines for it: NvRTX is a source build, and the jam engine is the 5.9 Preview. What an entry on
-this kit can truthfully put in the NVIDIA answers: built and benched on a GeForce RTX 4060; NVIDIA's Kimodo
-motion-diffusion model for the animation (through UE 5.9's AnimGenOffline); hardware ray tracing only if the game
-ships with it on (`docs/ue/lighting.md`). Read the form's NVIDIA questions at kickoff and write down what they ask.
+**NVIDIA RTX Award: what it takes (page read in full 2026-11-11).** It is a sub-award of Render Royalty, not a
+separate category: the best Render Royalty entry that uses NvRTX, DLSS 4.5 or NVIDIA ACE. Using an RTX GPU, hardware
+ray tracing or NVIDIA's Kimodo model does not qualify. The three routes:
+- **DLSS 4.5 plugin:** NVIDIA's newest listed release (8.7.2, 2026-07-21) supports UE 5.5-5.8, not 5.9 (NVIDIA's
+  plugin archive, checked 2026-11-11; recheck before deciding). So it is a 5.8.4 route. Untested in this kit: it
+  replaces TSR as the upscaler, so the render-path numbers in `docs/ue/performance.md` would need re-benching, and
+  the plugin's licence is the director's to accept.
+- **NvRTX:** NVIDIA's own branch of the engine, built from source. Not a jam-week option.
+- **NVIDIA ACE:** AI-driven characters (speech, animation). A feature to design a game around, not to add.
+So qualifying means building the jam game on 5.8.4 with the DLSS plugin, and giving up what the kit uses 5.9 for
+(Kimodo's generated animation above all). That is an engine decision for the director, before S.
 
 ## Grants and credits
 
 - **Development Continuation Grants:** the jam page lists them per engine as $50,000 / $25,000 / $10,000 for first,
-  second and third place. They follow overall placement, the total across all seven categories, not one category.
+  second and third place, plus a $1,000 / $500 / $250 Fab credit and a month of Tripo Teams. They follow overall placement, the total across all seven categories, not one category.
   At kickoff, check whether they need anything on the submission form.
 - **Fab credits** go to each winning team's lead. Partner prizes are per team unless marked per member.
 - **Hyper3D:** $10,000 split equally among *winning* teams (any category) that used Rodin and listed it under
