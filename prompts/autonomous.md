@@ -6,7 +6,8 @@ writes down what it decided and what it would have asked. Use it for practice ru
 director (CLAUDE.md).
 
 How it starts (`SETUP.md` "Autonomous runs" has the director's checklist): the director sets up the project, fills
-in the run card below in the project's `AUTONOMOUS.md`, starts Claude Code in auto mode in the project, and sends
+in the run card below in the project's `AUTONOMOUS.md`, runs `scripts\preflight.ps1 -Autonomous` until it says
+READY, starts Claude Code in auto mode in the project, and sends
 one `/goal` (end of this file). After that the director doesn't type.
 
 ## The run card (the director fills this in before the start; the session never changes it)

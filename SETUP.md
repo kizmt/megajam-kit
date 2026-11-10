@@ -178,6 +178,17 @@ The Blank template opens a temporary Open World level (Landscape, World Partitio
    (Adds `import_sound`, `import_any`, `run_console_command`, `run_python` and `get_sound_info` to MCP. Enabled by
    default; no prompt.) **5.9:** the plugin also carries the kit's skills (`Skills\megajam-editor-scripting`,
    `Skills\megajam-assets`): `AgentSkillToolset` `ListSkills` should list them as `/Skills/MegajamTools/...`.
+   **Then the preflight check**, with the editor open (restarted after the plugin copy):
+
+   ```
+   C:\dev\megajam-kit\scripts\preflight.ps1 -Project C:\dev\<ProjectName>
+   ```
+
+   It checks the engine, the kit branch, that `CLAUDE.md`, the critic, the scripts and the plugin match the kit,
+   Claude Code's settings, `.mcp.json`, `MEGAJAM_PROJECT`, All Toolsets, the map, the Python stub, the 5.9 MSVC and
+   MCP Instructions, Smart App Control, and that MCP answers with `MegajamTools` registered. Fix every **FAIL**
+   before starting Claude Code: `CLAUDE.md` and the critic only load when it starts, so a session can't repair them
+   later. WARNs are worth fixing too. It changes nothing and never prints the kit's `.env`.
 2. `.\scripts\init-repo.ps1` → writes Unreal `.gitignore` + `.gitattributes`, runs `git init`, enables LFS,
    makes the first commit. Binaries/Intermediate/Saved/DerivedDataCache are ignored; `.uasset`/`.umap`,
    images, models and audio go through LFS.
@@ -345,10 +356,12 @@ The director does the human-only steps once, then doesn't type until the final r
    doesn't stop the run; the session falls back to free work, which tests less of the kit.
 4. **The PC:** power plan never sleeps (screen off is fine), Windows Update paused for the run's length, GPU-heavy
    apps closed, nothing else typing into the machine (key-injection tests send keys to the focused window).
-5. **Claude Code:** `cd C:\dev\<Project>; claude --permission-mode auto` (auto is the default on recent versions),
+5. **Preflight:** `C:\dev\megajam-kit\scripts\preflight.ps1 -Project C:\dev\<Project> -Autonomous` (step 6's check
+   plus the run card). Start only on `READY`: nobody is there to fix a FAIL once the run starts.
+6. **Claude Code:** `cd C:\dev\<Project>; claude --permission-mode auto` (auto is the default on recent versions),
    `/effort high`, then paste the `/goal` line at the end of `prompts/autonomous.md`. `/goal` keeps starting turns
    until its condition holds; `/goal` with no argument shows the status, `/goal clear` stops it. A usage limit or a
    rate limit pauses the goal (code.claude.com/docs/en/goal); it continues when the limit resets only if the session
    is set to wait for it, so check that before leaving.
-6. **After:** read `devlog/FINAL_REPORT.md`, `QUESTIONS.md` and `KIT_NOTES.md`; kit changes go in through the usual
+7. **After:** read `devlog/FINAL_REPORT.md`, `QUESTIONS.md` and `KIT_NOTES.md`; kit changes go in through the usual
    review.
