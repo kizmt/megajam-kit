@@ -149,7 +149,13 @@ def half(bm_src, axis, side, value, keep_selected):
     geom = bm.verts[:] + bm.edges[:] + bm.faces[:]
     res = bmesh.ops.bisect_plane(bm, geom=geom, dist=1e-6, plane_co=co, plane_no=no,
                                  clear_inner=positive, clear_outer=not positive)
-    cut_edges = [e for e in res["geom_cut"] if isinstance(e, bmesh.types.BMEdge)]
+    # Geometry lying exactly on the plane (the cap of an earlier cut at the same value) survives on BOTH sides.
+    # It belongs to the side whose body it is joined to; on the other side it is a loose flat shell: drop it there,
+    # or it floats where the part was (seen as 79- and 51-triangle flat shells after "x<0.33" then "x>0.33&z>4.31").
+    bm.faces.ensure_lookup_table(); bm.faces.index_update()
+    flat = [f for comp in shells(bm) if all(abs(v.co[axis] - value) < 1e-5 for g in comp for v in g.verts) for f in comp]
+    if flat: bmesh.ops.delete(bm, geom=flat, context="FACES")
+    cut_edges = [e for e in res["geom_cut"] if isinstance(e, bmesh.types.BMEdge) and e.is_valid]
     capped = cap(bm, cut_edges) if cut_edges else 0
     return bm, capped
 
