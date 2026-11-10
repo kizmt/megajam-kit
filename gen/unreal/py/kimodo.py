@@ -153,7 +153,7 @@ elif op == "export":
         raise RuntimeError("export_anim_sequence_from_sequencer returned False")
     if not EAL.save_asset(path, only_if_is_dirty=False):
         raise RuntimeError(f"saving {path} failed")
-    result.update({"out": path, "skeleton": skeleton.get_path_name(), "binding": str(binding.get_display_name()),
+    result.update({"out": path, "skeleton": skeleton.get_path_name(), "mesh": mesh.get_path_name().split(".")[0], "binding": str(binding.get_display_name()),
                    "frames": int(anim.get_editor_property("number_of_sampled_keys")),
                    "seconds": round(anim.get_play_length(), 2)})
 else:

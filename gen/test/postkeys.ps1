@@ -34,6 +34,11 @@ param(
     [int]$ShotEvery = 15,
     [double]$ReadyTimeoutSec = 150,
     [string]$GameArgs = '',
+    # A packaged build's exe (the outer <Project>.exe or the inner Binaries\Win64 one): post the keys to the build that
+    # ships instead of the editor's -game. No frames are captured (the capture script is editor Python): prove
+    # results from the game's log. Give -StartPattern a line the GAME logs (its ready line); the game is stopped at
+    # -QuitAfter if it has not quit by itself.
+    [string]$Exe = '',
     # Print only the start and DONE lines: a 300-key sequence otherwise floods the session's context.
     [switch]$Quiet
 )
@@ -74,16 +79,41 @@ $safe = $Name -replace '[^\w-]', '_'
 $log = Join-Path $proj.Dir "Saved\Logs\postkeys_$safe.log"
 $capDir = Join-Path $proj.Dir "Generated\clips\$safe"
 if (Test-Path $capDir) { Get-ChildItem $capDir -Filter 'f_*.png' | Remove-Item -Force }
-$p = Start-KitGame $proj $Map (Join-Path $PSScriptRoot 'frame_capture.py') @{
-    KIT_CAP_DIR = $capDir; KIT_CAP_EVERY = $ShotEvery; KIT_QUIT_AFTER = $QuitAfter } $log $ResX $ResY $GameArgs
+$buildRoot = ''
+if ($Exe) {
+    if (-not (Test-Path -LiteralPath $Exe)) { Write-Host "FAIL: -Exe not found: $Exe"; exit 1 }
+    if ($StartPattern -eq 'PROOF capture start') { Write-Host 'FAIL: with -Exe, pass -StartPattern with a line the game itself logs (its ready line)'; exit 1 }
+    if (Test-Path $log) { Remove-Item $log -Force }
+    # The folder that holds the whole build: the outer exe's own folder, or three levels up from the inner exe.
+    $exeFull = (Resolve-Path -LiteralPath $Exe).Path
+    $buildRoot = if ($exeFull -match '\\Binaries\\Win64\\[^\\]+$') { Split-Path (Split-Path (Split-Path (Split-Path $exeFull))) } else { Split-Path $exeFull }
+    $p = Start-Process $exeFull -ArgumentList "-windowed -ResX=$ResX -ResY=$ResY -WinX=40 -WinY=40 -abslog=`"$log`" $GameArgs" -PassThru
+} else {
+    $p = Start-KitGame $proj $Map (Join-Path $PSScriptRoot 'frame_capture.py') @{
+        KIT_CAP_DIR = $capDir; KIT_CAP_EVERY = $ShotEvery; KIT_QUIT_AFTER = $QuitAfter } $log $ResX $ResY $GameArgs
+}
+# The process that owns the game window: -game is the editor process itself; a packaged outer exe starts an inner one.
+function Get-GamePid {
+    if (-not $buildRoot) { return [uint32]$p.Id }
+    $g = Get-Process | Where-Object { $_.MainWindowHandle -ne 0 -and $_.Path -and $_.Path.StartsWith($buildRoot, [StringComparison]::OrdinalIgnoreCase) } | Select-Object -First 1
+    if ($g) { return [uint32]$g.Id } else { return [uint32]$p.Id }
+}
+function Test-GameGone {
+    if (-not $buildRoot) { return $p.HasExited }
+    return -not (Get-Process | Where-Object { $_.Path -and $_.Path.StartsWith($buildRoot, [StringComparison]::OrdinalIgnoreCase) })
+}
+function Stop-Game {
+    if ($buildRoot) { Get-Process | Where-Object { $_.Path -and $_.Path.StartsWith($buildRoot, [StringComparison]::OrdinalIgnoreCase) } | Stop-Process -Force -ErrorAction SilentlyContinue }
+    elseif (-not $p.HasExited) { Stop-Process -Id $p.Id -Force }
+}
 Write-Host "game pid $($p.Id), log $log"
 
 $deadline = (Get-Date).AddSeconds($ReadyTimeoutSec)
 # Look the window up after the start line: editor -game shows a splash window first, which closes on load.
 while (-not ((Test-Path $log) -and (Select-String -Path $log -Pattern $StartPattern -Quiet))) {
-    if ((Get-Date) -gt $deadline -or $p.HasExited) {
+    if ((Get-Date) -gt $deadline -or ($p.HasExited -and (Test-GameGone))) {
         Write-Host "FAIL: start line '$StartPattern' never appeared"
-        if (-not $p.HasExited) { Stop-Process -Id $p.Id -Force }
+        Stop-Game
         Show-KitLog $log 20; exit 1
     }
     Start-Sleep -Milliseconds 20
@@ -91,10 +121,12 @@ while (-not ((Test-Path $log) -and (Select-String -Path $log -Pattern $StartPatt
 $t0 = Get-Date
 Write-Host ("start line seen at {0:HH:mm:ss.fff}" -f $t0)
 $hwnd = [IntPtr]::Zero
+$script:gamePid = 0
 $held = @{}
 foreach ($s in $steps) {
     while (((Get-Date) - $t0).TotalSeconds -lt $s.At) { Start-Sleep -Milliseconds 2 }
-    $h = [KitGameWin]::Largest([uint32]$p.Id)
+    if (-not $script:gamePid) { $script:gamePid = Get-GamePid }
+    $h = [KitGameWin]::Largest($script:gamePid)
     if ($h -eq [IntPtr]::Zero) { Write-Host 'FAIL: the game window is gone'; exit 1 }
     if ($h -ne $hwnd) { Write-Host ("window 0x{0:X}" -f $h.ToInt64()); $hwnd = $h }
     $ok = switch ($s.Action) {
@@ -105,7 +137,12 @@ foreach ($s in $steps) {
     if (-not $Quiet -or -not $ok) { Write-Host ("{0,6:N2}s {1,-4} {2,-9} posted={3} (sent at {4:N3}s)" -f $s.At, $s.Action, $s.Name, $ok, ((Get-Date) - $t0).TotalSeconds) }
 }
 foreach ($k in @($held.Keys)) { [void][KitPostKeys]::Up($hwnd, $held[$k]); Write-Host "released held key $k" }
-if (-not $p.WaitForExit([int](($QuitAfter + 40) * 1000))) { Write-Host 'the game did not quit by itself: stopping it'; Stop-Process -Id $p.Id -Force }
+if ($Exe) {
+    # A packaged game has no capture script to quit it: wait out -QuitAfter (or its own exit), then stop it.
+    while (((Get-Date) - $t0).TotalSeconds -lt $QuitAfter -and -not (Test-GameGone)) { Start-Sleep -Milliseconds 200 }
+    if (-not (Test-GameGone)) { Stop-Game }
+} elseif (-not $p.WaitForExit([int](($QuitAfter + 40) * 1000))) { Write-Host 'the game did not quit by itself: stopping it'; Stop-Process -Id $p.Id -Force }
 $shots = @(Get-ChildItem $capDir -Filter 'f_*.png' -ErrorAction SilentlyContinue)
 Show-KitLog $log 20
-Write-Host "DONE. log $log; $($shots.Count) frames in $capDir"
+if ($Exe) { Write-Host "DONE (packaged build). log $log; no frames (prove results from the log)" }
+else { Write-Host "DONE. log $log; $($shots.Count) frames in $capDir" }

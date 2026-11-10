@@ -86,6 +86,17 @@ Researched 2026-10-26/28; prices and terms change, so re-check a source before r
       Actor with one SkeletalMeshComponent).
     - Traps: generator sections can have open ranges (`has_start_frame()` before `get_start_frame()`); the edit
       dirties the sequence, so closing the editor asks to save it; an error opens the modal dialog above.
+    - **Any character, one sequence: `--for <Name>`** (verified 2026-11-11 on a generated Tripo hero with short arms
+      and a hood). Generate on the mannequin's Kimodo sequence, and the tool retargets the clip onto a
+      `character.ts` character with its own retargeter (`RTG_Manny_To_<Name>`), into
+      `/Game/Characters/<Name>/Anims/Kimodo/<clip>_<Name>`: `node gen\unreal\kimodo.ts "<prompt>" --name A_Hero_Jump
+      --seq <Manny's Kimodo sequence> --for Hero`. About 25 s per clip. In a side-by-side pose check the hero matched
+      the mannequin through a crouch, an arms-up jump and the landing. So the manual Add Character step is done once,
+      for the mannequin, not per hero. The retarget never overwrites: a new take needs a new clip name. These clips
+      are generated content, not sourced (the tool reuses the library retarget script, whose closing line about
+      `SOURCED_ASSETS.md` doesn't apply to them).
+    - `--map` is only needed if the sequence must be opened in its own level, and it fails if the open level has
+      unsaved changes (`load_level`'s default policy on 5.9): leave it out and the sequence opens in the current level.
     - **Still by hand, once per character:** the sequence itself, made with the plugin's **Add Character** (SETUP
       10b; the workflow below). Not tried by script: `AddGeneratedAnimationSectionAsync`, clips longer than the
       section (150 frames in the test), pose and foot keys, splines. Variations: run the tool with 2-3 seeds and keep

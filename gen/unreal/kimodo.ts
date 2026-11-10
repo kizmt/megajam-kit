@@ -3,9 +3,14 @@
 //
 //   node gen/unreal/kimodo.ts "a person throws a hard punch forward with the right fist, then stands tall" \
 //        --name A_Hero_Punch --seq /Game/Characters/Hero/Kimodo/LS_HeroKimodo [--map /Game/.../L_HeroKimodo]
-//        [--dest /Game/Characters/Hero/Anims] [--mesh /Game/.../SK_Hero] [--seed 7] [--timeout 300]
+//        [--for Hero] [--dest /Game/Characters/Hero/Anims] [--mesh /Game/.../SK_Hero] [--seed 7] [--timeout 300]
 //   node gen/unreal/kimodo.ts --state --seq /Game/.../LS_HeroKimodo        (sections, prompts, seeds; changes nothing)
 //
+// --for <Name>: the clip is for a character built by gen/character.ts. Generate on the mannequin's Kimodo sequence
+// (one sequence serves every character), and the clip is then retargeted onto <Name> with the retargeter
+// character.ts made (RTG_Manny_To_<Name>), into /Game/Characters/<Name>/Anims/Kimodo/<name>_<Name>. Verified on a
+// generated hero (2026-11-11). Without --for the clip is for the sequence's own character. A clip name is used
+// once: the retarget never overwrites, so a new take gets a new name (A_Hero_Wave_02).
 // Needs, once per project (SETUP.md 10b, the director's steps): the AnimGenOffline and Kimodo plugins, the Hugging
 // Face token, and a Level Sequence with the character added through the plugin's Add Character (that gives it the
 // Generated Animation track this script drives). 5.9 only.
@@ -34,6 +39,7 @@ const { values: o, positionals } = parseArgs({
     dest: { type: 'string' },
     mesh: { type: 'string' },
     seed: { type: 'string' },
+    for: { type: 'string' },
     section: { type: 'string' },
     timeout: { type: 'string', default: '300' },
     state: { type: 'boolean', default: false },
@@ -42,7 +48,7 @@ const { values: o, positionals } = parseArgs({
 });
 const prompt = positionals.join(' ').trim();
 if (o.help || !o.seq || (!o.state && (!prompt || !o.name))) {
-  console.log(`usage: node gen/unreal/kimodo.ts "<prompt>" --name A_Name --seq /Game/.../LS_X [--map /Game/.../L_X]
+  console.log(`usage: node gen/unreal/kimodo.ts "<prompt>" --name A_Name --seq /Game/.../LS_X [--for <Character>] [--map /Game/.../L_X]
             [--dest /Game/.../Anims] [--mesh /Game/.../SK_X] [--seed N] [--section i] [--timeout 300]
        node gen/unreal/kimodo.ts --state --seq /Game/.../LS_X`);
   process.exit(o.help ? 0 : 2);
@@ -54,7 +60,7 @@ const py = async <T>(args: Record<string, string>): Promise<T> =>
 
 interface Section { start: number | null; end: number | null; prompt: string | null; seed: number | null }
 interface State { opened?: boolean; open_in_sequencer?: boolean; sections: Section[] }
-interface Exported { out: string; skeleton: string; binding: string; frames: number; seconds: number }
+interface Exported { out: string; skeleton: string; mesh?: string; binding: string; frames: number; seconds: number }
 
 /** The editor's log: <Project>\Saved\Logs\<Project>.log. The plugin's progress and errors only show there. */
 function editorLog(): string {
@@ -102,6 +108,18 @@ try {
   const dest = o.dest ?? (o.seq ?? '').split('/').slice(0, -1).join('/');
   const exp = await py<Exported>({ op: 'export', out: `${dest}/${o.name}`, ...(o.mesh ? { mesh: o.mesh } : {}) });
   console.log(`[4] ${exp.out}: ${exp.frames} frames, ${exp.seconds} s, skeleton ${exp.skeleton} (binding ${exp.binding})`);
+  if (o.for) {
+    // The same batch retarget the animation libraries use (it also registers curves on the target skeleton).
+    interface Retargeted { created: number; skipped_existing: number; dest: string; retargeter: string; assets: string[] }
+    const r = parseMarkedJson<Retargeted>(
+      await runPythonFileOrThrow(join(KIT, 'gen', 'unreal', 'py', 'retarget_library.py'),
+        { name: o.for, folder: dest, names: o.name ?? '', category: 'Kimodo', ...(exp.mesh ? { source_mesh: exp.mesh } : {}) }),
+      'RETARGET_LIB_JSON');
+    if (r.created === 0) {
+      fail(r.skipped_existing ? `${r.dest}/${o.name}_${o.for} already exists (the retarget never overwrites): use a new --name for a new take` : `nothing was retargeted onto ${o.for}`);
+    }
+    console.log(`[5] retargeted onto ${o.for}: ${r.assets.join(', ') || r.dest} (via ${r.retargeter})`);
+  }
   console.log('    the sequence stays open with its prompt changed (unsaved): save it to keep the prompt, or close without saving');
 } catch (e) {
   console.error(`FAIL: ${errorMessage(e)}`);

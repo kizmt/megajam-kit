@@ -427,10 +427,12 @@ no foreground needed), `gen/test/camset.ps1` (camera-set frames), `gen/test/stab
   they can't prove a HUD element. For that: `shots.ps1 -ShowUI` (a HUD proof of one beat in 75 s), or a
   `game_test.ps1` script that places the pawn (`set_actor_location`) and runs `shot showui` (HUD states the bot
   never reaches, in 12 s).
-- **Posted keys also drive the packaged Development build** (started with `-windowed -abslog=<log>`; the log is
-  written promptly enough to drive from): the practice run played a whole game on the shipped exe that way. The kit's
-  `postkeys.ps1` only launches `-game`; for the packaged build the keys go to the inner process's window
-  (`<Build>\<Project>\Binaries\Win64\<Project>.exe`).
+- **Posted keys also drive the packaged build: `postkeys.ps1 -Exe <Build>\Windows\<Project>.exe -StartPattern
+  '<the game's ready line>'`** (tested 2026-11-11 on a packaged 5.9 Development build: the game logged run start,
+  first input and the jump; it is stopped at `-QuitAfter`). It starts the exe with `-windowed -abslog=<log>` and posts
+  to the inner process's window. No frames are captured there (the capture script is editor Python): prove results
+  from the game's log, or add `-ExecCmds="shot showui"` through `-GameArgs` for one frame. This is the scripted
+  play-through of the build that ships (`production.md` "Final pass"); the director's own play stays the final check.
 - A reviewer on contact sheets (400 px tiles) can't see the HUD, text under about 20 px, or colour (a red beacon read
   as orange): give it two or three full-size frames per beat as well (`prompts/playtest.md`).
 

@@ -260,7 +260,9 @@ Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls nee
 | `gen/unreal/mcp.ts` | Call any Unreal MCP tool from scripts (waits out 5.9's slow-task refusals). CLI: `toolsets`, `describe <toolset>`, `call <toolset> <tool> [json \| '@args.json']` |
 | `gen/unreal/ue.ts` | Editor operations for the generators on either engine (5.8 toolsets, 5.9 plain Python): import, Nanite, collision, place, materials, `captureView()` |
 | `gen/unreal/py.ts` | Run a Python file (or `-c` code) in the editor via `run_python`; `--arg k=v` -> `ARGS` dict. On 5.9 Epic's `execute_python` also exists (rules and when to use which: `docs/ue/editor-scripting.md`) |
-| `gen/unreal/kimodo.ts` | 5.9: text to an Animation Sequence with Kimodo, by script (prompt, wait, bake); needs the character's Kimodo sequence (`SETUP.md` 10b) |
+| `gen/unreal/kimodo.ts` | 5.9: text to an Animation Sequence with Kimodo, by script (prompt, wait, bake); `--for <Name>` retargets it onto any `character.ts` character. Needs the mannequin's Kimodo sequence once (`SETUP.md` 10b) |
+| `gen/video/trailer.ts` | Cut the trailer from `shots.ps1` frames and build its soundtrack from the game's event log (`docs/ue/cinematics-video.md` D3b) |
+| `gen/test/postkeys.ps1` | Posted-key tests in `-game`, or on the packaged build with `-Exe` (`docs/ue/debugging.md` F) |
 | `gen/parts.ts` | Split a generated prop into movable parts (lid, door leaf, lever, wheel) with pivots, import them; see Moving parts |
 | `gen/blender/bake_style.py` | Style mask (edges, occlusion, height) for the master's shared style layer; `asset.ts` and `character.ts` run it |
 | `gen/unreal/materials.ts style` | Read or set `MPC_Style`: one look for every generated asset (`docs/ue/materials.md`) |

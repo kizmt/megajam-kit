@@ -325,6 +325,16 @@ game has test hooks that can stage its moments.
 - **Can't do:** the game's audio (`-nosound`; build the mix in the edit from the log's event times, D4) or spawning
   actors from Python. It films the editor build's `-game`, not the packaged build.
 
+**The edit and the sound for D3b: `gen/video/trailer.ts`** (ported from the practice run's project script, tested
+2026-11-11 on its frames and log: a 24.7 s cut with 14 effects and 5 music cues placed in one command).
+`node gen\video\trailer.ts --cut <Project>\design\video_cut.json --events` cuts the saved frames by a JSON cut list
+(segments by time or anchored on a logged event) and builds the soundtrack the capture doesn't have: each sound
+effect goes where the game's log says its event happened (rules: a regex on the event text, a file, volume and pitch
+as numbers or formulas over the regex groups), the music switches on the game's own cue events, and the mix is
+normalised to -14 LUFS. The cut-file format is in the script's header. It needs the game to log one line per thing
+the player would hear (`[EVT t=1.23] checkpoint 2` by default): add those lines when the sound is added to the game,
+and the trailer's sound comes for free. `--events` prints where each sound landed: check it against the picture.
+
 **D3b lessons from the 5.9 practice run (2026-11-10):**
 - **Plan the capture as a 20-minute block.** `shots.ps1 -ShowUI -KeepFrames` at 1080p60 wrote 3.8-4.7 frames per
   second on the target PC (86 s of game = 5,160 frames = 18-25 minutes), and no other `-game` test can run

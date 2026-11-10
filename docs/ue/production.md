@@ -160,7 +160,7 @@ folder, never on PIE.
   this machine use `postkeys.ps1`, or allow the exe once (a rule per exe path: each new unzip folder asks again).
 
 - **Full play-through twice**, start to credits, with real input (keyboard and mouse, plus gamepad if the page claims
-  it). Restart, quit and every menu path work; Esc always has a way out; the game never soft-locks.
+  it). A scripted keys-only pass of the shipped exe first is cheap (`gen/test/postkeys.ps1 -Exe`, `debugging.md` F). Restart, quit and every menu path work; Esc always has a way out; the game never soft-locks.
 - **No debug left on screen:** print strings, on-screen debug messages, debug draws, `stat` overlays, cheat keys,
   test levels in the level list. The build stamp is the only debug text. A Development build also prints engine
   warnings on screen (texture pool over budget and similar): run the console command `DisableAllScreenMessages` once
