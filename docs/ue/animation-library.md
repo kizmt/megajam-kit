@@ -69,6 +69,37 @@ Researched 2026-10-26/28; prices and terms change, so re-check a source before r
     Generated Animation section to an Animation Mixer track). Setting the prompt, generating and baking to an Animation
     Sequence from a script is unverified: try it in the 5.9 test (`ue59.md`). Its output skeleton is Kimodo's SOMA
     77-joint rig, retargeted to the character.
+  - Setup, by the director: `SETUP.md` 10b. UI labels in the plugin's source (2026-11-10): **Add Generated Animation
+    Section**, **Pose Generator** (Kimodo), **Anim Description** (the text prompt), **Draw Spline** (a path to
+    follow), **Generate Animation** / **Generate All Animations**, **Export Animation** ("exports the generated
+    animation to an animation sequence asset"), **Create Auto-Generated Retargeter Assets**; progress shows
+    "Downloading Llama 3 weights", "Downloading Kimodo weights", "Quantizing Llama 3 to NF4"; the plugin shows
+    **VRAM Used**.
+
+### Claude as the fallback generator (any engine; APIs checked in the 5.9 stub, not yet run)
+
+Pick the source per motion: Kimodo (if it passed its test) for full-body human motion; library clips (sourced, not
+scored) for stock locomotion; Uthana (paid); and the session itself for simple, stylised or mechanical motion, or
+when the others are unavailable. Agent-written motion is good at doors, platforms, bobbing pickups, a tail sway, a
+creature with few bones, a stylised hop or bow; it is weak at natural human weight and timing. Three routes, simplest
+first:
+1. **Code, no asset:** procedural motion in C++ (sine bob, spring, rotation, squash and stretch) for props and
+   pickups (`game-feel.md`).
+2. **Control Rig in Sequencer, baked** (characters): key the character's Control Rig controls (IK feet and hands,
+   pelvis, spine) at a few key poses with `ControlRigSequencerLibrary.set_local_control_rig_transform` or
+   `set_control_rig_world_transform` (per control, per frame), let Sequencer interpolate, then bake with
+   `SequencerTools.export_anim_sequence(world, sequence, anim_sequence, export_options, binding, create_link)`.
+   IK keeps the feet where they are put.
+3. **Bone keys straight into an Animation Sequence** (simple rigs): the sequence's `controller`
+   (`AnimationDataController`): `open_bracket`, `set_frame_rate`, `set_number_of_frames`, `add_bone_track`,
+   `set_bone_track_keys(bone, positions, rotations, scales)` (one key per frame), `close_bracket`, then save.
+
+Method, as an animator blocks: key poses first (a walk: contact, down, passing, up; an action: anticipation, action,
+follow-through, settle), written as numbers in a JSON the build script reads (`Tools\anim\<clip>.json`), so a
+correction is a data edit. Judge a frame sheet from the gameplay camera with the critic, then refine: at most 3-4
+rounds per clip, then simplify the motion or use another source. AnimGenOffline accepts other pose generators (its
+author: any algorithm that outputs poses over time), so an agent-backed generator could plug in there, but that is a
+C++ plugin: not for the jam.
 
 ### Uthana text-to-motion (tested: 3 clips; API, cost and output format in `PIPELINE.md`)
 

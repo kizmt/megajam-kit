@@ -343,6 +343,28 @@ scored); download them now, retarget them onto the game's characters during the 
 4. During the jam, migrate only the folders you need into the game (Migrate keeps each pack's `/Game/<Pack>/` path)
    and run `node gen/unreal/retarget_library.ts` with the arguments in `docs/ue/animation-library.md` "Workflow".
 
+## 10b. AI animation generation on 5.9: Kimodo (once per machine, before the jam; you do every step)
+
+Why and what: `docs/ue/animation-library.md` "Generated animation". Do it with no Claude session running in the
+project (its first run downloads ~16 GB and may show dialogs that block MCP).
+1. **Hugging Face:** an account granted access to `meta-llama/Meta-Llama-3-8B-Instruct` (the form on that page; the
+   Kimodo and adapter repos are open) and a **Read** token. A fine-grained token needs read access to public gated
+   repos. Never paste the token into a Claude session.
+2. **Plugins** (Edit > Plugins, Experimental): tick **AnimGenOffline** and **Kimodo**, and **Sequencer Anim Mixer
+   Toolset** so MCP can reach the mixer. Restart. If the editor offers to install Python packages for them (PyTorch
+   and friends), that is an install: read it and decide.
+3. **Token:** Editor Preferences > Plugins > **Kimodo** > Authentication > **Hugging Face Token**. It is stored per
+   user (`EditorPerProjectUserSettings.ini`), not in the project. Leave Performance at its defaults (the text
+   encoder stays in system RAM). Its "Licenses and Attributions" lists the three licences.
+4. **First clip** (this downloads the weights): put the Third Person character in a level, add a Level Sequence with
+   the character in it, then **Add Generated Animation Section**; in the section set **Pose Generator** = Kimodo and
+   **Anim Description** = "a person walks forward and waves"; **Generate Animation**. Wait for "Downloading Llama 3
+   weights" / "Downloading Kimodo weights" to finish and "Animation generated successfully". If it asks to
+   **Create Auto-Generated Retargeter Assets** for the character, say yes. The labels come from the plugin's source;
+   where they sit in the UI is untested.
+5. **Export Animation** saves it as an Animation Sequence. Play it on the character.
+6. Note for the kit: time per clip, the **VRAM Used** figure, and how the clip looks (feet, hands, timing).
+
 ## 11. Autonomous practice run (no director input; `prompts/autonomous.md`)
 
 The director does the human-only steps once, then doesn't type until the final report.
