@@ -137,9 +137,16 @@ if ($is59) {
     if ((Test-Path $game) -and (Get-Content -Raw $game) -match 'megajam-kit project: one AI session') { Pass 'MCP project Instructions set (5.9)' }
     else { Warn 'MCP project Instructions not found in DefaultGame.ini (5.9, SETUP step 3.5; the ini key is unconfirmed)' }
 }
-$userIni = Join-Path $Project 'Saved\Config\WindowsEditor\EditorPerProjectUserSettings.ini'
-if ((Test-Path $userIni) -and (Get-Content -Raw $userIni) -match '(?m)^bThrottleCPUWhenNotForeground=False') { Pass '"Use Less CPU when in Background" is off' }
-else { Warn '"Use Less CPU when in Background" not confirmed off: with it on, a background editor runs at ~3 fps (SETUP step 8.2)' }
+# "Use Less CPU when in Background": per user and per engine version (5.9 keeps it in %LOCALAPPDATA%\UnrealEngine\5.9\
+# ...\EditorSettings.ini); a project file may also carry it. On, a background editor runs at ~3 fps: fatal unattended.
+$throttle = @()
+foreach ($ini in @((Join-Path $env:LOCALAPPDATA "UnrealEngine\$minor\Saved\Config\WindowsEditor\EditorSettings.ini"),
+                   (Join-Path $Project 'Saved\Config\WindowsEditor\EditorPerProjectUserSettings.ini'))) {
+    if (Test-Path $ini) { $throttle += @(Select-String -LiteralPath $ini -Pattern '^\s*bThrottleCPUWhenNotForeground=(\w+)' | ForEach-Object { $_.Matches[0].Groups[1].Value }) }
+}
+if ($throttle -contains 'True') { Fail '"Use Less CPU when in Background" is ON: Editor Preferences > General > Performance, untick it (SETUP step 8.2)' }
+elseif ($throttle -contains 'False') { Pass '"Use Less CPU when in Background" is off' }
+else { Warn '"Use Less CPU when in Background" not found in the settings files (the default is on): untick it in Editor Preferences (SETUP step 8.2)' }
 
 # ---------- machine ----------
 $node = (& node --version 2>$null)
