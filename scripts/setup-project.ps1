@@ -14,6 +14,8 @@
          All Toolsets leaves out), and AnimGenOffline, Kimodo and Sequencer Anim Mixer Toolset (Kimodo's animation
          generation) unless -NoKimodo. -Plugins adds more by name, for a game that needs them, e.g.
          -Plugins PCGPrimitives,ProceduralVegetationEditor (procedural levels; scripted trees)
+    2.3  5.9: the Asset Manager's GameFeatureData entry in Config\DefaultGame.ini (stops the prompt at every launch)
+    3.3  .mcp.json for Claude Code (the editor's MCP server at its default address)
     3.5  5.9: writes the MCP project Instructions (agents\mcp-instructions.md) into Config\DefaultGame.ini
     5    .claude\settings.local.json (kit read-only, unreal-mcp enabled), CLAUDE.md, the critic subagent
     6    scripts\ and Plugins\MegajamTools
@@ -91,6 +93,27 @@ if ($is59) {
     if ($md -match '(?s)```text\r?\n(.+?)\r?\n```') {
         Set-IniValue (Join-Path $config 'DefaultGame.ini') '/Script/ModelContextProtocol.ModelContextProtocolProjectSettings' 'Instructions' $Matches[1].Trim() 'MCP project Instructions (SETUP 3.5)'
     } else { Write-Host '  WARN   no ```text block in agents\mcp-instructions.md: paste the Instructions by hand (SETUP 3.5)' }
+}
+if ($is59) {
+    # The Asset Manager entry, as the 5.9 editor itself writes it when the entry is added in Project Settings
+    # (copied from a project set up by hand on 2026-11-11).
+    $gameIniPath = Join-Path $config 'DefaultGame.ini'
+    $gfd = '+PrimaryAssetTypesToScan=(PrimaryAssetType="GameFeatureData",AssetBaseClass="/Script/GameFeatures.GameFeatureData",bHasBlueprintClasses=False,bIsEditorOnly=False,bNeedsLoadForCooking=False,Directories=((Path="/Game/Unused")),SpecificAssets=,Rules=(Priority=-1,ChunkId=-1,bApplyRecursively=True,CookRule=Unknown))'
+    $gl = if (Test-Path $gameIniPath) { @(Get-Content -LiteralPath $gameIniPath) } else { @() }
+    if (($gl -join "`n") -match 'PrimaryAssetType="GameFeatureData"') { Kept 'Asset Manager: GameFeatureData entry (SETUP 2.3)' }
+    else {
+        $at = -1
+        for ($i = 0; $i -lt $gl.Count; $i++) { if ($gl[$i].Trim() -eq '[/Script/Engine.AssetManagerSettings]') { $at = $i; break } }
+        if ($at -ge 0) { $gl = @($gl[0..$at]) + $gfd + @(if ($at + 1 -lt $gl.Count) { $gl[($at + 1)..($gl.Count - 1)] }) }
+        else { $gl = @($gl) + '' + '[/Script/Engine.AssetManagerSettings]' + $gfd }
+        [IO.File]::WriteAllLines($gameIniPath, $gl, $utf8); Done 'Asset Manager: GameFeatureData entry (SETUP 2.3)'
+    }
+}
+$mcpJson = Join-Path $Project '.mcp.json'
+if (Test-Path $mcpJson) { Kept '.mcp.json' }
+else {
+    [IO.File]::WriteAllText($mcpJson, "{`n`t`"mcpServers`":`n`t{`n`t`t`"unreal-mcp`":`n`t`t{`n`t`t`t`"type`": `"http`",`n`t`t`t`"url`": `"http://127.0.0.1:8000/mcp`"`n`t`t}`n`t}`n}`n", $utf8)
+    Done '.mcp.json (the editor''s MCP server, default address)'
 }
 if ($kimodo) {
     Set-IniValue (Join-Path $config 'DefaultEngine.ini') '/Script/PythonScriptPlugin.PythonScriptPluginSettings' 'bPipStrictHashCheck' 'False' 'Pip Strict Hash Check off (SETUP 10b; Kimodo needs it on the Preview)'
