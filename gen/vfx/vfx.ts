@@ -18,14 +18,12 @@ import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { KIT, errorMessage, fail, generatedDir, isMain, jsonArg } from '../paths.ts';
 import { parseMarkedJson, run } from '../proc.ts';
-import { McpUnreachableError, callTool, mcpCall, type ObjectRef } from '../unreal/mcp.ts';
+import { McpUnreachableError, callTool, type ObjectRef } from '../unreal/mcp.ts';
+import { assetExists, saveAssets, setNanite, setProperties } from '../unreal/ue.ts';
 import { runPythonFileOrThrow } from '../unreal/python.ts';
 import { VFX_TEXTURES, writeGrayPng } from './textures.ts';
 
 const MT = 'megajam_tools.toolsets.MegajamTools';
-const OB = 'editor_toolset.toolsets.object.ObjectTools';
-const SM = 'editor_toolset.toolsets.static_mesh.StaticMeshTools';
-const AS = 'editor_toolset.toolsets.asset.AssetTools';
 export const VFX_ROOT = '/Game/Kit/VFX';
 export const VFX_MASTER = `${VFX_ROOT}/Materials/M_VFX_Master`;
 const TEX = `${VFX_ROOT}/Textures`;
@@ -52,17 +50,14 @@ export async function makeTextures(o: { size?: number; only?: string[]; unreal?:
     if (o.unreal !== false) {
       const tex = await importOne(TEX, t.name, file);
       const addr = t.tiles ? 'TA_Wrap' : 'TA_Clamp';
-      await mcpCall(OB, 'set_properties', {
-        instance: tex,
-        values: JSON.stringify({ SRGB: false, CompressionSettings: 'TC_Masks', LODGroup: 'TEXTUREGROUP_Effects', AddressX: addr, AddressY: addr }),
-      });
+      await setProperties(tex, { SRGB: false, CompressionSettings: 'TC_Masks', LODGroup: 'TEXTUREGROUP_Effects', AddressX: addr, AddressY: addr });
     }
     console.log(`  ${t.name}  ${t.tiles ? 'tiles' : 'clamped'}  ${t.what}`);
     done.push(`${TEX}/${t.name}`);
   }
   // Never save an empty list: save_assets([]) saves every dirty package, the user's level included.
   if (o.unreal !== false && done.length) {
-    if (!(await callTool<boolean>(AS, 'save_assets', { asset_paths: done }))) throw new Error('saving the textures failed');
+    if (!(await saveAssets(done))) throw new Error('saving the textures failed');
   }
   return done;
 }
@@ -72,7 +67,7 @@ export interface VfxMasterResult { path: string; version: string; rebuilt: boole
 export async function ensureVfxMaster({ force = false }: { force?: boolean } = {}): Promise<VfxMasterResult> {
   const need = ['T_VFX_SoftCircle', 'T_VFX_Noise'];
   const missing: string[] = [];
-  for (const n of need) if (!(await callTool<boolean>(AS, 'exists', { path: `${TEX}/${n}` }))) missing.push(n);
+  for (const n of need) if (!(await assetExists(`${TEX}/${n}`))) missing.push(n);
   if (missing.length) await makeTextures({ only: missing });
   const r = parseMarkedJson<VfxMasterResult>(
     await runPythonFileOrThrow(PY('build_vfx_material.py'), {
@@ -98,12 +93,9 @@ export async function makeInstance(name: string, spec: Record<string, unknown>):
  */
 export async function prepareFlipbook(texturePath: string): Promise<string> {
   const objectPath = texturePath.includes('.') ? texturePath : `${texturePath}.${texturePath.split('/').pop()}`;
-  await mcpCall(OB, 'set_properties', {
-    instance: { refPath: objectPath },
-    values: JSON.stringify({ SRGB: true, CompressionSettings: 'TC_Default', LODGroup: 'TEXTUREGROUP_Effects', AddressX: 'TA_Clamp', AddressY: 'TA_Clamp' }),
-  });
+  await setProperties({ refPath: objectPath }, { SRGB: true, CompressionSettings: 'TC_Default', LODGroup: 'TEXTUREGROUP_Effects', AddressX: 'TA_Clamp', AddressY: 'TA_Clamp' });
   const pkg = objectPath.split('.')[0]!;
-  if (!(await callTool<boolean>(AS, 'save_assets', { asset_paths: [pkg] }))) throw new Error(`saving ${pkg} failed`);
+  if (!(await saveAssets([pkg]))) throw new Error(`saving ${pkg} failed`);
   return pkg;
 }
 
@@ -130,11 +122,11 @@ export async function makeMeshes(o: { unreal?: boolean; out?: string } = {}): Pr
       continue;
     }
     // Particle meshes stay non-Nanite (docs/ue/vfx.md "Cost rules").
-    await mcpCall(SM, 'set_nanite_enabled', { mesh, enabled: false });
+    await setNanite(typeof mesh === 'string' ? mesh : mesh.refPath, false);
     paths.push(`${folder}/${m.name}`);
   }
   // Every mesh kept (all referenced): nothing to save, and save_assets([]) would save every dirty package.
-  if (paths.length && !(await callTool<boolean>(AS, 'save_assets', { asset_paths: paths }))) throw new Error('saving the meshes failed');
+  if (paths.length && !(await saveAssets(paths))) throw new Error('saving the meshes failed');
   return r;
 }
 

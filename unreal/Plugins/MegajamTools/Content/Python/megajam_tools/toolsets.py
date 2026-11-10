@@ -8,16 +8,25 @@ import unreal
 import toolset_registry
 from toolset_registry.registration import Registration
 
-# Epic's import helper (verified on 5.8.4). Not in the 5.9 docs: if the module moved, only the two import tools fail,
-# with this message, instead of the whole toolset failing to register.
+# Epic's import helper (verified on 5.8.4). UE 5.9 dropped Epic's Python editor toolsets (a 5.9 run found
+# editor_toolset.toolsets.asset.AssetTools unregistered), so where the module is missing the import runs as a plain
+# automated AssetImportTask, the route the 5.9 run verified for FBX, PNG and the re-import below.
 try:
     from editor_toolset.toolsets.asset import import_asset
-except ImportError as _e:
-    _IMPORT_ASSET_ERROR = str(_e)
-
-    def import_asset(*_args, **_kwargs):
-        raise RuntimeError(f"editor_toolset.toolsets.asset.import_asset is not available in this engine "
-                           f"({_IMPORT_ASSET_ERROR}); update megajam_tools/toolsets.py")
+except ImportError:
+    def import_asset(folder_path: str, asset_name: str, source_file: str) -> list:
+        task = unreal.AssetImportTask()
+        task.set_editor_property("filename", source_file)
+        task.set_editor_property("destination_path", folder_path)
+        task.set_editor_property("destination_name", asset_name)
+        task.set_editor_property("replace_existing", True)
+        task.set_editor_property("automated", True)
+        task.set_editor_property("save", False)
+        unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
+        assets = [unreal.EditorAssetLibrary.load_asset(p) for p in task.get_editor_property("imported_object_paths")]
+        if not assets:
+            raise RuntimeError(f"import of {source_file} into {folder_path}/{asset_name} produced nothing")
+        return assets
 
 from megajam_tools.refs import referencers_outside
 

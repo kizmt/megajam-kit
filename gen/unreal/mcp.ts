@@ -126,6 +126,15 @@ async function getMetaTools(): Promise<MetaTool[]> {
   return metaTools;
 }
 
+/**
+ * True when the editor's tool search is 5.9's (describe_toolsets): there Epic's Python editor toolsets
+ * (editor_toolset.toolsets.*) that the kit's 5.8.4 calls name are gone, and gen/unreal/ue.ts runs the same
+ * operations as plain unreal.* Python instead.
+ */
+export async function hasNewToolSearch(): Promise<boolean> {
+  return (await getMetaTools()).some((t) => t.name === 'describe_toolsets');
+}
+
 export async function describeToolset(toolset: string): Promise<string> {
   const tools = await getMetaTools();
   const plural = tools.find((t) => t.name === 'describe_toolsets');

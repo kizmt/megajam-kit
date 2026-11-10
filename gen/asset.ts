@@ -15,8 +15,9 @@ import { basename, extname, join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { KIT, errorMessage, generatedDir, pascal } from './paths.ts';
 import { packOrm, parseMarkedJson, parseTripo, requireTripoCredits, run, secs, type OrmResult } from './proc.ts';
-import { applyPbr, ref, type ApplyPbrResult } from './unreal/materials.ts';
-import { McpUnreachableError, callTool, captureViewport, mcpCall, type Box, type CameraTransform, type ObjectRef } from './unreal/mcp.ts';
+import { applyPbr, type ApplyPbrResult } from './unreal/materials.ts';
+import { McpUnreachableError, captureViewport, type CameraTransform } from './unreal/mcp.ts';
+import { assetExists, convexCollisions, deleteAsset, importStaticMesh, placeAsset, setNanite, setViewportCamera } from './unreal/ue.ts';
 import { runPythonCode } from './unreal/python.ts';
 import { TURNAROUND_RULES, VIEW_ORDER, parseViews, splitSheet } from './views.ts';
 
@@ -109,11 +110,6 @@ const t0 = Date.now();
 const save = (): void => writeFileSync(join(dir, 'manifest.json'), JSON.stringify(manifest, null, 2));
 const step = (n: number, msg: string): void => console.log(`[${n}] ${msg}`);
 
-const S = 'editor_toolset.toolsets.static_mesh.StaticMeshTools';
-const SC = 'editor_toolset.toolsets.scene.SceneTools';
-const AS = 'editor_toolset.toolsets.asset.AssetTools';
-const A = 'editor_toolset.toolsets.actor.ActorTools';
-const E = 'EditorToolset.EditorAppToolset';
 
 try {
   // 1. Concept image(s)
@@ -212,7 +208,6 @@ try {
     t = Date.now();
     const folder = `${o.dest}/${name}`;
     const assetPath = `${folder}/SM_${name}`;
-    const meshRef = ref(assetPath);
     try {
       // Rerun: remove the actor a previous run placed FIRST. Otherwise every run stacks a new actor, and the old ones
       // keep pointing at the deleted mesh. Only actors this script placed: labelled <Name> AND showing a mesh from
@@ -224,7 +219,7 @@ try {
         '    if m and m.get_path_name().startswith(ARGS["folder"] + "/"):\n        A.destroy_actor(a)\n        n += 1\nprint(n)',
         { label: name, folder });
       if (removed.ok && removed.output.trim() !== '0') console.log(`    removed ${removed.output.trim()} previous ${name} actor(s)`);
-      if (await callTool<boolean>(AS, 'exists', { path: folder })) {
+      if (await assetExists(folder)) {
         // Deleting an asset that something outside the folder still references opens a modal dialog that stalls
         // the editor, so check first (loading referencers to confirm, so the actors removed above don't count).
         const outside = await runPythonCode(
@@ -234,21 +229,21 @@ try {
         if (outside.output.trim()) {
           throw new Error(`refusing to replace ${folder}: assets outside it still reference it (remove or repoint them, or use a new name):\n  ${outside.output.trim().split('\n').join('\n  ')}`);
         }
-        await mcpCall(AS, 'delete', { path: folder });
+        await deleteAsset(folder);
       }
       // Import geometry only (the importer's auto materials drop metallic and can fail to compile),
       // then build MI_<Name> from the kit's master PBR material.
-      await mcpCall(S, 'import_file', { folder_path: folder, asset_name: `SM_${name}`, source_file: fbx.replace(/\\/g, '/'), import_materials: true, import_textures: false });
+      await importStaticMesh(folder, `SM_${name}`, fbx);
       const autoMat = `${folder}/M_${name}`;
       manifest.steps.material = await applyPbr({ name, texDir: join(dir, `${name}_tex`), dest: o.dest, mesh: assetPath });
-      if (await callTool<boolean>(AS, 'exists', { path: autoMat })) await mcpCall(AS, 'delete', { path: autoMat });
+      if (await assetExists(autoMat)) await deleteAsset(autoMat);
       // Nanite on: Epic's 5.8 guidance is to enable it wherever supported. Without it every generated prop
       // renders all ~25k triangles at any distance (one LOD), which adds up fast as the level fills.
-      await mcpCall(S, 'set_nanite_enabled', { mesh: meshRef, enabled: true });
+      await setNanite(assetPath, true);
       manifest.steps.nanite = true;
       if (o.hulls) {
         const hull_count = Math.max(1, Math.min(16, parseInt(o.hulls, 10) || 4));
-        const okHulls = await callTool<boolean>(S, 'generate_convex_collisions', { mesh: meshRef, hull_count });
+        const okHulls = await convexCollisions(assetPath, hull_count);
         manifest.steps.collision = { hulls: hull_count, ok: okHulls };
         console.log(`    collision: ${hull_count} convex hulls ${okHulls ? 'OK' : 'FAILED'}`);
       }
@@ -268,11 +263,7 @@ try {
         console.log(`    imported ${assetPath} (not placed: --no-place)`);
       } else {
         const [x = 0, y = 0, z = 0] = o.place.split(',').map(Number);
-        const actor = await callTool<ObjectRef>(SC, 'add_to_scene_from_asset', {
-          asset_path: assetPath, name,
-          xform: { location: { x, y, z }, rotation: { pitch: 0, yaw: Number(o.yaw), roll: 0 } }, snap_to_ground: false,
-        });
-        const b = await callTool<Box>(A, 'get_actor_bounds', { actor });
+        const { actor, box: b } = await placeAsset(assetPath, name, [x, y, z], Number(o.yaw));
         const c = { x: (b.min.x + b.max.x) / 2, y: (b.min.y + b.max.y) / 2, z: (b.min.z + b.max.z) / 2 };
         const r = Math.max(b.max.x - b.min.x, b.max.y - b.min.y, b.max.z - b.min.z);
         const d = Math.max(r * 2.2, 120);
@@ -280,7 +271,7 @@ try {
         const yaw = (Math.atan2(c.y - cam.y, c.x - cam.x) * 180) / Math.PI;
         const pitch = (Math.atan2(c.z - cam.z, Math.hypot(c.x - cam.x, c.y - cam.y)) * 180) / Math.PI;
         const view: CameraTransform = { location: cam, rotation: { pitch, yaw, roll: 0 } };
-        await mcpCall(E, 'SetCameraTransform', { transform: view });
+        await setViewportCamera(view);
         const shot = await captureViewport(join(dir, 'shot.png'), { captureTransform: view });
         // The placed actor lives in the open level, which stays unsaved: say so.
         await saveFolder();

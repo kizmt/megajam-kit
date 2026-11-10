@@ -20,21 +20,16 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { KIT, errorMessage, isMain } from '../paths.ts';
 import { parseMarkedJson } from '../proc.ts';
-import { callTool, mcpCall, type ObjectRef } from './mcp.ts';
+import { type ObjectRef } from './mcp.ts';
+import { assetExists, createMaterialInstance, deleteAsset, importTexture as importTextureAsset, materialSlots, ref,
+  saveAssets, setInstanceTexture, setProperties, setSlotMaterial } from './ue.ts';
 import { runPythonFileOrThrow } from './python.ts';
 
-const AS = 'editor_toolset.toolsets.asset.AssetTools';
-const MI = 'editor_toolset.toolsets.material_instance.MaterialInstanceTools';
-const TX = 'editor_toolset.toolsets.texture.TextureTools';
-const OB = 'editor_toolset.toolsets.object.ObjectTools';
-const SM = 'editor_toolset.toolsets.static_mesh.StaticMeshTools';
-const SK = 'editor_toolset.toolsets.skeletal_mesh.SkeletalMeshTools';
 
 export const MASTER = '/Game/Kit/Materials/M_PBR_Master';
 const KIT_TEX = '/Game/Kit/Textures';
 
-/** '/Game/X/Y' -> {refPath: '/Game/X/Y.Y'} (object path form the toolsets expect). */
-export const ref = (p: string): ObjectRef => ({ refPath: p.includes('.') ? p : `${p}.${p.split('/').pop() ?? ''}` });
+export { ref };
 
 type Rgb = readonly [number, number, number];
 export type MapKey = 'basecolor' | 'normal' | 'orm' | 'emissive';
@@ -73,11 +68,9 @@ function writeTga(file: string, [r, g, b]: Rgb): void {
  */
 async function importTexture(folder: string, name: string, file: string, props: TextureProps): Promise<ObjectRef> {
   const path = `${folder}/${name}`;
-  if (await callTool<boolean>(AS, 'exists', { path })) await mcpCall(AS, 'delete', { path });
-  const t = await callTool<ObjectRef | ObjectRef[]>(TX, 'import_file', { folder_path: folder, asset_name: name, source_file: file.replace(/\\/g, '/') });
-  const tex = Array.isArray(t) ? t[0] : t;
-  if (!tex) throw new Error(`texture import produced nothing: ${file}`);
-  await mcpCall(OB, 'set_properties', { instance: tex, values: JSON.stringify(props) });
+  if (await assetExists(path)) await deleteAsset(path);
+  const tex = await importTextureAsset(folder, name, file);
+  await setProperties(tex, { ...props });
   return tex;
 }
 
@@ -95,7 +88,7 @@ export async function ensureMaster({ force = false }: { force?: boolean } = {}):
   for (const key of MAP_KEYS) {
     const m = MAPS[key];
     const path = `${KIT_TEX}/${m.defaultName}`;
-    if (!(await callTool<boolean>(AS, 'exists', { path }))) {
+    if (!(await assetExists(path))) {
       const f = join(tmp, `${m.defaultName}.tga`);
       writeTga(f, m.fill);
       await importTexture(KIT_TEX, m.defaultName, f, m.props);
@@ -104,7 +97,7 @@ export async function ensureMaster({ force = false }: { force?: boolean } = {}):
     defaults[key] = path;
   }
   // The master references these: unsaved, they'd be missing after a restart or in a cook.
-  if (imported.length && !(await callTool<boolean>(AS, 'save_assets', { asset_paths: imported }))) {
+  if (imported.length && !(await saveAssets(imported))) {
     throw new Error(`saving ${imported.join(', ')} failed`);
   }
   const result = parseMarkedJson<MasterResult>(
@@ -135,7 +128,6 @@ export interface ApplyPbrResult { instance: string; textures: MapKey[]; slots: s
 
 /** texDir contains T_<Name>_basecolor.png, _normal.png, _orm.png (pack_orm.py), optional _emissive.png. */
 export async function applyPbr({ name, texDir, dest = '/Game/Props', mesh, kind = 'static', maxTextureSize = 2048, openGlNormals = false }: ApplyPbrOptions): Promise<ApplyPbrResult> {
-  const meshTools = kind === 'skeletal' ? SK : SM;
   const loose = ['roughness', 'metallic', 'ao'].filter((k) => existsSync(join(texDir, `T_${name}_${k}.png`)));
   if (loose.length && !existsSync(join(texDir, `T_${name}_orm.png`))) {
     console.warn(`WARN: ${texDir} has T_${name}_${loose.join('/')} but no T_${name}_orm.png: the master's default ORM ` +
@@ -146,9 +138,8 @@ export async function applyPbr({ name, texDir, dest = '/Game/Props', mesh, kind 
   const instPath = `${folder}/MI_${name}`;
   // Re-running reuses the existing instance: the mesh (and maybe levels) reference it, and deleting a referenced
   // asset opens a modal dialog that stalls the editor.
-  const reuse = await callTool<boolean>(AS, 'exists', { path: instPath });
-  const inst = reuse ? ref(instPath)
-    : await callTool<ObjectRef>(MI, 'create', { folder_path: folder, asset_name: `MI_${name}`, parent: ref(MASTER) });
+  const reuse = await assetExists(instPath);
+  const inst = reuse ? ref(instPath) : await createMaterialInstance(folder, `MI_${name}`, MASTER);
   const applied: MapKey[] = [];
   const touched: string[] = [instPath];
   for (const key of MAP_KEYS) {
@@ -156,21 +147,20 @@ export async function applyPbr({ name, texDir, dest = '/Game/Props', mesh, kind 
     const file = join(texDir, `T_${name}_${key}.png`);
     // On a reused instance, point each map at the kit default first: maps missing this run then don't keep an old
     // texture, and the old texture is unreferenced when importTexture replaces it.
-    if (reuse) await mcpCall(MI, 'set_texture_parameter', { instance: inst, name: m.param, value: ref(`${KIT_TEX}/${m.defaultName}`) });
+    if (reuse) await setInstanceTexture(inst, m.param, ref(`${KIT_TEX}/${m.defaultName}`));
     if (!existsSync(file)) continue;
     const props: TextureProps = { ...m.props, MaxTextureSize: maxTextureSize };
     if (key === 'normal' && openGlNormals) props.bFlipGreenChannel = true;
     const tex = await importTexture(folder, `T_${name}_${key}`, file, props);
-    await mcpCall(MI, 'set_texture_parameter', { instance: inst, name: m.param, value: tex });
+    await setInstanceTexture(inst, m.param, tex);
     applied.push(key);
     touched.push(`${folder}/T_${name}_${key}`);
   }
   const meshPath = (mesh ?? `${folder}/${kind === 'skeletal' ? 'SK' : 'SM'}_${name}`).split('.')[0] ?? '';  // asset.ts/character.ts import into <dest>/<Name>/
-  const meshRef = ref(meshPath);
-  const slots = await callTool<string[]>(meshTools, 'get_material_slots', { mesh: meshRef });
-  for (const s of slots) await mcpCall(meshTools, 'set_material', { mesh: meshRef, slot_name: s, material: inst });
+  const slots = await materialSlots(meshPath, kind);
+  for (const s of slots) await setSlotMaterial(meshPath, kind, s, inst);
   // Save exactly what this call changed: an empty list would save every dirty package (the user's level included).
-  if (!(await callTool<boolean>(AS, 'save_assets', { asset_paths: [...touched, meshPath] }))) {
+  if (!(await saveAssets([...touched, meshPath]))) {
     throw new Error(`saving ${[...touched, meshPath].join(', ')} failed`);
   }
   return { instance: instPath, textures: applied, slots };

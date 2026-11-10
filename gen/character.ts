@@ -24,7 +24,8 @@ import { parseArgs } from 'node:util';
 import { KIT, errorMessage, generatedDir, pascal } from './paths.ts';
 import { packOrm, parseMarkedJson, parseTripo, readTripoTask, requireTripoCredits, run, secs, type OrmResult } from './proc.ts';
 import { applyPbr, type ApplyPbrResult } from './unreal/materials.ts';
-import { McpUnreachableError, callTool, mcpCall } from './unreal/mcp.ts';
+import { McpUnreachableError } from './unreal/mcp.ts';
+import { assetExists, deleteAsset } from './unreal/ue.ts';
 import { runPythonFileOrThrow } from './unreal/python.ts';
 import { stripFootIk } from './unreal/abp.ts';
 import { TURNAROUND_RULES, VIEW_ORDER, parseViews, splitSheet } from './views.ts';
@@ -330,8 +331,7 @@ try {
       const mat = await applyPbr({ name, texDir, dest: '/Game/Characters', mesh: `${folder}/SK_${name}`, kind: 'skeletal', maxTextureSize: parseInt(o['max-tex'], 10) || 0 });
       manifest.steps.material = mat;
       const autoMat = `${folder}/M_${name}`;
-      if (await callTool<boolean>('editor_toolset.toolsets.asset.AssetTools', 'exists', { path: autoMat }))
-        await mcpCall('editor_toolset.toolsets.asset.AssetTools', 'delete', { path: autoMat });
+      if (await assetExists(autoMat)) await deleteAsset(autoMat);
       const check = parseMarkedJson<CheckResult>(await runPythonFileOrThrow(PY('check_skeletal.py'), { mesh: `${folder}/SK_${name}` }), 'CHECK_JSON');
       manifest.steps.check = check;
       console.log(`    ${imp.size_cm.join(' x ')} cm, ${check.bones} bones, root scale ${check.root_scale.map((v) => v.toFixed(3)).join(',')}; ${mat.instance} (${mat.textures.join(', ')})`);
