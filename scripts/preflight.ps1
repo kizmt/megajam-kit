@@ -130,6 +130,17 @@ $defEngine = Join-Path $Project 'Config\DefaultEngine.ini'
 $ini = if (Test-Path $defEngine) { Get-Content -Raw $defEngine } else { '' }
 if ($ini -match '(?m)^GameDefaultMap=/Game/Maps/Main' -and $ini -match '(?m)^EditorStartupMap=/Game/Maps/Main') { Pass 'startup and default map are /Game/Maps/Main' }
 else { Warn 'Editor Startup Map / Game Default Map are not /Game/Maps/Main (SETUP step 4)' }
+# SETUP 7b "All paths": not needed to start, but every capture and bench before it measures the wrong picture
+# (the 2026-11-10 run rendered 2560x1440 stretched for 7 hours without bAllowHighDPIInGameMode).
+$scal = Join-Path $Project 'Config\DefaultScalability.ini'
+$scalIni = if (Test-Path $scal) { Get-Content -Raw $scal } else { '' }
+$missing7b = @()
+if ($ini -notmatch '(?m)^bAllowHighDPIInGameMode=True') { $missing7b += 'bAllowHighDPIInGameMode=True (else 1440p stretched on the 4K display)' }
+if ($ini -notmatch '(?m)^r\.DefaultFeature\.MotionBlur=False') { $missing7b += 'r.DefaultFeature.MotionBlur=False' }
+if ($ini -notmatch '(?m)^r\.Tonemapper\.Sharpen=0') { $missing7b += 'r.Tonemapper.Sharpen=0' }
+if ($scalIni -notmatch '(?m)^r\.TSR\.History\.ScreenPercentage=100') { $missing7b += 'r.TSR.History.ScreenPercentage=100 (DefaultScalability.ini)' }
+if ($missing7b) { foreach ($m in $missing7b) { Warn "SETUP 7b not applied: $m (apply before the first capture or bench; the style lock does it)" } }
+else { Pass 'SETUP 7b display settings applied' }
 if (Test-Path (Join-Path $Project 'Intermediate\PythonStub\unreal.py')) { Pass 'Python API stub present' }
 else { Warn 'no Intermediate\PythonStub\unreal.py: tick Python Developer Mode and restart the editor (SETUP step 2.4)' }
 if ($is59) {

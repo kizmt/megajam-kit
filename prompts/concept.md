@@ -39,20 +39,42 @@ The director gives: first reactions to the theme, any genre or feel they want or
 they can review each day. Also ask, so the concepts don't have to be redone:
 - **Target length** for a first-time player (the kit's default is 5-10 min; the director's answer sets it, CLAUDE.md
   rule 1).
-- **Paid-generation budget and appetite:** should credit cost or the number of characters to generate and rig count
-  as build risk in step 3, or not?
+- **Story and character, or spectacle and feel?** Which should weigh more when the concepts are scored: a
+  protagonist with a reason to be there and a theme that means something, or a striking world and a great core verb.
+  Step 3 doubles the columns the answer names. Both still count.
+- **Paid-generation budget:** how much the game may spend. The default is to use it: every concept plans a
+  generated hero and signature assets (CLAUDE.md "The hero and the budget"); a smaller budget changes how many, not
+  whether.
 - **Naming taste:** what kind of working titles they like.
 
 Ask once if anything is missing, then go.
 
 ## 2. Five concepts in words (Claude, 20 min)
-Five different takes, not five variants of one. At least one literal reading of the theme, at least one twist
-(the theme as a mechanic, not a backdrop), at least one that is cheap to build. Write all five and the step 3 table
-to `design/concepts.md` and keep it: the devlog tells "the concept and why it won" (`docs/submission.md`). Each, in
-this format:
+**First, read the theme ten ways** (in `design/concepts.md`, one line each): three literal readings (the words as a
+rule or a mechanic) and at least seven lateral ones: what the theme means to a person (a feeling, a fear, a wish),
+a story it could be the moral or the twist of, a place or a culture it suggests, an image it evokes, its opposite.
+The concepts come from the strongest of these, not from the first.
+
+Five different takes, not five variants of one: different protagonists, different places, different core verbs.
+At least two come from lateral readings (the theme carries the story or the feeling, and also changes the rules),
+at least one is a literal reading, at least one is cheap to build. Every concept has a **protagonist** (someone or
+something the player is, with a want) and a **world** a judge hasn't seen in every other jam entry.
+
+**Ruled out unless the director asks for them** (the 2026-11-10 practice run made all five of its concepts this way
+and was forgettable): the template mannequin as the player; an abstract test chamber, grid void or "facility" as
+the setting; the HUD or the rules themselves as the main way the theme shows; a theme link that is only a
+mechanic with no person or place behind it.
+
+Write the ten readings, all five concepts and the step 3 table to `design/concepts.md` and keep it: the devlog
+tells "the concept and why it won" (`docs/submission.md`). Each, in this format:
 
 - **Working title:** distinctive, not a single common word.
 - **Pitch:** one sentence a judge would repeat.
+- **Protagonist and world:** who the player is, what they want and why it is hard; where it happens and the one
+  thing that makes the place unlike a stock setting. One line each.
+- **Story in three lines:** the start, the turn, the end. A short game still has a shape a player can retell.
+- **Theme meaning:** what the theme says through this game (the feeling or idea a player leaves with), in one line,
+  next to the theme link below.
 - **Core verb:** the one thing the player does most (jump, aim, steer, time, place, connect, sort, hide, choose...).
   One verb, done well.
 - **Theme link:** how the theme changes the *rules*, not only the setting.
@@ -62,24 +84,37 @@ this format:
 - **Beats:** onboarding, 2-3 twists (each adds one new idea to the core verb), climax
   (`docs/design.md` "Shape of a short game").
 - **Look and sound:** what makes it beautiful and what makes it sound good, in one line each.
+- **Signature assets:** the hero (the protagonist, generated: `gen/character.ts`, or a generated hero object
+  for a game without a body) and 3 assets the game is remembered by (a creature, a landmark, a set-piece prop).
 - **Build list:** what the kit makes it from (props `gen/asset.ts`, characters `gen/character.ts`, effects
-  `gen/vfx/vfx.ts`, animation sources, audio) and the hardest engine feature it needs.
+  `gen/vfx/vfx.ts`, animation: Kimodo on 5.9, libraries, Uthana; audio) and the hardest engine feature it needs.
 - **Biggest risk:** the one thing most likely to fail, and the fallback if it does.
 
 ## 3. Score them (Claude, 10 min)
 One table, 1-5 per column, with a one-line reason per score. One column per judged category, so a strong look
 can't hide weak audio. No averaging away a red flag:
 
-| Concept | Theme | Fun in 30 s | Gameplay | Ambition / novelty | Level + progression room | Visuals | Audio | Video moment | Build risk (5 = safe) |
-|---|---|---|---|---|---|---|---|---|---|
+| Concept | Theme | Theme meaning | Protagonist + world | Memorability | Fun in 30 s | Gameplay | Ambition / novelty | Level + progression room | Visuals | Audio | Video moment | Build risk (5 = safe) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
 
+- **Weighting (step 1):** "story and character" doubles Theme meaning and Protagonist + world; "spectacle and
+  feel" doubles Visuals, Video moment and Fun in 30 s. Show both the plain and the weighted total.
+- **Theme meaning:** 5 when the theme is felt (in the story, the place or the player's choices) as well as used as
+  a rule; 2 when it is only a rule or a label.
+- **Protagonist + world:** 5 when a judge could describe who they played and where after one minute, and neither
+  is a stock default; 1 for the template mannequin in a grey or abstract space.
+- **Memorability:** write the sentence a judge says about it the next day. 5 if it names someone, somewhere or a
+  moment ("the lighthouse keeper who..."); 2 if it only names a mechanic ("the one where you remove limits").
 - **Fun in 30 s:** would a stranger enjoy the core verb in grey boxes, with no content? If not, no amount of
   content fixes it.
 - **Ambition:** the judges' wording includes "a bigger scope"; in this kit bigger scope is earned by illusion (a
   world beyond the playable space, scale contrast, one set piece: `docs/ue/worldbuilding.md` "Ambition on a budget").
 - **Build risk:** anything needing a system the kit hasn't proven (networking, physics-driven gameplay at scale,
-  large open spaces, many unique characters, dialogue trees) scores 1-2, unless the director said in step 1 that
-  credit cost or character count isn't a risk. Any 1 here needs a named fallback.
+  large open spaces, dialogue trees) scores 1-2. A generated hero and up to three generated characters are **not**
+  a risk: the kit has the pipeline (`gen/character.ts`, retargeting, Kimodo on 5.9) and the budget is there to be
+  used. Only more than three, or one that needs a custom rig (quadruped, many limbs), counts. Any 1 here needs a
+  named fallback. Build risk never outweighs Theme meaning or Memorability on its own: a safe forgettable game
+  loses the jam as surely as a broken one.
 - **Placement, and the Development Continuation Grants that follow it, come from the total across all seven
   categories** (`docs/submission.md`). A concept that wins one column and fails two loses.
 - Recommend one (or a merge) in two sentences. The director picks. Record the pick and the reason in `DECISIONS.md`.
@@ -93,7 +128,8 @@ Write `design/concept.md` (in the planning folder until S):
 - **Beats:** onboarding, each twist with the one new idea it adds, the climax, the end.
 - **The set-piece shot:** the one image the climax is built around; the video must contain it.
 - **Cut list in three tiers.**
-  - *Must* (not a game without it): the core verb with 3-channel feedback; onboarding, 2-3 twists and an end,
+  - *Must* (not a game without it): **the hero** (generated, rigged and animated, CLAUDE.md "The hero and the
+    budget") and the signature assets from step 2; the core verb with 3-channel feedback; onboarding, 2-3 twists and an end,
     playable start to finish; one music track and a sound on every action; start and end screens; **by S + 48 h**, a
     reset hook and the test hooks the trailer needs (stage a shot, log events), so the video can be filmed offline
     (`docs/ue/cinematics-video.md` D3b). **The shot list now** (`design/shots.json`, rendered later by
@@ -102,6 +138,8 @@ Write `design/concept.md` (in the planning folder until S):
   - *Could* (only when ahead): side goals, a secret, extra polish.
   - **No *Should* work before every *Must* is playable; no *Could* before every *Should*.** Everything starts in
     the lowest tier it can live in.
+- **Hero first:** the hero's concept sheet comes with the style lock and its model starts generating at S + 3 h,
+  so it is in the game, animated, by first playable: the grey-box rooms are the only thing that stays grey.
 - **Risk spike:** the riskiest *Must* item, built first in grey boxes (≤ 2 hours), in parallel with the style lock
   (the director reviews key art while the session builds). **It passes when the director has played the core verb
   in grey boxes and calls it fun**, not when it merely works: fun is weighted most (ties re-score Fun Factor

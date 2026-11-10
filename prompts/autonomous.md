@@ -93,7 +93,10 @@ Never wait for a reply; never end a turn with a question.
 0. **Facts (5 min).** Read `AUTONOMOUS.md`, CLAUDE.md, `docs/ue/README.md`. Read the balances (`node
    gen\balances.ts`; image providers have no balance call: count spend from prices). Check SETUP step 6 is done
    (`scripts\package.ps1` and `Plugins\MegajamTools` in the project, `megajam_tools` in the MCP toolset list); if not,
-   run its two robocopy lines and restart the editor. Write `PROGRESS.md` with the run card, the balances and S. If
+   run its two robocopy lines and restart the editor. Run `scripts\preflight.ps1 -Autonomous` and act on every
+   line: its 7b WARNs list the `SETUP.md` 7b settings still missing (the 2026-11-10 run never applied them and
+   measured 1440p for 7 hours while reporting 4K). Write `PROGRESS.md` with the run card, the balances and S (the
+   run card's S wins over the `/goal` time when they differ). If
    the editor or MCP isn't up, start it (CLAUDE.md "Shell habits"). Count spend from this run's own calls (the
    manifests and logs), not balance differences: other sessions may share the accounts.
 1. **Theme.** If the run card gives none, roll one so the session doesn't pick its own comfort zone:
@@ -117,7 +120,8 @@ Never wait for a reply; never end a turn with a question.
 
 | When | Milestone (pass/fail) |
 |---|---|
-| S + 3% | Concept picked, cut list and schedule written; style lock done |
+| S + 3%, and never before S + 45 min | Concept picked (the ten theme readings first), cut list and schedule written |
+| S + 6%, and never before S + 1.5 h | Style lock done with the hero sheet; the hero is generating; SETUP 7b applied (`scripts\preflight.ps1` shows no 7b WARN) |
 | S + 6% | Risk spike answered: the core verb works and is fun in grey boxes (the panel judges a posted-key clip), or the fallback is chosen |
 | S + 19% | First playable start to end in grey boxes; packaged and benched; panel review 1 |
 | S + 46% | All beats playable in rough form |
@@ -127,7 +131,9 @@ Never wait for a reply; never end a turn with a question.
 | S + 87% | Final pass on the packaged zip (`docs/ue/production.md` "Final pass") |
 | S + 97% | **Done:** the final report. The rest is buffer |
 
-A slip of more than one round cuts from the lowest tier first, as usual. There is no sleep block: rounds run
+The two floors exist because a short run scaled the creative steps to 14 minutes in the 2026-11-10 test, and the
+game was forgettable; the build milestones after them move later by the same amount. A slip of more than one round
+cuts from the lowest tier first, as usual. There is no sleep block: rounds run
 back to back. Keep each round to ~2 h so the devlog shows the path.
 
 ## Every turn

@@ -12,11 +12,15 @@ references for *feel only* (no copying), and one sentence on what the player sho
 
 ## 2. Key art (Claude, 30 min)
 1. **Directions in words first (free).** Write 2–3 distinct directions as short paragraphs (setting, light,
-   palette, material feel, and the character or main subject if there is one), all for the same scene. The director can often pick or merge from the
+   palette, material feel, and the hero: the protagonist or hero object from `design/concept.md`), all for the same scene. The director can often pick or merge from the
    text alone; then only that direction gets images.
 2. **Images for the chosen direction(s)** (image model, cost stated first; prices in `PIPELINE.md`): per direction,
-   2 key frames of the game's main view (different parts of the level) + **1 character sheet** if the game has a
-   player character (a few colour variants). The character sheet becomes the reference for `gen/character.ts` concepts.
+   2 key frames of the game's main view (different parts of the level) + **1 hero sheet** (the protagonist, or the
+   hero object; a front view in a neutral pose for `gen/character.ts`, plus a few colour variants), every time:
+   the hero is never the template mannequin (CLAUDE.md "The hero and the budget"). The hero sheet becomes the
+   reference for `gen/character.ts` concepts, and its generation starts as soon as it is approved.
+   Each key frame should hold something only this game has (the hero, a landmark, a creature): a frame that could
+   belong to any game is not done.
 3. Present side by side. The director picks or asks for changes. Repeat once at most.
 4. Copy the approved images into `art/reference/` (the screenshots in step 4 are compared against them).
 
@@ -42,11 +46,12 @@ Concrete and checkable, never vague adjectives:
 - **Don'ts:** what would break the look.
 
 ## 4. Build the look in-engine *before* the game (Claude, 1–1.5 h)
-The main view's space (sky, or the interior's lights) + fog + post-process volume + master material + 3 generated
-hero props, **and 3-4 pieces of the game's real shapes in the locked shape language** (the structures, surfaces or
+The main view's space (sky, or the interior's lights) + fog + post-process volume + master material + the hero (or
+its first generated pass) + 3 generated signature assets, **and 3-4 pieces of the game's real shapes in the locked shape language** (the structures, surfaces or
 silhouettes the key art is made of), not only boxes: light can't fix shape, and a look tuned on grey boxes keeps
 being tuned on grey boxes (a practice run spent six light passes while every critic named shapes).
-The Basic level has no post-process volume: build an unbound one here, and on the Lumen path set its
+First apply `SETUP.md` 7b ("All paths" plus the chosen path; `scripts\preflight.ps1` lists any 7b setting still
+missing): every capture and bench before it measures the wrong picture. The Basic level has no post-process volume: build an unbound one here, and on the Lumen path set its
 `LumenMaxRoughnessToTraceReflections` to 0.25 (`SETUP.md` 7b).
 Place 4-6 fixed cameras (`art/camera-set.md`: the gameplay view plus key spots; CameraActors tagged `CamSet` and
 `cam:<Name>`), capture them with `gen/test/camset.ps1` and compare with the key art.
