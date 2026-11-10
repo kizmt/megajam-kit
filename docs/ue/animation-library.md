@@ -57,18 +57,28 @@ Researched 2026-10-26/28; prices and terms change, so re-check a source before r
     "commercially-friendly". The text encoder is Meta's gated **Llama 3 8B Instruct** (Llama 3 licence), so it needs
     a Hugging Face read token from an account granted access to `meta-llama/Meta-Llama-3-8B-Instruct`. The director
     reads and accepts these; the session never does.
-  - Setup (per user): the token goes in Editor Preferences > Plugins > Kimodo (stored in
-    `EditorPerProjectUserSettings.ini`; or the `HF_TOKEN` environment variable). Weights download on the first
-    Generate: do that before the jam, not on jam day. Never print or commit the token.
-  - Memory: Kimodo's README says ~17 GB of VRAM, mostly the text encoder. The plugin keeps the encoder in system RAM by
-    default (the diffusion model on the GPU), can quantize it to NF4 (cached under `Intermediate`), and unloads the
-    model after 15 idle minutes. Whether it fits the RTX 4060's 8 GB with the editor open is to measure.
+  - Setup (per machine and project, done on the target PC 2026-11-10): `SETUP.md` 10b. The token comes from the kit's
+    `.env` via `gen\hf_token.ts`; the weights are cached under the user's Hugging Face cache; each new project needs
+    the plugins, Pip Strict Hash Check off and the two-package install. Never print or commit the token.
+  - Memory (measured): the text encoder sits in system RAM, quantized to NF4 (4.6 GB, cached under `Intermediate`);
+    the diffusion model holds ~1.1 GB of VRAM after a generation; the model unloads after 15 idle minutes. It fits the
+    RTX 4060 with the editor open. Time: ~20 s per 5 s clip, 8 s of it encoding a new prompt (repeated prompts are
+    cached).
   - Errors open a **modal dialog** (`KimodoSettings.h` ShowErrorDialog), which blocks the game thread and every MCP
-    call: set the token and download the weights before scripting it.
-  - Scripting: the only AI- or Python-callable function found is `AddGeneratedAnimationSectionAsync` (adds a
-    Generated Animation section to an Animation Mixer track). Setting the prompt, generating and baking to an Animation
-    Sequence from a script is unverified: try it in the 5.9 test (`ue59.md`). Its output skeleton is Kimodo's SOMA
-    77-joint rig, retargeted to the character.
+    call. With the setup done none appeared in the test; a session still saves before generating and treats a
+    stalled MCP call as a possible dialog (`debugging.md` B).
+  - **Scripting (not yet tried; the session finds out):** AI-callable is only `AddGeneratedAnimationSectionAsync`
+    (adds a Generated Animation section to an Animation Mixer track). The section and its pose generator are ordinary
+    objects, so Python can likely set their properties (prompt, Movement Source, quality, variations, seed; names via
+    `get_editor_property` and the stub). Unknown: whether a script can trigger a generation (the toolbar's Generate
+    runs the editor command `GenerateAllAnimations`, not a scripting function) and add pose or foot keys (plugin
+    channels). Baking can use the standard `SequencerTools.export_anim_sequence`. Probe these in one short spike; if
+    generation can't be triggered by script after two tries, ask the director to press Generate (in the jam) or use
+    the other sources (autonomous run). Its output skeleton is Kimodo's SOMA 77-joint rig, retargeted automatically
+    to the character.
+  - **What an agent does better than the UI:** measure foot slide from the baked clip (foot bone positions per frame,
+    in cm, as `characters.md` does for retargets), generate 2-3 variations and keep the one with the least slide, and
+    hide the rest with runtime foot IK.
   - Setup, by the director: `SETUP.md` 10b. UI labels in the plugin's source (2026-11-10): **Add Generated Animation
     Section**, **Pose Generator** (Kimodo), **Anim Description** (the text prompt), **Draw Spline** (a path to
     follow), **Generate Animation** / **Generate All Animations**, **Export Animation** ("exports the generated
@@ -86,11 +96,17 @@ Researched 2026-10-26/28; prices and terms change, so re-check a source before r
     path" clips: it attaches the character to a path, and an on-the-spot action then slides along it (mute or delete
     the **Attach** track, set Movement Source = Generated Animation). The character is a Sequencer spawnable; delete
     any hand-placed copy. The toolbar's **Generate** button appears only while the sequence holds a generator section.
-    The actor row's pencil toggles **Edit Poses** (the Control Rig pose) and the generated animation.
+    The actor row's pencil toggles **Edit Poses** (the Control Rig pose) and the generated animation; with it on, the
+    character shows the rig's pose and looks frozen (the "stands still" seen in the test was this, not the rig track
+    itself). **Pose and foot keys** live in Animation Mode's Tab menu, not Sequencer's: select a rig control in the
+    viewport, press **Tab** > **AnimGenOffline** > **Add Key** > Full Body / Hips / Left Hand / Right Hand / Left Foot /
+    Right Foot (keys that part's current pose at the playhead as a target), plus **Add Target Transform Key**, **Auto
+    Key Channels**, **Draw Spline**. Hand keys are the way to place arms for stylised characters.
   - **Quality seen:** walks and gestures convincing on the mannequin; a punch worked with slightly unnatural legs and a
-    little foot slide even on the spot (Quality High, Variations 3, foot-describing prompts, Post Processing foot
-    cleanup, and keyed foot **Effector Target** keys are the levers; runtime foot IK hides the rest in game). Sharp
-    combat moves: try Pose Targets on the key frame, or library clips.
+    little foot slide even on the spot. Foot keys set by hand at three frames did not remove the slide (one try, may
+    have been misapplied). Levers: Quality High, Variations 3 and keep the least-sliding take (measure it), prompts that
+    say what the feet do, Post Processing foot cleanup, foot keys, and runtime foot IK in game. Sharp combat moves: hand
+    keys on the strike frame, or library clips.
   - **Show Retarget Debug** draws only on Pose Targets you key (the poses given to the model); with none it draws
     nothing. To tell a retarget problem from a model one, play the same seed and prompt on Kimodo's own
     `soma_neutral` mesh (Content Browser > Settings > Show Plugin Content > Kimodo Content > Characters > Soma) next

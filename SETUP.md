@@ -368,23 +368,37 @@ project (its first run downloads ~16 GB and may show dialogs that block MCP).
    environment (an install: your call), once per project:
    `& "C:\dev\<Project>\Intermediate\PipInstall\Scripts\python.exe" -m pip install --no-deps antlr4-python3-runtime==4.9.3 omegaconf==2.3.0`
 4. **First clip** (worked 2026-11-10 on the target PC; this downloads ~17.5 GB the first time):
-   - A scratch level (File > New Level > Basic) with `SKM_Manny_Simple` (Content > Characters > Mannequins > Meshes)
-     dragged in; save test assets in a `_KimodoTest` folder.
-   - Clapperboard > **Add Level Sequence**; **+ Track > Actor To Sequencer** > the mannequin.
-   - On the character's row: **Add Generated Animation Section**. Right-click the section bar > **Properties**:
+   - A scratch level (File > New Level > Basic, saved in a `_KimodoTest` folder) and a Level Sequence (clapperboard >
+     **Add Level Sequence**, same folder).
+   - Add the character the plugin's way: Sequencer toolbar > the **AnimGenOffline** drop-down (a running-figure icon
+     with no text) > **Add Character**. Pose Generator Kimodo, Source Skeletal Mesh, the mesh (e.g. `SKM_Manny_Simple`),
+     **Control Rig** ticked (Auto finds Manny's `CR_Mannequin_Body`: needed for pose and foot keys), **Spline** ticked
+     only for "walk along this path" clips, Transform Track ticked. The character is a spawnable of the sequence; it
+     gets a Generated Animation section. (Adding a placed mesh by hand with + Track > Actor To Sequencer > Add Generated
+     Animation Section also works, but without the pose-editing rig.)
+   - Right-click the section bar > **Properties**:
      **Pose Generator** = Kimodo, **Anim Description Override** = the prompt, and **Movement Source** =
      **Generated Animation** (the default, Sequencer, takes the root path from Sequencer: with no path the character
      stands still). **Quality Level** Medium (High for final clips), **Variations** 2-3 to pick from.
    - In the track list, expand **Generated Animation** and set **Weight** to 1.0 (it was 0.0).
-   - If Animation Mode added a **Control Rig track** (`CR_Mannequin_Body`) to the character, delete or mute it: it
-     overrides the generated clip.
-   - Right-click the bar > **Generate Animation**. The first run downloads the Llama 3 text encoder, applies the
+   - The character's **Control Rig track** is the pose-editing rig: the pencil on the character's row toggles **Edit
+     Poses** (the rig's pose shows) and the generated animation. If the character stands still, check the pencil is
+     off. With **Spline** on, an **Attach** track ties the character to the path: mute it for on-the-spot actions.
+   - Right-click the bar > **Generate Animation** (or the toolbar's **Generate** button, shown while the sequence has a
+     generated section). The first run downloads the Llama 3 text encoder, applies the
      adapter and quantizes it (cached afterwards). Changing an input regenerates on its own (Allow Auto Generate On
      Change). The root motion lands in the Transform track; the character walks off: press |◀ and frame it (F).
    - Measured: ~20 s for a 5 s clip (8 s of it encoding a new prompt on the CPU; a repeated prompt is cached), the
      text encoder in system RAM (4.6 GB in NF4), the diffusion model ~1.1 GB of VRAM.
-5. **Export Animation** (right-click the bar) saves it as an Animation Sequence. Play it on the character.
-6. Note for the kit: how the clip looks (feet, hands, timing).
+5. **Pose and foot keys** (to steer it): in Animation Mode select one of the character's rig controls in the viewport
+   and press **Tab**: **AnimGenOffline > Add Key > Full Body / Hips / Left Hand / Right Hand / Left Foot / Right Foot**
+   keys that body part's current pose at the playhead as a target; also **Add Target Transform Key**, **Auto Key
+   Channels**, **Draw Spline**. Move or rotate the control first (W / E) to change the target, then use the toolbar's
+   **Generate** (the menu's Generate is greyed while posing).
+6. **Export Animation** (right-click the bar) saves it as an Animation Sequence. Play it on the character.
+7. Result of the 2026-11-10 test: walk and wave convincing; a punch with slightly odd legs and a little foot slide on
+   the spot, which foot keys set by hand at three frames did not remove (one try). Details and levers:
+   `docs/ue/animation-library.md` "Generated animation".
 
 ## 11. Autonomous practice run (no director input; `prompts/autonomous.md`)
 
