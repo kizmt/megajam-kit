@@ -29,7 +29,19 @@ function Resolve-KitEngine([string]$UProject) {
         $builds = Get-ItemProperty 'HKCU:\Software\Epic Games\Unreal Engine\Builds' -ErrorAction SilentlyContinue
         $root = if ($builds) { $builds.PSObject.Properties[$assoc].Value } else { $null }
         if ($root) { return $root }
-        throw "source-build engine $assoc is not registered (HKCU\Software\Epic Games\Unreal Engine\Builds)"
+        # The registration can vanish: on 2026-11-11 the Builds key was empty after the Launcher started, while
+        # projects made earlier still named the GUID. Fall back to the Launcher engine that built this project's
+        # editor module (same BuildId).
+        $modules = Join-Path (Split-Path $UProject) 'Binaries\Win64\UnrealEditor.modules'
+        $installed = Join-Path $env:ProgramData 'Epic\UnrealEngineLauncher\LauncherInstalled.dat'
+        if ((Test-Path $modules) -and (Test-Path $installed)) {
+            $id = (Get-Content -Raw $modules | ConvertFrom-Json).BuildId
+            foreach ($e in @((Get-Content -Raw $installed | ConvertFrom-Json).InstallationList | ForEach-Object { $_ } | Where-Object { $_.AppName -like 'UE_*' })) {
+                $em = Join-Path $e.InstallLocation 'Engine\Binaries\Win64\UnrealEditor.modules'
+                if ((Test-Path $em) -and ((Get-Content -Raw $em | ConvertFrom-Json).BuildId -eq $id)) { return $e.InstallLocation }
+            }
+        }
+        throw "engine $assoc (from $UProject) is not registered (HKCU\Software\Epic Games\Unreal Engine\Builds) and no Launcher engine matches the project's build: right-click the .uproject > Switch Unreal Engine version, or set KIT_ENGINE_ROOT"
     }
     $dat = Join-Path $env:ProgramData 'Epic\UnrealEngineLauncher\LauncherInstalled.dat'
     if (Test-Path $dat) {

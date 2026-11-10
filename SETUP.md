@@ -40,6 +40,14 @@ The theme window runs before the project exists (`prompts/concept.md`). Check it
 
 ## 1. Create the project (2 min)
 
+**The short way (added 2026-11-11): steps 2-6 in one script.** After step 1 below, close the editor and run
+`C:\dev\megajam-kit\scripts\setup-project.ps1 -Project C:\dev\<ProjectName>`. It enables the plugins (All Toolsets;
+on 5.9 also Kimodo's three), writes the MCP Instructions, Claude Code's settings, `CLAUDE.md`, the critic, the
+scripts and the kit plugin, turns Pip Strict Hash Check off for Kimodo and, on a second run after the editor's first
+start, installs Kimodo's two extra Python packages. It then prints the clicks that are left for you (content pack,
+the Main level, the Asset Manager entry, `.mcp.json`, the mannequin's Kimodo sequence, `MEGAJAM_PROJECT`). It only
+adds what is missing, so it is safe to rerun. The numbered steps below remain the reference for what each part is.
+
 1. Launch the chosen engine from the Epic Games Launcher (Unreal Engine > Library: 5.8.4 or 5.9), then in the
    Project Browser → Games → **Blank**, **C++**.
 2. Location `C:\dev`, name `<ProjectName>` (short path; Unreal creates the project folder itself). Ask the director
