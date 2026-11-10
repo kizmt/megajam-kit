@@ -2,7 +2,11 @@
 // Four views for Tripo's multiview-to-3D: a turnaround sheet cut into front, left, back and right images.
 // With only a front view Tripo guesses the back and sides; four consistent views fix the hidden side's shape.
 //
-//   node gen/views.ts <sheet.png> [--out dir] [--layout grid|row]
+//   node gen/views.ts <sheet.png> [--out dir] [--layout grid|row] [--mirror left|right]
+//
+// --mirror left: the left view is good and the right one is not (image models often draw both sides facing the same
+// way, or one in perspective): the right view is rewritten as the left one flipped. Right for a symmetric subject;
+// --mirror right is the other way round. Without it, a pair of side views that face the same way prints a warning.
 //
 // The sheet is a 2x2 grid by default (top-left front, top-right left, bottom-left back, bottom-right right) or a row
 // of four (front, left, back, right). The cut lines go through the emptiest band near each expected split, so cells
@@ -31,7 +35,7 @@ export const TURNAROUND_RULES = (layout: Layout): string =>
   'crosses between cells. Plain flat light-grey background everywhere, soft even lighting, no shadow, no ground, ' +
   'no labels, no text, no arrows, no dividing lines.';
 
-export interface ViewsResult { sheet: string; layout: Layout; size: number[]; views: Record<(typeof VIEW_ORDER)[number], string> }
+export interface ViewsResult { sheet: string; layout: Layout; size: number[]; views: Record<(typeof VIEW_ORDER)[number], string>; mirrored?: 'left' | 'right'; warning?: string }
 
 function ffmpeg(): string {
   const f = findFfmpeg();
@@ -48,8 +52,19 @@ function dims(file: string): [number, number] {
 
 const A = 512; // analysis size (the sheet is squashed to A x A RGB to find the gaps)
 
-/** Cut a turnaround sheet into four view images. */
-export function splitSheet(sheet: string, outDir?: string, layout: Layout = 'grid'): ViewsResult {
+/** A view as a small greyscale thumbnail, optionally flipped left-right (for comparing the two side views). */
+function thumb(file: string, flip: boolean): Buffer | null {
+  const r = spawnSync(ffmpeg(), ['-v', 'error', '-i', file, '-vf', `scale=48:48${flip ? ',hflip' : ''}`, '-f', 'rawvideo', '-pix_fmt', 'gray', '-'], { maxBuffer: 1 << 16 });
+  const b = r.stdout as Buffer;
+  return r.status === 0 && b.length >= 48 * 48 ? b : null;
+}
+const diff = (a: Buffer, b: Buffer): number => { let n = 0; for (let i = 0; i < 48 * 48; i++) n += Math.abs((a[i] ?? 0) - (b[i] ?? 0)); return n / (48 * 48); };
+
+/**
+ * Cut a turnaround sheet into four view images. mirror: rewrite the other side view as this one flipped.
+ * Without mirror, result.warning is set when the two side views look like the same side drawn twice.
+ */
+export function splitSheet(sheet: string, outDir?: string, layout: Layout = 'grid', mirror?: 'left' | 'right'): ViewsResult {
   const src = resolve(sheet);
   const [W, H] = dims(src);
   const raw = spawnSync(ffmpeg(), ['-v', 'error', '-i', src, '-vf', `scale=${A}:${A}`, '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'],
@@ -129,7 +144,22 @@ export function splitSheet(sheet: string, outDir?: string, layout: Layout = 'gri
     if (r.status !== 0) throw new Error(`ffmpeg crop failed for ${file}: ${r.stderr}`);
     views[VIEW_ORDER[k]!] = file;
   });
-  return { sheet: src, layout, size: [W, H], views };
+  const result: ViewsResult = { sheet: src, layout, size: [W, H], views };
+  if (mirror) {
+    const from = views[mirror], to = views[mirror === 'left' ? 'right' : 'left'];
+    const r = spawnSync(ffmpeg(), ['-y', '-v', 'error', '-i', from, '-vf', 'hflip', '-frames:v', '1', '-update', '1', to], { encoding: 'utf8' });
+    if (r.status !== 0) throw new Error(`ffmpeg flip failed for ${to}: ${r.stderr}`);
+    result.mirrored = mirror;
+  } else {
+    // Opposite sides of a roughly symmetric subject are mirror images: the right view should match the left one
+    // flipped better than it matches the left one as drawn. If not, both face the same way.
+    const l = thumb(views.left, false), rSame = thumb(views.right, false), rFlip = thumb(views.right, true);
+    if (l && rSame && rFlip && diff(l, rSame) < diff(l, rFlip) * 0.8) {
+      result.warning = 'the two side views look like the same side drawn twice (they should face opposite ways). ' +
+        'Look at both; for a symmetric subject keep the good one and rerun with --mirror left or --mirror right (no new image needed)';
+    }
+  }
+  return result;
 }
 
 /** --views a,b,c,d (front, left, back, right) as absolute paths. */
@@ -142,17 +172,20 @@ export function parseViews(arg: string): string[] {
 if (isMain(import.meta.url)) {
   const { values: o, positionals } = parseArgs({
     allowPositionals: true,
-    options: { out: { type: 'string' }, layout: { type: 'string', default: 'grid' }, help: { type: 'boolean', short: 'h', default: false } },
+    options: { out: { type: 'string' }, layout: { type: 'string', default: 'grid' }, mirror: { type: 'string' }, help: { type: 'boolean', short: 'h', default: false } },
   });
   const sheet = positionals[0];
   if (o.help || !sheet) {
-    console.log('usage: node gen/views.ts <sheet.png> [--out dir] [--layout grid|row]');
+    console.log('usage: node gen/views.ts <sheet.png> [--out dir] [--layout grid|row] [--mirror left|right]');
     process.exit(o.help ? 0 : 2);
   }
   if (o.layout !== 'grid' && o.layout !== 'row') fail('--layout is grid or row');
+  if (o.mirror !== undefined && o.mirror !== 'left' && o.mirror !== 'right') fail('--mirror is left or right (the GOOD side; the other is written as its flip)');
   try {
-    const r = splitSheet(sheet, o.out, o.layout);
+    const r = splitSheet(sheet, o.out, o.layout, o.mirror);
     for (const v of VIEW_ORDER) console.log(`  ${v.padEnd(5)} ${r.views[v]}`);
+    if (r.mirrored) console.log(`  the ${r.mirrored === 'left' ? 'right' : 'left'} view is the ${r.mirrored} one flipped`);
+    if (r.warning) console.log(`  WARN: ${r.warning}`);
     console.log(`VIEWS_JSON=${JSON.stringify(r)}`); // KEY=json, the form parseMarkedJson reads
   } catch (e) {
     fail(e instanceof Error ? e.message : String(e));

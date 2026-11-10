@@ -6,9 +6,10 @@
 //           unreal.* Python through MegajamTools.run_python (gen/unreal/py/ue_ops.py), which works on both.
 // The engine is told apart by its tool search (mcp.ts hasNewToolSearch). Paths are '/Game/X/Y' or object paths.
 
-import { existsSync, statSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { existsSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { KIT } from '../paths.ts';
+import { KIT, env } from '../paths.ts';
 import { callTool, captureViewport, hasNewToolSearch, mcpCall, type Box, type CameraTransform, type ObjectRef } from './mcp.ts';
 import { runPythonFile } from './python.ts';
 
@@ -131,11 +132,36 @@ export async function setSlotMaterial(mesh: string, kind: MeshKind, slot: string
 }
 
 /**
+ * A minimised editor does not draw its viewports and barely ticks, while MCP keeps answering: a viewport capture is
+ * never written and Kimodo never starts (rehearsal 2026-11-11). Call before either. Restores the window without
+ * giving it focus and returns a line to print, or '' when nothing had to change. Never throws: on another OS, or
+ * when the check itself fails, the caller carries on and its own timeout message names this cause.
+ */
+export function ensureEditorDrawing(): string {
+  if (process.platform !== 'win32') return '';
+  try {
+    const proj = env('MEGAJAM_PROJECT') ?? '';
+    const name = proj && existsSync(proj) ? (readdirSync(proj).find((f) => f.endsWith('.uproject')) ?? '').replace(/\.uproject$/, '') : '';
+    const out = execFileSync('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', join(KIT, 'gen', 'unreal', 'editor_window.ps1'), '-Name', name, '-Restore'], { encoding: 'utf8', timeout: 20000 });
+    const line = out.split(/\r?\n/).find((l) => l.startsWith('EDITOR_WINDOW_JSON='));
+    const w = line ? (JSON.parse(line.slice('EDITOR_WINDOW_JSON='.length)) as { found: boolean; minimised?: boolean; restored?: boolean }) : null;
+    if (!w?.found || !w.minimised) return '';
+    return w.restored
+      ? 'the editor window was minimised (a minimised editor does not draw or generate): restored it without taking focus; leave it open, behind other windows is fine'
+      : 'WARN: the editor window is minimised and could not be restored: restore it by hand, or this step will time out';
+  } catch {
+    return '';
+  }
+}
+
+/**
  * Capture the level viewport to a PNG (from `view` when given). 5.8: EditorAppToolset.CaptureViewport. 5.9 has no
  * such tool: HighResShot writes the file on the viewport's next frame, so this waits for it (a viewport that is not
  * drawing, e.g. the editor minimised, never writes: the error says so).
  */
 export async function captureView(outFile: string, view?: CameraTransform, size: [number, number] = [1600, 900]): Promise<string> {
+  const note = ensureEditorDrawing();
+  if (note) { console.log(`    ${note}`); await new Promise((r) => setTimeout(r, 1500)); }
   if (!(await usePython())) return captureViewport(outFile, view ? { captureTransform: view } : {});
   const file = resolve(outFile).replace(/\\/g, '/');
   await op('screenshot', { file, view, size });

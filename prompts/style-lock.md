@@ -3,6 +3,11 @@
 Starts at the contest start: key art images are created art (rule 7(h)). Steps 1 and 2.1 and the audio direction in
 words run in the theme window (`prompts/concept.md` step 6).
 
+**Run this in a session started in the project folder** (`cd C:\dev\<Project>; claude`): the Unreal MCP tools load
+from the project's `.mcp.json`. A planning session carried over from the theme window has none; it can still drive
+the editor through the kit (`node gen\unreal\mcp.ts call ...`, `node gen\unreal\py.ts <file>`), but a fresh session
+is cheaper and has the project's `CLAUDE.md`.
+
 Goal: a look the director approves, written down precisely enough that every later asset and scene can be
 checked against it. Budget: ~3 hours of the jam, ~1 hour in practice runs.
 

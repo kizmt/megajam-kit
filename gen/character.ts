@@ -21,7 +21,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
-import { KIT, errorMessage, generatedDir, pascal } from './paths.ts';
+import { KIT, errorMessage, fail, generatedDir, pascal } from './paths.ts';
 import { bakeStyleMask, packOrm, parseMarkedJson, parseTripo, readTripoTask, requireTripoCredits, run, secs, type OrmResult, type StyleMaskResult } from './proc.ts';
 import { applyPbr, type ApplyPbrResult } from './unreal/materials.ts';
 import { McpUnreachableError } from './unreal/mcp.ts';
@@ -39,6 +39,7 @@ const { values: o, positionals } = parseArgs({
     concepts: { type: 'string' },
     image: { type: 'string' },
     sheet: { type: 'string' },
+    mirror: { type: 'string' },
     views: { type: 'string' },
     turnaround: { type: 'boolean', default: false },
     task: { type: 'string' },
@@ -72,6 +73,8 @@ const usage = `usage: node gen/character.ts "<description>" --name Name [--conce
   --name is required (asset names: SK_<Name>, MI_<Name>, ABP_Unarmed_<Name>, BP_<Name>).
   --turnaround: the concept is a 2x2 sheet (front, left, back, right), cut by gen/views.ts and sent to Tripo's
   multiview-to-3D: Tripo stops guessing the back and sides. --sheet starts from such a sheet, --views from 4 files.
+  --mirror left|right (with --sheet): that side view is good; the other is written as its flip (a symmetric
+  character needs only one good side view: no new image).
   --task: with --pbr, rigs that task as is; without, re-textures it first (unless --no-retexture).
   --max-tex: in-game texture cap (cooked size); the full-res source is kept. --tex N downsizes the source too.
   --parent makes BP_<Name>: a thin subclass of that C++ Character with mesh, anim class and offset set.
@@ -162,9 +165,13 @@ try {
   // 1. T-pose concept (one front view, or a four-view turnaround sheet)
   let image = o.image ? resolve(o.image) : null;
   let views: string[] | null = o.views ? parseViews(o.views) : null;
+  const mirror = o.mirror === 'left' || o.mirror === 'right' ? o.mirror : undefined;
+  if (o.mirror && !mirror) fail('--mirror is left or right: the good side view; the other is written as its flip');
   const sheetToViews = (sheet: string, supplied: boolean, t?: number): void => {
-    const r = splitSheet(sheet);
+    const r = splitSheet(sheet, undefined, 'grid', mirror);
     views = VIEW_ORDER.map((v) => r.views[v]);
+    if (r.mirrored) console.log(`    the ${r.mirrored === 'left' ? 'right' : 'left'} view is the ${r.mirrored} one flipped (--mirror)`);
+    if (r.warning) console.log(`    WARN: ${r.warning}`);
     manifest.steps.concept = { files: [r.sheet], views, ...(supplied ? { supplied } : {}), ...(t ? { time: secs(t) } : {}) };
     console.log(`    views: ${views.join('\n           ')}\n    Check the four views match (same design, left/right the right way round) before paying for the model.`);
   };

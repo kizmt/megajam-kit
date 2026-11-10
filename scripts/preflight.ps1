@@ -84,7 +84,7 @@ foreach ($s in Get-ChildItem -LiteralPath (Join-Path $Kit 'scripts') -Filter *.p
 foreach ($p in $pairs) {
     $k = Join-Path $Kit $p[0]; $d = Join-Path $Project $p[1]
     if (-not (Test-Path -LiteralPath $d)) { Fail "$($p[1]) missing ($($p[2])): SETUP step 5-6 robocopy" }
-    elseif (-not (SameFile $k $d)) { Fail "$($p[1]) differs from the kit's: copy it again (SETUP step 5-6)" }
+    elseif (-not (SameFile $k $d)) { Fail "$($p[1]) differs from the kit's (edited in the project, or the kit moved on since setup): with the editor closed, rerun the kit's scripts\setup-project.ps1 -Project <this project> to copy it again (SETUP step 5-6)" }
     else { Pass $p[1] }
 }
 $kitPlugin = Join-Path $Kit 'unreal\Plugins\MegajamTools'

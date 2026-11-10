@@ -72,9 +72,16 @@ prepped mesh into parts, puts each pivot on its hinge or axle, and imports them 
 
 ```powershell
 node gen\parts.ts Chest --list                                   # size and loose shells: choose the cuts
+node gen\parts.ts Chest --list --slabs z:12                      # plus the bounds inside 12 slabs along z
 node gen\parts.ts Chest --part "Lid:z>0.62:pivot=0,-0.25,0.62"   # lid above 0.62 m, hinged along the back edge
 node gen\parts.ts Cart --part "WheelL:x<-0.4:pivot=-0.45,0,0.2" --part "WheelR:x>0.4:pivot=0.45,0,0.2" --place=600,0,0
+node gen\parts.ts Clock --part "Post:x<0.33" --part "Anchor:x>0.33&z>4.31" --list   # what is left after those cuts
 ```
+
+- **Write the concept prompt so the parts can be cut.** Each moving part needs a visible gap from the rest along
+  one axis (raised, pulled forward, swung open): a plane has to pass between them. Parts drawn interlocking (an
+  anchor's pallets over a wheel's teeth) come back fused and can't be separated cleanly; draw them apart and close
+  the gap in the engine with the part's rest transform. A rehearsal spent a second image and 25 minutes on this.
 
 - **Run `asset.ts` for the prop first.** The cuts are made on `Generated/assets/<name>/SM_<Name>.fbx` and the parts
   reuse `MI_<Name>` (same UVs, so textures and the style mask still fit). No credits; about 3 s plus the import.
@@ -82,17 +89,31 @@ node gen\parts.ts Cart --part "WheelL:x<-0.4:pivot=-0.45,0,0.2" --part "WheelR:x
   and `preview.png`. Selectors: `x>v x<v y>v y<v z>v z<v` (everything on that side of the plane; the cut is capped
   with faces textured from the cut's edge) or `shell=i,j` (whole loose shells from `--list`, no cut). Parts are taken
   in order from what is left; the remainder is `--rest` (default `Body`), pivot at the original origin.
+- **Finding the cut values:** `--list --slabs z:12` prints the bounds of the geometry inside each slab along an
+  axis; where the bounds narrow or jump, one piece ends and the next begins. `--list` together with `--part ...`
+  shows what is left after those cuts (shell indices change with every cut, so read them here before a `shell=`).
+- **A part that one plane can't name:** join planes with `&` (`"Anchor:x>0.33&z>4.31"`: in front of the post and
+  above the wheel), and give the same part name again to add another cut to it (`--part "Anchor:..." --part
+  "Anchor:shell=2"`: one mesh, the first pivot given). What a compound cut leaves behind stays as separate shells
+  in the rest.
 - **Pivot** = where the part turns or slides: a lid's hinge line, a wheel's axle centre, a lever's base. Default: the
   centre of the part's bounds at its lowest point.
 - **Slivers:** a plane also slices things that only dip across it (the bottom of a hanging ball). Small capped
-  slivers go back to the side they came from (reported as "sliver(s) moved back"); `--keep-bits` turns that off. If
+  slivers go back to the side they came from (reported as "sliver(s) moved back"); `--keep-bits` turns that off. A
+  loose bit just over the limit (5% of its side's main shell; `--sliver 0.08` raises it) stays put and is printed
+  as a NOTE with its size and bounds: it would show when the part moves. If
   a cut still can't separate the part cleanly, re-generate the prop with the part apart from the body (prompt
   "lid open", "wheel beside the cart") or generate the part as its own prop.
 - **Result:** `<dest>/<Name>/SM_<Name>_<Part>` per part (Nanite, `--hulls N` convex collision each) and a table of
   relative locations in Unreal cm (`parts.json`). Build the actor with one `StaticMeshComponent` per part at that
   location under the root: assembled, it matches the original prop exactly (checked: the parts' combined bounds
   equal the whole's, also with an off-centre pivot); each part then rotates or slides about its own origin.
-  `--place=x,y,z` spawns the parts assembled as a check.
+  `--place=x,y,z` spawns the parts assembled as a check; `--replace` first removes the fused prop `asset.ts`
+  placed and the parts of an earlier `--place` (otherwise they overlap, and a NOTE names them).
+- **Faces that were hidden show when a part moves.** The generator textured only what the concept view showed, so
+  a spoke behind the post comes back pale grey once the wheel turns. Fixes, cheapest first: keep the travel small
+  enough that it stays hidden, re-texture the prop (`asset.ts`, 20 credits), or give the generator a second view
+  of the hidden side (`--turnaround`).
 - A re-run replaces the parts unless something still uses them (a level actor, a Blueprint): it refuses with the
   list instead of opening the editor's modal delete dialog.
 
@@ -121,8 +142,12 @@ node gen/views.ts <sheet.png> [--layout grid|row]       # cut a sheet by hand: <
 - **Check the four views before paying for the model:** same design in all four, left and right sides the right way
   round (a belt knot or a strap shows it), nothing crossing between cells. A mismatched sheet gives a worse mesh
   than one good front view. Gemini swapped or doubled the side views on 2 of 2 sheets in a practice run
-  (2026-11-08). **A swapped sheet needs no new image:** cut it with `gen/views.ts`, then pass the files in true order,
-  `--views <s>_front.png,<s>_right.png,<s>_back.png,<s>_left.png`. A sheet that draws one side twice needs a re-roll.
+  (2026-11-08), and drew both sides facing left with a part the prompt excluded on a third (2026-11-11).
+  `views.ts`, `asset.ts` and `character.ts` now print a WARN when the two side views look like the same side drawn
+  twice. **A symmetric subject needs only one good side view:** `--sheet <file> --mirror left` (or `right`) writes
+  the other side as its flip, no new image. **A swapped sheet needs no new image either:** cut it with `gen/views.ts`, then pass the files in true order,
+  `--views <s>_front.png,<s>_right.png,<s>_back.png,<s>_left.png`. A sheet that draws one side twice needs a re-roll
+  only when the subject is not symmetric (otherwise `--mirror`).
 - **Keep the approved design:** pass the approved front concept as the first `--ref`, so the sheet redraws that
   character instead of a new one.
 - **Cutting:** `views.ts` cuts through the emptiest band near each expected split, trims each view to its figure and

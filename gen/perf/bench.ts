@@ -266,7 +266,7 @@ if (w && !native && (String(w.client[0]) !== resX || String(w.client[1]) !== res
   console.log(`WARNING: asked for ${o.res}, the window is ${w.client.join('x')}: label the numbers with the measured size.`);
 }
 console.log('(the CSV "systemresolution" metadata and the log\'s "LogWindows: resolution" are requests or the scaled desktop, not the window: ignore them)');
-console.log(`the bar (docs/ue/performance.md) at the game's target of ${targetFps} fps: p95 >= ${targetFps}, 1% low within 20% of avg, ` +
+console.log(`the bar (docs/ue/performance.md) at the game's target of ${targetFps} fps: p95 >= ${targetFps}, 1% low within 20% of avg or at/above the target, ` +
   `no hitch (frame > ${(2000 / targetFps).toFixed(1)} ms)`);
 console.log('variant            fps  p95fps  1%low  hitches   GPU ms   RT ms   GT ms   TSR  Lumen  bar');
 for (const { name, s } of results) {

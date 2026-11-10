@@ -39,6 +39,8 @@ function Start-KitGame($proj, [string]$Map, [string]$Script, [hashtable]$Setting
 function Show-KitLog([string]$Log, [int]$Max = 40) {
     if (-not (Test-Path $Log)) { Write-Host "no log at $Log"; return }
     Select-String -Path $Log -Pattern 'PROOF|Error:|Fatal' |
+        # A -game process tries the MCP port the open editor already holds: two expected error lines per run.
+        Where-Object { $_.Line -notmatch 'HttpListener unable to bind|MCP server listener could not start' } |
         Where-Object { $_.Line -notmatch 'LogPython: Error: .*(ToolsetDefinition|toolset|StateTree|init_unreal|AgentSkill|PythonTestRunner|Traceback|\^\^\^|from skills|class .*Skill)' } |
         Select-Object -First $Max | ForEach-Object { $_.Line -replace '^\[[^\]]*\]\[[^\]]*\]', '' }
 }

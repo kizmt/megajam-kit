@@ -29,6 +29,7 @@ import { KIT, errorMessage, fail, projectDir } from '../paths.ts';
 import { parseMarkedJson } from '../proc.ts';
 import { hasNewToolSearch } from './mcp.ts';
 import { runPythonFileOrThrow } from './python.ts';
+import { ensureEditorDrawing } from './ue.ts';
 
 const { values: o, positionals } = parseArgs({
   allowPositionals: true,
@@ -78,6 +79,8 @@ try {
     process.exit(0);
   }
   const t0 = Date.now();
+  const windowNote = ensureEditorDrawing();
+  if (windowNote) console.log(`    ${windowNote}`);
   const opened = await py<State>({ op: 'open', ...(o.map ? { map: o.map } : {}) });
   if (!opened.opened) fail(`could not open ${o.seq} in Sequencer`);
   if (opened.sections.length === 0) fail(`${o.seq} has no Generated Animation section (SETUP.md 10b: Add Character)`);
@@ -99,7 +102,7 @@ try {
     if (DONE.test(text)) { done = true; break; }
   }
   if (!done) {
-    fail(`no "generation done" line in ${log} after ${o.timeout} s. Look at the editor: a Kimodo error dialog blocks it; ` +
+    fail(`no "generation done" line in ${log} after ${o.timeout} s. Look at the editor: its window is minimised (it then never starts: restore it and rerun); a Kimodo error dialog blocks it; ` +
       'or Live Update / the section\'s auto-generate is off (then press Generate in the Sequencer toolbar and rerun with the same prompt)');
   }
   console.log(`[3] generated (${((Date.now() - t0) / 1000).toFixed(0)} s)`);

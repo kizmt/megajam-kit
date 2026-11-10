@@ -14,7 +14,8 @@ in the planning folder: `design\concept.md`, `design\concepts.md`, `design\sched
 `DECISIONS.md` at the planning folder root.
 **At S:** create the project (`SETUP.md`), then give the planning session access to it before moving anything:
 `/add-dir C:\dev\<Project>` (or restart Claude Code in the project with `C:\dev\_plan` in `additionalDirectories`).
-Without it, shell copies into the project are refused. Move `design\` and `DECISIONS.md` into the project, copy the
+Full paths on both sides usually work without it (a rehearsal moved the files and wrote project files that way);
+`/add-dir` is the fix when a copy or a write is refused. Move `design\` and `DECISIONS.md` into the project, copy the
 schedule table into `PROGRESS.md`, and commit them right after `init-repo.ps1`'s first commit. From then on the
 session runs in the project as usual.
 The reveal is at 04:00 JST: decide the night before whether the director watches live or sleeps and starts planning

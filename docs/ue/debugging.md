@@ -13,6 +13,7 @@ it in this sense.
 | Feature "doesn't work", no crash | `GetLogEntries` filtered to `Error`/`Warning` since PIE start | Add a `UE_LOG` on the code path; re-run PIE; quote the line |
 | PIE stops with red text / "Accessed None" | Message Log > Play In Editor (Window > Message Log) | Fix the first error; later ones are usually fallout |
 | **5.9 only:** an error or crash the steps here don't explain | Search, don't read: `rg -i -A3 "<word from the error>" docs/ue59/known-issues.md` | Unofficial list from the Preview's forum thread; entries may already be patched: test the workaround, don't assume it |
+| A viewport screenshot is never written, or Kimodo waits and never generates, while MCP answers | Is the editor window minimised? It then draws nothing and barely ticks (`gen\unreal\editor_window.ps1 -Name <Project>` prints it) | Restore the window (behind other windows is fine). `captureView` and `kimodo.ts` check and restore it without taking focus |
 | Editor/PIE crash | Newest `Saved/Crashes/UECC-*/` folder: `CrashContext.runtime-xml` `<ErrorMessage>` + `<CallStack>` | Also tail `Saved/Logs/<Project>.log` |
 | Packaged build crash | `<Build>\<Game>\Saved\Logs\<Game>.log`, last 100 lines | Keep the matching `.pdb` (see Crashes) |
 | `Saved/Crashes` folder appeared but nothing crashed | It's an **ensure** (`<CrashType>Ensure</CrashType>`) | Read `EnsureFailed: Error:` line in the log; fix it before the final package (each first fire walks the stack and writes a crash folder: a hitch of tens to hundreds of ms) |

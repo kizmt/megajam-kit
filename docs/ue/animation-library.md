@@ -115,6 +115,13 @@ Researched 2026-10-26/28; prices and terms change, so re-check a source before r
     and where it goes; for actions in sequence, key the **Anim Description** channel over time (or Multi-Prompt
     Transitions) so each stretch has one action, as Kimodo's training data is described moment by moment. Variations
     2-3 and Quality High for clips that will ship.
+  - A target on the body is not followed well in one try (2026-11-11): "the right fist knocks downward twice on a
+    drum held at the right hip" raised the hand from 72 cm to 130 cm and dipped it twice beside the head, so it
+    read as a salute. Say where the hand ends in body terms ("the right fist strikes down to waist height beside
+    the right thigh, twice"), and measure the hand bone's height over the clip before judging it by eye.
+  - **The editor window must not be minimised.** A minimised editor never starts the generation, though MCP keeps
+    answering (2026-11-11: a 300 s wait; it began within a second of restoring the window, and the rerun took
+    128 s). `kimodo.ts` checks first and restores the window without taking focus. Behind other windows is fine.
   - **Workflow that worked (2026-11-10, by hand):** add the character with the plugin's own **Add Character**
     (Sequencer toolbar > the AnimGenOffline drop-down, a running-figure icon > Actions): pick the mesh, tick **Control
     Rig** (Auto finds Manny's `CR_Mannequin_Body`) for pose editing, and tick **Spline** only for "walk along this

@@ -13,7 +13,8 @@ play. The right frame rate depends on the game, so the bar has a fixed part and 
 --target-fps <target>`, which prints PASS/FAIL per variant:
 - **No hitches:** no frame longer than twice the target frame time (after the skipped warm-up frames). Usual
   causes: shader/PSO compiles, asset loads or spawns mid-play, a garbage-collection spike.
-- **Steady pacing:** the 1% low (p99 frame time) within 20% of the average fps.
+- **Steady pacing:** the 1% low (p99 frame time) within 20% of the average fps, or at or above the target (an
+  uncapped run far above the target always has a wide spread; it is steady once capped at the target).
 - **At or above the target:** the slowest 5% of frames (p95) at or above the game's target fps.
 - **A settings menu that scales:** quality preset, resolution scale, frame cap and vsync, applied and saved through
   `UGameUserSettings` (`SetOverallScalabilityLevel`, `SetResolutionScaleNormalized`, `SetFrameRateLimit`,

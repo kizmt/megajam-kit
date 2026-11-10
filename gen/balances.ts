@@ -16,7 +16,17 @@ type Row = Record<string, unknown> & { service: string; ok: boolean };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- vendor JSON, each field checked where it is used
 async function get(url: string, init?: RequestInit): Promise<{ status: number; body: any }> {
-  const r = await fetch(url, { ...init, signal: AbortSignal.timeout(20000) });
+  // One retry on a timeout or a dropped connection: a slow reply is not a bad key (a rehearsal printed FAIL once).
+  let r: Response;
+  try {
+    r = await fetch(url, { ...init, signal: AbortSignal.timeout(20000) });
+  } catch {
+    try {
+      r = await fetch(url, { ...init, signal: AbortSignal.timeout(30000) });
+    } catch (e) {
+      throw new Error(`no reply after two tries (timeout or network, not a key problem): ${errorMessage(e).split('\n')[0]}`);
+    }
+  }
   const t = await r.text();
   try { return { status: r.status, body: JSON.parse(t) }; } catch { return { status: r.status, body: t.slice(0, 200) }; }
 }

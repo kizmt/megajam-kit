@@ -46,7 +46,11 @@ export function barCheck(s: CsvSummary, targetFps: number): { pass: boolean; not
   const h = hitches(s, targetFps);
   if (h > 0) notes.push(`${h} hitch(es) over ${(2000 / targetFps).toFixed(1)} ms (worst ${(s.threads['FrameTime']?.max ?? 0).toFixed(1)} ms)`);
   if (s.fpsLow < targetFps) notes.push(`p95 ${s.fpsLow.toFixed(0)} fps is below the ${targetFps} fps target`);
-  if (s.fps > 0 && s.fps1Low < 0.8 * s.fps) notes.push(`1% low ${s.fps1Low.toFixed(0)} fps is more than 20% under the ${s.fps.toFixed(0)} fps average`);
+  // Uneven pacing only shows when the slow frames fall under the target: an uncapped run far above it (129 fps
+  // average, 1% low 101, target 60) is steady once the game caps or syncs at the target, so that is not a failure.
+  if (s.fps > 0 && s.fps1Low < 0.8 * s.fps && s.fps1Low < targetFps) {
+    notes.push(`1% low ${s.fps1Low.toFixed(0)} fps is more than 20% under the ${s.fps.toFixed(0)} fps average and under the ${targetFps} fps target`);
+  }
   return { pass: notes.length === 0, notes };
 }
 

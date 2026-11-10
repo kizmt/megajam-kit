@@ -13,7 +13,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { basename, extname, join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
-import { KIT, errorMessage, generatedDir, pascal } from './paths.ts';
+import { KIT, errorMessage, fail, generatedDir, pascal } from './paths.ts';
 import { bakeStyleMask, packOrm, parseMarkedJson, parseTripo, requireTripoCredits, run, secs, type OrmResult, type StyleMaskResult } from './proc.ts';
 import { applyPbr, type ApplyPbrResult } from './unreal/materials.ts';
 import { McpUnreachableError, type CameraTransform } from './unreal/mcp.ts';
@@ -29,6 +29,7 @@ const { values: o, positionals } = parseArgs({
     name: { type: 'string' },
     image: { type: 'string' },
     sheet: { type: 'string' },
+    mirror: { type: 'string' },
     views: { type: 'string' },
     turnaround: { type: 'boolean', default: false },
     model: { type: 'string' },
@@ -59,6 +60,7 @@ if (o.help || (!prompt && !o.image && !o.sheet && !o.views && !o.model)) {
        [--tex 2048] [--faces 30000] [--tris N] [--dest /Game/Props] [--place x,y,z | --no-place] [--yaw deg] [--hulls 4-8] [--no-unreal] [--no-mask]
   --turnaround  the concept is a 2x2 four-view sheet (front, left, back, right) sent to Tripo's multiview-to-3D:
              for props whose back or sides matter (seen all round, asymmetric); --sheet/--views start from one
+             --mirror left|right (with --sheet): that side view is good; the other is written as its flip
   --hulls N  replace the default collision with N convex hulls (props the player pushes, picks up or
              walks around closely; leave off for background props)
   A value starting with '-' needs '=': --place=-300,0,0  --yaw=-90 (Node's parser rejects '--yaw -90').`);
@@ -117,9 +119,13 @@ try {
   // 1. Concept image(s)
   let image = o.image ? resolve(o.image) : null;
   let views: string[] | null = o.views ? parseViews(o.views) : null;
+  const mirror = o.mirror === 'left' || o.mirror === 'right' ? o.mirror : undefined;
+  if (o.mirror && !mirror) fail('--mirror is left or right: the good side view; the other is written as its flip');
   const sheetToViews = (sheet: string, supplied: boolean, t?: number): void => {
-    const r = splitSheet(sheet);
+    const r = splitSheet(sheet, undefined, 'grid', mirror);
     views = VIEW_ORDER.map((v) => r.views[v]);
+    if (r.mirrored) console.log(`    the ${r.mirrored === 'left' ? 'right' : 'left'} view is the ${r.mirrored} one flipped (--mirror)`);
+    if (r.warning) console.log(`    WARN: ${r.warning}`);
     manifest.steps.concept = { files: [r.sheet], views, ...(supplied ? { supplied } : {}), ...(t ? { time: secs(t) } : {}) };
     console.log(`    views: ${views.join('\n           ')}`);
   };
