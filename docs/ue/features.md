@@ -8,11 +8,11 @@ Epic's definitions (5.8):
 We already depend on Experimental and Beta features on purpose: **Unreal MCP, the Toolset Registry/toolsets, PCG via
 MCP** (Experimental) and **Python editor scripting** (`PythonScriptPlugin.uplugin` has `IsBetaVersion` true, but the
 5.8 Experimental hub lists "Scripting the Unreal Editor Using Python"; editor-only either way).
-**5.9:** Unreal MCP is still Experimental (docs/ue59/pages/unreal-mcp-in-unreal-editor.md) and Python editor
-scripting is still on the Experimental hub (docs/ue59/pages/experimental-features.md). 5.9 adds AI toolsets
+**5.9:** Unreal MCP is still Experimental (docs/ue59/pages/ai-features/unreal-mcp-in-unreal-editor.md) and Python editor
+scripting is still on the Experimental hub (docs/ue59/pages/whats-new/experimental-features.md). 5.9 adds AI toolsets
 (Blueprints, editor actions, MVVM, Slate inspection, performance, files, scene capture, console, Texture Graph, widget
 animation) and an MCP Client toolset, and removes the old Python Foundation Packages plugin
-(docs/ue59/pages/unreal-engine-5-9-release-notes.md).
+(docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md).
 Editor-side tooling that doesn't ship in the game is low risk. Runtime features that ship inside the game are where
 the risk is.
 
@@ -40,11 +40,11 @@ the risk is.
 | Texture Graph | Experimental | Procedural textures in-engine | untested |
 | PCG Editor Mode | Experimental | Faster PCG authoring | untested |
 | Dynamic Asset Selection (Choosers) | Experimental | Data-driven asset/animation picking | untested |
-| **5.9:** Choosers | still Experimental (docs/ue59/pages/experimental-features.md) | Chooser tables can be built and edited from Blueprint or Python (docs/ue59/pages/unreal-engine-5-9-release-notes.md) | untested |
+| **5.9:** Choosers | still Experimental (docs/ue59/pages/whats-new/experimental-features.md) | Chooser tables can be built and edited from Blueprint or Python (docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md) | untested |
 | Water plugin | Experimental (`Water.uplugin`) | Sea, rivers, lakes with waves, shoreline and SLW shading for free | **works from Python** (rehearsal): many gotchas, recipe in `worldbuilding.md` "Water"; packaged perf not isolated |
 | Motion Warping | Beta | Lines up attacks, vaults and climbs with a target by warping root motion | untested in the kit; `animation-library.md` "Combat animation pattern" |
 | Nanite Foliage (shape preservation `VOXELIZE`) | Experimental (Project Settings > Rendering > Nanite Foliage, editor restart) | Thin leaves that survive at distance | **tested in the rehearsal:** right for trees (5-7 m), wrong for small thin plants (use Preserve Area); WPO wind works. Epic's Nanite Foliage page says some voxel settings "don't actually work as intended yet, if at all". Rehearsal details: `performance.md` "Geometry" |
-| **5.9:** Dynamic Wind (wind for Nanite Foliage) | Experimental plugin, off by default; needs SM6 and Nanite Foliage (Project Settings > Engine > Rendering > Nanite Foliage (Experimental), `r.Nanite.Foliage`, editor restart) | GPU bone wind on skeletal plants (Instanced Skinned Mesh) through Nanite Skinning instead of WPO; force sources and push capsules; `DynamicWind.Mode` parametric mode for low-end | untested; bone groups come only from PVE, USD or JSON import, not built by hand (docs/ue59/pages/dynamic-wind-for-nanite-foliage-in-unreal-engine.md) |
+| **5.9:** Dynamic Wind (wind for Nanite Foliage) | Experimental plugin, off by default; needs SM6 and Nanite Foliage (Project Settings > Engine > Rendering > Nanite Foliage (Experimental), `r.Nanite.Foliage`, editor restart) | GPU bone wind on skeletal plants (Instanced Skinned Mesh) through Nanite Skinning instead of WPO; force sources and push capsules; `DynamicWind.Mode` parametric mode for low-end | untested; bone groups come only from PVE, USD or JSON import, not built by hand (docs/ue59/pages/rendering/dynamic-wind-for-nanite-foliage-in-unreal-engine.md) |
 | MegaLights | Production Ready per the 5.8 release notes; doc page and source help text still say Experimental | Many shadowed local lights at near-constant cost | untested; only for a night or interior level, after a practice-run measurement; not for the sun (`lighting.md` "MegaLights") |
 | Lumen Lite | Beta (5.8 release notes) | "Twice as fast as Lumen high quality"; the kit ships it as the Medium preset | untested in a packaged build: prove it (rule 2; `lighting.md` "Scalability") |
 | Sandboxes | Experimental (5.8 launch post) | Isolated workspace keeping only chosen changes | **skip**: Git branches do this; interaction with Git and World Partition external actors undocumented |
@@ -60,14 +60,14 @@ visual artifacts"), Direct Mesh Controls, Animation Mixer in Sequencer, MetaHuma
 Streaming and Spatially Aware Retargeting. Control Rig Physics is Beta but needs a hand-authored rig.
 **5.9:** the spatially aware retarget sub-operations (Relative IK Retarget, Body Intersect Goals) are still
 experimental and need the Spatially Aware Retarget Ops plugin
-(docs/ue59/pages/retargeting-operation-stack-in-unreal-engine-5-8.md); 5.9 adds Proximity IK, Pelvis Volume and Limb
-Twist retarget ops with no status given (docs/ue59/pages/unreal-engine-5-9-release-notes.md).
+(docs/ue59/pages/animation/retargeting-operation-stack-in-unreal-engine-5-8.md); 5.9 adds Proximity IK, Pelvis Volume and Limb
+Twist retarget ops with no status given (docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md).
 **5.9:** new in 5.9 and Experimental, so the same rule applies: Unreal Canvas
-(docs/ue59/pages/unreal-canvas-overview-in-unreal-engine.md), Dynamic Wind (table above), Ambient Lighting Volumes
-(Movable Sky Light, only when Lumen isn't the GI method; docs/ue59/pages/ambient-lighting-volumes-in-unreal-engine.md),
+(docs/ue59/pages/ai-features/unreal-canvas-overview-in-unreal-engine.md), Dynamic Wind (table above), Ambient Lighting Volumes
+(Movable Sky Light, only when Lumen isn't the GI method; docs/ue59/pages/worlds/ambient-lighting-volumes-in-unreal-engine.md),
 AVBOIT order-independent transparency
-(docs/ue59/pages/adaptive-voxelbased-order-independent-transparency-in-unreal-engine.md) and the WebAssembly target
-(docs/ue59/pages/unreal-engine-5-9-release-notes.md).
+(docs/ue59/pages/rendering/adaptive-voxelbased-order-independent-transparency-in-unreal-engine.md) and the WebAssembly target
+(docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md).
 
 5.8 hub lists, for reference. Beta: Recovery Hub, Modeling Mode/Tools, UV Editor, Geometry Scripting, PCG GPU
 Processing, Substrate, UMG Viewmodel, Waveform Editor, MetaSounds Quick Start, MetaSound Builder API, Editor Utility

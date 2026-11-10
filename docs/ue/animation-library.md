@@ -41,7 +41,7 @@ Researched 2026-10-26/28; prices and terms change, so re-check a source before r
 - Untested in this kit except Uthana (below): run a 2-3 clip trial (cost stated first) before relying on any generator.
 - **5.9:** a new **UAF AnimGen** plugin brings AI-driven animation generation into the Unreal Animation Framework
   (UAF). The 5.9 docs have no page on it beyond the release notes: check its output and terms before relying on it
-  (docs/ue59/pages/unreal-engine-5-9-release-notes.md).
+  (docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md).
 
 ### Uthana text-to-motion (tested: 3 clips; API, cost and output format in `PIPELINE.md`)
 
@@ -82,7 +82,7 @@ Researched 2026-10-26/28; prices and terms change, so re-check a source before r
    relative to the body), **Pelvis Volume** (places the pelvis across characters with different proportions) and
    **Limb Twist** (spreads twist along the limbs). The 5.9 docs name them only in the release notes (no settings
    page); try them in the retargeter's op stack when contacts or the pelvis are off after a retarget
-   (docs/ue59/pages/unreal-engine-5-9-release-notes.md).
+   (docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md).
    The tool prints the source-to-target chain map: read it, because a wrong mapping is otherwise silent. Then run
    without `--limit`. Finally do one `-game` launch: it catches cook-only problems PIE hides.
 4. The tool reuses one retargeter per (source skeleton, character), never overwrites, retargets sequences before
@@ -138,7 +138,7 @@ All allow AI use (checked 2026-10-28). Counts are approximate (heuristic classif
   the attack starts. Needs root-motion animations. Without root motion, rotate toward the target over the wind-up instead.
   **5.9:** the release notes list "smaller updates" to Motion Warping without detail; the 5.9 Motion Warping page
   describes the same plugin, component, notify-state and warp-target workflow
-  (docs/ue59/pages/unreal-engine-5-9-release-notes.md, docs/ue59/pages/motion-warping-in-unreal-engine.md).
+  (docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md, docs/ue59/pages/animation/motion-warping-in-unreal-engine.md).
 - **States:** dodge/roll (with brief invulnerability), block/parry (timed window), hit reaction (interrupts the attack),
   knockdown + get-up, death (ragdoll or death montage). All timings and damage in a DataAsset.
 - **AI characters using Epic's ABP slide without walk/run:** fix in `ai.md` "AI characters slide without walk/run

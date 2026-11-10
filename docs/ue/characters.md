@@ -29,7 +29,7 @@ and Tripo's API docs (list at the bottom). Anything not checked is marked (unver
 | Need | Tool | Notes |
 |---|---|---|
 | Import skeletal FBX | `SkeletalMeshTools.import_file(folder, name, file, skeleton=None, import_materials, import_textures, import_animations, create_physics_asset)` | Pins the **legacy `FbxFactory` + `FbxImportUI`**, so it takes **FBX only** (not GLB). `skeleton=None` creates a new Skeleton. Assets are **not saved** (`task.save=False`), so save afterwards |
-| **5.9:** Import skeletal mesh | The 5.9 MCP page says the Skeletal Mesh `ImportFile` tool takes `bReplaceExisting` and `bSave`, both `false` by default; it only replaces an asset of its own class, and `bSave` runs save validators (docs/ue59/pages/unreal-mcp-in-unreal-editor.md). Check the tool's schema with `describe_tools` and pass `bSave` or save afterwards |
+| **5.9:** Import skeletal mesh | The 5.9 MCP page says the Skeletal Mesh `ImportFile` tool takes `bReplaceExisting` and `bSave`, both `false` by default; it only replaces an asset of its own class, and `bSave` runs save validators (docs/ue59/pages/ai-features/unreal-mcp-in-unreal-editor.md). Check the tool's schema with `describe_tools` and pass `bSave` or save afterwards |
 | Import anything (GLB, FBX) with default importer | `MegajamTools.import_any` | Goes through **Interchange**, which handles FBX by default in 5.8 (`Interchange.FeatureFlags.Import.FBX` = true) |
 | Inspect mesh | `SkeletalMeshTools.get_bone_names / get_bone_parent / get_bone_children / get_bounds / get_skeleton / get_lod_count / get_vertex_count / get_morph_target_names` | `get_bone_names` = root first. Use it to check the rig before retargeting |
 | Materials, sockets | `get_material_slots / set_material`, `add_socket(mesh, socket, bone) / set_socket_transform / ...` | Sockets for weapons and hand props |
@@ -37,7 +37,7 @@ and Tripo's API docs (list at the bottom). Anything not checked is marked (unver
 | IK Rig, Retargeter, batch retarget | **No toolset.** Use editor Python: `IKRigController`, `IKRetargeterController`, `IKRetargetBatchOperation` (all in the stub) | See script below |
 | Anim BP / Blend Space / Montage assets | Python: `AnimBlueprintFactory` (target_skeleton, parent_class, preview_skeletal_mesh), `BlendSpaceFactory1D` / `BlendSpaceFactoryNew`, `AnimMontageFactory`; `BlendSpace.sample_data` / `blend_parameters` are writable; `BlueprintEditorLibrary.reparent_blueprint / compile_blueprint` | Creating the assets is scriptable |
 | **Anim graph / state machine nodes** | Node edits **are scriptable** via the editor's BlueprintTools over MCP (`find_nodes` / `delete_node` / `connect_pins`; `read_graph_dsl` can't read AnimGraphs): `gen/unreal/abp.ts` | Authoring a whole state machine is not practical by script. That's why we retarget `ABP_Unarmed` instead of authoring one |
-| **5.9:** Graph scripting | 5.9 adds scripting functions to create and edit Blueprints, graphs, nodes and variables from Python or Editor Utility Blueprints, and GraphDsl, a text-based language for authoring and editing graph assets (docs/ue59/pages/unreal-engine-5-9-release-notes.md). The page doesn't say whether they cover AnimGraphs or state machines; keep `gen/unreal/abp.ts` until tested |
+| **5.9:** Graph scripting | 5.9 adds scripting functions to create and edit Blueprints, graphs, nodes and variables from Python or Editor Utility Blueprints, and GraphDsl, a text-based language for authoring and editing graph assets (docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md). The page doesn't say whether they cover AnimGraphs or state machines; keep `gen/unreal/abp.ts` until tested |
 | AnimationAssistantToolset | Sequencer + Control Rig only (level sequences, keyframing, `bake_to_control_rig`, FBX to/from rig) | Useless for gameplay characters; only for cutscenes |
 
 ## Skeletal mesh import essentials
@@ -99,10 +99,10 @@ and Tripo's API docs (list at the bottom). Anything not checked is marked (unver
   Scripting them through `IKRetargeterController` is unverified.
 - **5.9:** the IK Retargeter adds three spatially aware ops: **Proximity IK** (keeps limbs and contacts correct
   relative to the body), **Pelvis Volume** (places the pelvis across characters with different proportions) and
-  **Limb Twist** (spreads twist along the limbs) (docs/ue59/pages/unreal-engine-5-9-release-notes.md). The offline
+  **Limb Twist** (spreads twist along the limbs) (docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md). The offline
   op stack page doesn't document them yet; it lists only Relative IK Retarget and Body Intersect Goals as spatially
   aware sub-ops, both Experimental and needing the **Spatially Aware Retarget Ops** plugin
-  (docs/ue59/pages/retargeting-operation-stack-in-unreal-engine-5-8.md). On 5.9, try Pelvis Volume first when the
+  (docs/ue59/pages/animation/retargeting-operation-stack-in-unreal-engine-5-8.md). On 5.9, try Pelvis Volume first when the
   pelvis sits wrong on a short or stylized target.
 - **Batch retarget (new API in 5.8):** `IKRetargetBatchOperation.run_batch_retarget(IKRetargetBatchOperationInputs)`.
   `duplicate_and_retarget` is deprecated in 5.8. It handles AnimSequences, Montages, Blend Spaces and **Anim
@@ -111,7 +111,7 @@ and Tripo's API docs (list at the bottom). Anything not checked is marked (unver
   and anims with it. Epic's docs say batch work should use a saved retargeter, not an auto-generated one.
 - **5.9:** the 5.9 Python retargeter page still shows batch retargeting with
   `IKRetargetBatchOperation.duplicate_and_retarget(..., remap_referenced_assets=True)` and doesn't mention
-  `run_batch_retarget` (docs/ue59/pages/using-python-to-create-and-edit-ik-retargeter-assets-in-unreal-engine.md).
+  `run_batch_retarget` (docs/ue59/pages/animation/using-python-to-create-and-edit-ik-retargeter-assets-in-unreal-engine.md).
   Grep the 5.9 stub for both before running `retarget_setup.py`.
 - **UI alternative:** right-click an animation > *Retarget Animation Assets*. With "Auto Generate Retargeter" (default on)
   it builds both IK Rigs + retargeter, and *Export Retarget Assets* saves them.
@@ -160,7 +160,7 @@ project lacks it, add the Third Person feature pack via Content Drawer > Add):
   for Tripo `--spec unreal` rigs too).
 - **5.9:** Control Rig can be referenced as an asset as well as a class, with new Blueprint nodes to check, convert and
   spawn rigs from those references; several older nodes are deprecated in favour of the asset-reference versions
-  (docs/ue59/pages/unreal-engine-5-9-release-notes.md; no node list given). `strip-footik` finds the node by class
+  (docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md; no node list given). `strip-footik` finds the node by class
   (`AnimGraphNode_ControlRig`): check it still finds it on a 5.9 ABP.
 - `Anims/Unarmed/Attack/MM_Attack_01..03, MM_ChargedAttack`, `Jump/MM_Dash, MM_WallJump`, walk/jog 8-way sets.
 - Montages with sections: `Variant_Combat/Anims/AM_ComboAttack`, `AM_ChargedAttack`; `Variant_Platforming/Anims/AM_Dash`.
@@ -260,8 +260,8 @@ protected:
   Skeletal Mesh uses animation LODs" and no morph targets. With 1-3 characters there's no win and only risk (maturity
   status in 5.8 unverified).
 - **5.9:** the 5.9 Nanite page keeps the same skeletal limits (no geometry LODs, no morph targets)
-  (docs/ue59/pages/nanite-virtualized-geometry-in-unreal-engine.md). 5.9's Nanite culling handles skinned
-  instances as separate work, automatically (docs/ue59/pages/unreal-engine-5-9-release-notes.md). No reason to
+  (docs/ue59/pages/rendering/nanite-virtualized-geometry-in-unreal-engine.md). 5.9's Nanite culling handles skinned
+  instances as separate work, automatically (docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md). No reason to
   change the rule.
 - Tripo meshes import with **one LOD**. Fine for a few characters. For crowds, generate LODs in the Skeletal Mesh
   Editor (UI) or cap faces at generation.
@@ -288,7 +288,7 @@ node and renamed stats; Motion Matching inside Choosers (5.7) is Experimental.
 with Play Sound and Play Niagara Effect handlers, StateTree conditions (Animation Is Looping, Animation Time
 Remaining) and updated Chooser, Pose Search, Warping, Mirroring and Control Rig integrations. A new **UAF AnimGen**
 plugin adds AI-driven animation generation, and Chooser tables can be built and edited from Blueprint or Python
-(docs/ue59/pages/unreal-engine-5-9-release-notes.md). The offline 5.9 docs have no UAF or AnimGen page beyond the
+(docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md). The offline 5.9 docs have no UAF or AnimGen page beyond the
 release notes, so none of it is a documented replacement for the ABP path here; the decision stands.
 
 ## Recommended path for a generated character
@@ -372,7 +372,7 @@ cleanly without them); the rest apply to any character.
   (start around legs 1.5, arms 0.7 and tune by eye), plus speeding up the run animation with movement speed. Then add a
   procedural waddle, lean, bounce and squash-and-stretch on jumps and landings, with all amounts in the tuning DataAsset.
   - **5.9:** the new Pelvis Volume and Proximity IK ops target this case (different proportions, contacts relative to
-    the body) (docs/ue59/pages/unreal-engine-5-9-release-notes.md); see "IK Rig and IK Retargeter" above.
+    the body) (docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md); see "IK Rig and IK Retargeter" above.
 - **Procedural bone edits in C++ with no graph logic: an anim instance proxy.** Override
   `FAnimInstanceProxy::Evaluate_WithRoot`, call `EvaluateAnimationNode_WithRoot`, then edit `Output.Pose` (use `FCSPose`
   for component space); read game state in `PreUpdate` (game thread); return the proxy from `CreateAnimInstanceProxy`.

@@ -78,7 +78,7 @@ scene is the floor: real content adds cost, so re-bench after each big content r
 Project Settings > Engine > Rendering > Optimizations (`r.SupportAmbientLightingVolumes`). If the game places none,
 turn it off to remove their shader code (editor restart). They only act with a Movable Sky Light and without Lumen
 GI; their cost shows as **AmbientLightingVolumes** in the GPU profiler
-(docs/ue59/pages/ambient-lighting-volumes-in-unreal-engine.md).
+(docs/ue59/pages/worlds/ambient-lighting-volumes-in-unreal-engine.md).
 
 ## Render paths (measured on a prototype, packaged, 4K output, RTX 4060)
 
@@ -116,7 +116,7 @@ Facts behind the table:
   `ShowFlag.VisualizeFarShadowCasters 1` shows which objects cast them, the new **Set Cast Far Shadow** Blueprint
   function toggles it per component at runtime, and with cascaded maps `r.Shadow.CSMShadowDepthReuse.FarInterval`
   re-renders far cascades less often. `stat ShadowRendering` gives the CPU side; turn visualizations off before
-  profiling (docs/ue59/pages/debugging-shadows-in-unreal-engine.md, docs/ue59/pages/unreal-engine-5-9-release-notes.md).
+  profiling (docs/ue59/pages/worlds/debugging-shadows-in-unreal-engine.md, docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md).
 - TSR costs ~2.1-2.6 ms at 4K output from 1080p, ~3.7 ms from 1440p. `r.TSR.History.ScreenPercentage=200` adds ~3.2 ms.
 - With TSR/TAA, post-processing runs at output resolution (~1 ms at 4K); with a spatial upscale at internal resolution.
   PP materials set Before Tonemapping still run at internal resolution (Epic's `BlendableLocation` enum): put
@@ -144,7 +144,7 @@ Facts behind the table:
   Editor, USD or a JSON import), placed as Instanced Skinned Mesh components with a Dynamic Wind Data **Transform
   Provider**; it needs SM6 and **Nanite Foliage (Experimental)** (`r.Nanite.Foliage`) enabled, plus a restart.
   `DynamicWind.Mode 0` is a cheaper stateless parametric wind for low-end hardware. It does not replace WPO wind on
-  static-mesh plants (docs/ue59/pages/dynamic-wind-for-nanite-foliage-in-unreal-engine.md).
+  static-mesh plants (docs/ue59/pages/rendering/dynamic-wind-for-nanite-foliage-in-unreal-engine.md).
 - **Many animated characters:** enable the Animation Budget Allocator plugin (stable, ships with 5.8, off by
   default; `a.Budget.Enabled=1`, `a.Budget.BudgetMs`) and use its budgeted skeletal mesh component for non-player
   characters. 12 characters needed ~0.6 ms of animation, under a 1 ms budget, so it only matters at larger counts.
@@ -170,7 +170,7 @@ Facts behind the table:
   **Full** or **Simplified Material** (not Inline). `r.Lumen.WorldCache.Allowed 0/1` switches back to the Surface
   Cache live (a scalability setting). Its GPU time is **LumenWorldCache** and it runs on async compute by default
   (`r.Lumen.WorldCache.AsyncCompute`), so the undercount above applies to it too
-  (docs/ue59/pages/lumen-world-cache-in-unreal-engine.md).
+  (docs/ue59/pages/worlds/lumen-world-cache-in-unreal-engine.md).
 - `-ExecCmds="stat gpu"` drew nothing in the packaged build. A game cvar that runs the command from the player
   controller ~1 s after BeginPlay works.
 - `r.Lumen.ScreenProbeGather.DownsampleFactor` defaults to **16** in 5.8.4 (probe tile size in pixels). Lower values
@@ -215,7 +215,7 @@ Facts behind the table:
   with **Evaluate World Position Offset** / **World Position Offset Disable Distance** deciding whether it is active),
   or it is skeletal, spline, part of a Nanite Assembly, displaced, or moved this frame. So the WPO disable distance
   also moves far instances to the cheap class. A/B with `r.Nanite.Culling.Classification 0`
-  (docs/ue59/pages/nanite-technical-details.md).
+  (docs/ue59/pages/rendering/nanite-technical-details.md).
 - Many copies of one prop (rocks, crates, trees): place as **instances** (instanced static mesh / PCG), not hundreds of
   separate actors.
 - Collision: imported props get one auto **convex hull** (cheap). For openings and walk-in shapes use authored
@@ -270,8 +270,8 @@ Facts behind the table:
   Game ms highest = CPU/gameplay bound; GPU highest = rendering bound.
 - `MegajamTools.run_console_command` can issue these from scripts.
 - **5.9:** Unreal MCP adds engine toolsets including **Console** and **Perf** (CSV and GPU profiler, Stats); both have
-  runtime-callable tools (docs/ue59/pages/unreal-engine-5-9-release-notes.md,
-  docs/ue59/pages/unreal-mcp-in-unreal-editor.md). Run `describe_toolset` on them before use.
+  runtime-callable tools (docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md,
+  docs/ue59/pages/ai-features/unreal-mcp-in-unreal-editor.md). Run `describe_toolset` on them before use.
 - Final truth is the **packaged** build on the target PC (Epic: profile on target hardware). Package daily from day 2.
 - Deep dive: Unreal Insights (CPU/GPU timing per frame), RenderDoc (single GPU frame).
 

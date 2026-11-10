@@ -77,7 +77,7 @@ Workflow: `CreateNiagaraSystem` from a **template system**, giving it an `FXS_` 
   - **5.9:** the tool-search meta-tools are `list_toolsets`, `describe_toolsets` (tools of one or more toolsets;
     schemas only with `include_schemas: true`), `describe_tools` (full schemas for named `Toolset.Tool`s) and
     `call_tool`. On 5.9 check writes against `describe_tools` for the tool you call
-    (docs/ue59/pages/unreal-mcp-in-unreal-editor.md).
+    (docs/ue59/pages/ai-features/unreal-mcp-in-unreal-editor.md).
 - **Curve data interfaces written with `SetStackInputData` leave a stale LUT** ("Post CopyToInternal LUT generation is
   out of sync"). A written curve on `ScaleSpriteSize` scaled every sprite to 0 with no error. Workaround: disable the
   module and take the size from the spawn range. (Untested: setting the curve in the UI, or recompiling after.)
@@ -89,7 +89,7 @@ Workflow: `CreateNiagaraSystem` from a **template system**, giving it an `FXS_` 
   limit; parse the saved file instead.
   - **5.9:** `describe_toolsets` returns names, descriptions and annotations unless `include_schemas: true`;
     fetch one tool's schema with `describe_tools` (e.g. `NiagaraToolsets.NiagaraToolset_System.AddEmitter`)
-    instead of the whole toolset (docs/ue59/pages/unreal-mcp-in-unreal-editor.md).
+    instead of the whole toolset (docs/ue59/pages/ai-features/unreal-mcp-in-unreal-editor.md).
 - **Sprite Rotation Mode: Unset with the renderer still binding `Particles.SpriteRotation`** (which nothing writes)
   turned 9-14 cm sprites into ~20 x 150 cm stretched quads at fixed angles, visible only in the packaged build. For
   upright sprites use **Direct Angle (Degrees)** with angle 0. When a sprite effect looks wrong, swap in
@@ -148,7 +148,7 @@ at the gameplay camera's distance.
 
 **5.9:** the Unreal Animation Framework (UAF) gains a notify system with a built-in Play Niagara Effect handler.
 It applies to UAF-animated characters only; for footstep dust on those, it is an alternative to the anim notify ->
-C++ handler route (docs/ue59/pages/unreal-engine-5-9-release-notes.md).
+C++ handler route (docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md).
 
 Lightweight variants (`*Lightweight` templates) are the cheapest for simple bursts and fountains. But they're
 fixed-function (limited modules, no scratchpads or dynamic inputs) and the MCP toolset can't edit them. Use one only
@@ -348,7 +348,7 @@ UNiagaraFunctionLibrary::SpawnSystemAttached(TrailFX, Mesh, NAME_None, FVector::
   (default 1, read-only, restart) compiles an extra shader per translucent material even with `r.OIT.Method=0`:
   set `r.AVBOIT.Support=0` if unused. Changing `r.OIT.Method` at runtime hitches. Debug: `r.AVBOIT.Visualize` with
   `r.ShaderPrint 1`; `r.AVBOIT.DebugWeightOutput 2` shows whether a material adds the background itself
-  (docs/ue59/pages/adaptive-voxelbased-order-independent-transparency-in-unreal-engine.md).
+  (docs/ue59/pages/rendering/adaptive-voxelbased-order-independent-transparency-in-unreal-engine.md).
 - **Translucency and overdraw are the real GPU cost** at 4K output. Prefer fewer, smaller sprites. Check with view mode
   *Optimization Viewmodes > Shader Complexity / Quad Overdraw*. A few huge smoke sprites filling the screen can cost
   more than a thousand sparks.
@@ -358,7 +358,7 @@ UNiagaraFunctionLibrary::SpawnSystemAttached(TrailFX, Mesh, NAME_None, FVector::
 - Measure with `stat Niagara`, `stat gpu`, and the Niagara Debugger (Tools > Debug) (unverified menu path).
 - **5.9:** the 5.9 docs give the path as Level Editor **Tools > Debug > Niagara Debugger**; FX budget cvars there:
   `fx.budget.enabled 1`, `fx.Budget.GameThread`, `fx.Budget.RenderThread`. Its FX Outliner is still in development
-  and the Performance tab is highly experimental (docs/ue59/pages/niagara-debugger-for-unreal-engine.md).
+  and the Performance tab is highly experimental (docs/ue59/pages/niagara-vfx/niagara-debugger-for-unreal-engine.md).
 
 ## Effect Types and scalability
 
@@ -396,7 +396,7 @@ UNiagaraFunctionLibrary::SpawnSystemAttached(TrailFX, Mesh, NAME_None, FVector::
   `performance.md`'s "Dynamic shadow-casting lights" budget.
 - **5.9:** the new Lumen World Cache (Hardware Ray Tracing, per project) doesn't cache translucent surfaces either:
   its paths pass through translucent materials and store lighting for opaque surfaces only, so it
-  doesn't change the rule above (docs/ue59/pages/lumen-world-cache-in-unreal-engine.md).
+  doesn't change the rule above (docs/ue59/pages/worlds/lumen-world-cache-in-unreal-engine.md).
 - **Additive particles don't appear in Lumen reflections or screen traces**; what reflects is the light's specular, so
   shape it with the light's source radius / length.
 

@@ -161,7 +161,7 @@ Source: `Engine\Plugins\Experimental\Toolsets\AnimationAssistantToolset\Content\
 Run `describe_toolset` first; schemas are strict.
 **5.9:** with Tool Search on (the default), the MCP meta-tools are `list_toolsets`, `describe_toolsets` (pass
 `include_schemas: true` for input/output schemas), `describe_tools` (`Toolset.Tool` names) and `call_tool`
-(docs/ue59/pages/unreal-mcp-in-unreal-editor.md).
+(docs/ue59/pages/ai-features/unreal-mcp-in-unreal-editor.md).
 
 - **SequencerTools** (`sequencer.py`): `create_level_sequence(package_path, asset_name)` (deletes an existing
   asset of the same name!), `open_sequence`, `play/pause/set_playhead_frame`, `set_display_rate`,
@@ -176,12 +176,12 @@ Run `describe_toolset` first; schemas are strict.
   **SequencerCustomBindingTools** (`convert_to_spawnable/possessable`), **SequencerImportExportTools**
   (FBX in/out), **SequencerControlRigTools**; separate plugin **SequencerAnimMixerToolset**.
 - **5.9:** `LevelSequenceEditorSubsystem` implements `IToolsetProvider`, so its tagged functions are offered as MCP
-  tools without a wrapper toolset (docs/ue59/pages/unreal-mcp-in-unreal-editor.md). Check `list_toolsets` for it.
+  tools without a wrapper toolset (docs/ue59/pages/ai-features/unreal-mcp-in-unreal-editor.md). Check `list_toolsets` for it.
 - **No MRQ toolset.** Rendering must go through Python (`MoviePipelineQueueSubsystem`, editor) once the MRQ
   plugin is enabled; its classes are absent from a test project's stub because the plugin is off there.
 - **5.9:** the **Unreal Canvas Bridge** plugin (Experimental; needs UE 5.9 Preview, an NVIDIA GPU with 8 GB+ VRAM and
   the Model Context Protocol plugin) exposes Movie Render Graph rendering to Unreal Canvas as MCP tools
-  (docs/ue59/pages/unreal-engine-5-9-release-notes.md, docs/ue59/pages/unreal-canvas-in-unreal-engine.md). The docs
+  (docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md, docs/ue59/pages/ai-features/unreal-canvas-in-unreal-engine.md). The docs
   don't name those tools; until checked, render through Python as above.
 - Typical scripted intro: create sequence -> create_camera -> add Transform track + section -> add_key_float on
   Location/Rotation at frames 0 and N -> add Camera Cut track -> set_camera_cut_binding -> screenshot to verify.
@@ -198,7 +198,7 @@ Run `describe_toolset` first; schemas are strict.
 - **5.9:** the Movie Render Graph Nodes page lists an **H.264 Movie** Output Type node (Quality property, Include
   Audio checkbox: audio in the rendered content is embedded; Windows builds only) and **APV MP4** / **APV TMV**
   nodes (Quality: Maximum, High, Standard (default), Compact, Custom QP)
-  (docs/ue59/pages/movie-render-graph-nodes-in-unreal-engine.md).
+  (docs/ue59/pages/animation/movie-render-graph-nodes-in-unreal-engine.md).
 - Worth it only for: a trailer-quality flythrough or the intro/ending rendered at higher quality than real time.
   Cost: enabling the plugin = editor restart; renders take minutes; it's another thing to learn.
 - **Avoiding Lumen/TAA noise and smear** (settings exist in `MoviePipelineAntiAliasingSetting.h`):

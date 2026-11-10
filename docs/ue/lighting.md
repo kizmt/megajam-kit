@@ -52,8 +52,8 @@ Sections marked **(Lumen path)** apply to full Lumen; Lumen Lite ships Medium GI
   `DefaultEngine.ini` `[SystemSettings]` has `r.Lumen.WorldCache.Supported=1` (read-only, editor restart, shader
   recompile); see "Lumen World Cache" below. **Support Ambient Lighting Volumes** (Project Settings > Engine >
   Rendering > Optimizations, `r.SupportAmbientLightingVolumes`) is on by default; Epic says disable it if the project
-  places none, to remove its shader code (editor restart) (docs/ue59/pages/lumen-world-cache-in-unreal-engine.md,
-  docs/ue59/pages/ambient-lighting-volumes-in-unreal-engine.md).
+  places none, to remove its shader code (editor restart) (docs/ue59/pages/worlds/lumen-world-cache-in-unreal-engine.md,
+  docs/ue59/pages/worlds/ambient-lighting-volumes-in-unreal-engine.md).
 
 ## Lumen: how it works (just enough) (Lumen path)
 
@@ -89,31 +89,31 @@ Sections marked **(Lumen path)** apply to full Lumen; Lumen Lite ships Medium GI
   translucency volume). Built at runtime by path tracing from the screen (one path per 8x8 tile, up to 3 bounces),
   so no mesh cards: small, large single, spline, skeletal and WPO-deformed meshes all work, no card cooking. Epic
   lists more GI bounces, more colour in reflections, near-instant lighting after a camera cut, no per-instance CPU
-  cost and much less memory (docs/ue59/pages/lumen-world-cache-in-unreal-engine.md).
+  cost and much less memory (docs/ue59/pages/worlds/lumen-world-cache-in-unreal-engine.md).
 - **5.9:** turn on with `r.Lumen.WorldCache.Supported=1` under `[SystemSettings]` in `DefaultEngine.ini`, restart.
   Used only when Lumen GI is on with HWRT (both Project Settings HWRT boxes), the platform's **Hardware Ray Tracing
   Mode** (Project Settings > Platforms > Windows > Renderer) is **Full** (default) or **Simplified Material** (not
   **Inline**), D3D12 SM6.6 bindless, and `r.Lumen.WorldCache.Allowed 1` (default). Ray Lighting Mode can stay
   Surface Cache. Otherwise Lumen silently falls back to the Surface Cache (SW RT included)
-  (docs/ue59/pages/lumen-world-cache-in-unreal-engine.md).
+  (docs/ue59/pages/worlds/lumen-world-cache-in-unreal-engine.md).
 - **5.9:** A/B without restart: `r.Lumen.WorldCache.Allowed 0` = Surface Cache, `1` = World Cache (a few frames of
   incomplete lighting while the Surface Cache rebuilds). It is a scalability cvar, so it can be off for lower
-  `sg.GlobalIlluminationQuality` levels (docs/ue59/pages/lumen-world-cache-in-unreal-engine.md).
+  `sg.GlobalIlluminationQuality` levels (docs/ue59/pages/worlds/lumen-world-cache-in-unreal-engine.md).
 - **5.9:** check it is active with View Modes > Lumen > **Surface Cache**: with the World Cache on it shows the
   World Cache (pink = hash collisions, yellow = no entry yet); if off, the label reads "Lumen Scene, Pink - missing
   Surface Cache coverage...". Path debug `r.Lumen.WorldCache.Debug 1` (with `r.DebugCursor.Freeze 1`);
-  `r.Lumen.WorldCache.Freeze 1`, `r.Lumen.WorldCache.Reset 1` (docs/ue59/pages/lumen-world-cache-in-unreal-engine.md).
+  `r.Lumen.WorldCache.Freeze 1`, `r.Lumen.WorldCache.Reset 1` (docs/ue59/pages/worlds/lumen-world-cache-in-unreal-engine.md).
 - **5.9:** knobs (all scalability cvars, no editor properties): `CellDensity` (20; higher = less leaking, more
   memory, slower update), `PathDownsampleFactor` (8), `MaxBounces` (3), `MaxFramesAccumulated` (16; lower = faster
   response to light changes, noisier), `MaxRayIntensity` (40, firefly clamp), ray bias cvars for self-shadowing vs
-  leaking; all `r.Lumen.WorldCache.*` (docs/ue59/pages/lumen-world-cache-in-unreal-engine.md).
+  leaking; all `r.Lumen.WorldCache.*` (docs/ue59/pages/worlds/lumen-world-cache-in-unreal-engine.md).
 - **5.9:** limits: lighting lags changes (per-cell averaging); translucent surfaces not cached; **water, ray traced
   translucency, foliage and subsurface transmission, and Far Field unsupported**; `Reset` only resets the first view
-  (docs/ue59/pages/lumen-world-cache-in-unreal-engine.md).
+  (docs/ue59/pages/worlds/lumen-world-cache-in-unreal-engine.md).
 - **5.9:** **Simplified Material** Hardware Ray Tracing Mode compiles only a simplified hit shader (less shader and
   memory cost than Full) but disables Lumen hit lighting; the World Cache is then Lumen's only material lighting at
   hits. Preview it in the editor with `r.RayTracing.SimplifiedMaterialOverride 1` (2 = Full, 0 = platform setting;
-  editor only) (docs/ue59/pages/lumen-world-cache-in-unreal-engine.md).
+  editor only) (docs/ue59/pages/worlds/lumen-world-cache-in-unreal-engine.md).
 - **5.9:** a new feature for us: prove it in a practice run (`features.md`) and bench it against the Surface Cache on
   the same frame before using it in the jam.
 
@@ -174,7 +174,7 @@ Groups: `sg.ResolutionQuality` (= screen percentage), `sg.ViewDistanceQuality`, 
 - **5.9:** with the Lumen World Cache active, the "Black areas / no bounce" row (Max Lumen Mesh Cards, pink card gaps)
   and card coverage of skeletal and spline meshes no longer affect ray hits; Surface Cache view pink then means hash
   collisions (two surfaces sharing an entry), not missing cards. The SW-tracing row still
-  applies (SW RT keeps the Surface Cache) (docs/ue59/pages/lumen-world-cache-in-unreal-engine.md).
+  applies (SW RT keeps the Surface Cache) (docs/ue59/pages/worlds/lumen-world-cache-in-unreal-engine.md).
 
 ## Virtual Shadow Maps
 
@@ -196,16 +196,16 @@ Groups: `sg.ResolutionQuality` (= screen percentage), `sg.ViewDistanceQuality`, 
   Development build: `r.Shadow.Virtual.Visualize Overview`, which only works while the viewport is already in the
   Virtual Shadow Map view mode. A set `r.Shadow.Virtual.Visualize` overrides the menu: set it to `none` to give
   control back. The 5.9 page also lists **Shadow Casters** (which objects cast and which invalidate cached pages) and
-  Cached Page blue = only the static page cached (docs/ue59/pages/debugging-shadows-in-unreal-engine.md).
+  Cached Page blue = only the static page cached (docs/ue59/pages/worlds/debugging-shadows-in-unreal-engine.md).
 - **5.9:** with VSM, non-Nanite objects past the Directional Light's dynamic shadow distance are culled unless
   **Far Shadow** is on; new Blueprint **Set Cast Far Shadow** on a primitive component toggles it at runtime;
   `ShowFlag.VisualizeFarShadowCasters 1` (or `viewmode FarShadowCasters` in PIE/game) shows far casters in green
-  (docs/ue59/pages/debugging-shadows-in-unreal-engine.md).
+  (docs/ue59/pages/worlds/debugging-shadows-in-unreal-engine.md).
 - **5.9:** missing-shadow checklist from the 5.9 page: Cast Shadows on light and component; past the dynamic shadow
   distance (above); non-Nanite objects tiny on screen are culled from shadows; contact shadows vanish when the
   occluder is off screen. Isolate a method with Show > Lighting Components > Dynamic Shadows and Show > Lighting
   Features > Distance Field Shadows / Screen Space Contact Shadows / Capsule Shadows
-  (docs/ue59/pages/debugging-shadows-in-unreal-engine.md).
+  (docs/ue59/pages/worlds/debugging-shadows-in-unreal-engine.md).
 
 ## Lights (all Movable)
 
@@ -242,13 +242,13 @@ Groups: `sg.ResolutionQuality` (= screen percentage), `sg.ViewDistanceQuality`, 
 - **5.9:** the 5.9 MegaLights page (part of Epic's AI-assisted lighting docs audit against 5.9 source) is still
   tagged experimental and still names the kill switch `r.MegaLights.Allow`; directional lights still off by default
   (`r.MegaLights.DirectionalLights 1`). Check the cvar name on 5.9 before relying on it
-  (docs/ue59/pages/megalights-in-unreal-engine.md, docs/ue59/pages/unreal-engine-5-9-release-notes.md).
+  (docs/ue59/pages/worlds/megalights-in-unreal-engine.md, docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md).
 - **Cost knobs and measuring.** Cost follows internal resolution, `r.MegaLights.DownsampleMode` and
   `r.MegaLights.NumSamplesPerPixel`; `r.MegaLights.LightAttenuationFalloff` trims light range. Debug view
   `r.MegaLights.Visualize 1` (on Epic's 5.8 page). Measure GPU time with `r.RDG.AsyncCompute 0`.
 - **5.9:** energy-based light culling is shared between MegaLights, Lumen hit lighting, LumenPT and the Lumen World
   Cache: lights that would add too little energy at a point are skipped; the change notes report faster, less noisy
-  light sampling (docs/ue59/pages/lumen-world-cache-in-unreal-engine.md).
+  light sampling (docs/ue59/pages/worlds/lumen-world-cache-in-unreal-engine.md).
 
 ## Environment (outdoor stack, all in the Basic level; no VolumetricCloud by default)
 
@@ -370,12 +370,12 @@ floor); the problems are general, the numbers are that game's. What went wrong w
   overlaps multiply; max 32 per view (**Volume Sort Priority** -127..127 decides which stay). Runtime: **Set Tint** on
   the component (Blueprint), or Sequencer. Debug: Show > Visualize > Ambient Lighting Volumes (editor only); GPU
   stat **AmbientLightingVolumes**; white-tint volumes cost nothing
-  (docs/ue59/pages/ambient-lighting-volumes-in-unreal-engine.md).
+  (docs/ue59/pages/worlds/ambient-lighting-volumes-in-unreal-engine.md).
   - Requirements: **Movable Sky Light**; **no effect when Lumen is the GI method**; deferred renderer **with
     Substrate** (kit test project has `r.Substrate=True`); no effect with the forward renderer or ray-traced sky
     lighting. Reflections (sky, captures, SSR) are not tinted, so glossy surfaces stay brighter inside a dark volume;
     translucency and volumetric fog unaffected. Use it on the no-Lumen path only; on Experimental features see
-    `features.md` (docs/ue59/pages/ambient-lighting-volumes-in-unreal-engine.md).
+    `features.md` (docs/ue59/pages/worlds/ambient-lighting-volumes-in-unreal-engine.md).
 
 ## Lighting gotchas (found on a prototype; general UE behaviour)
 
@@ -412,8 +412,8 @@ floor); the problems are general, the numbers are that game's. What went wrong w
 - **5.9:** the 5.9 shadow debugging page names the `stat GPU` rows: **ShadowDepths** = rendering shadow maps;
   shadow projection is part of **Lights**. `stat ShadowRendering` gives CPU time for shadow depth/projection, shadow
   counts, shadow map memory and VSM counters. Lumen World Cache shows as **LumenWorldCache** (runs on async compute by
-  default, `r.Lumen.WorldCache.AsyncCompute`) (docs/ue59/pages/debugging-shadows-in-unreal-engine.md,
-  docs/ue59/pages/lumen-world-cache-in-unreal-engine.md).
+  default, `r.Lumen.WorldCache.AsyncCompute`) (docs/ue59/pages/worlds/debugging-shadows-in-unreal-engine.md,
+  docs/ue59/pages/worlds/lumen-world-cache-in-unreal-engine.md).
 - The pass/fail bar is `performance.md` "The bar"; the GPU frame budget for the game's target fps is in
   `performance.md` "Bench lessons" (60 fps ≈ 13 ms after TSR and margin). Rough per-pass shares of that budget (ours,
   not Epic's): Lumen ~20% (Lumen path), shadows ~20%, fog ~10%. No VolumetricCloud by default (measured ~2.5 ms).
@@ -455,7 +455,7 @@ floor); the problems are general, the numbers are that game's. What went wrong w
 - Forum (community, not Epic) 5.8.0 cloud/opaque edge bug: https://forums.unrealengine.com/t/ue5-8-volumetric-cloud-opaque/2746561
 - **5.9:** Epic audited all 72 Lighting the Environment pages against 5.9 engine source (labels, menu paths, renamed
   settings, defaults; some suggestions still await SME verification). On a 5.9 project read the offline 5.9 page
-  (`docs/ue59/pages/<slug>.md`, same slugs as the 5.8 doc URLs above, except the release notes) before these links; on 5.8, the links above
-  (docs/ue59/pages/unreal-engine-5-9-release-notes.md, docs/ue59/pages/lighting-the-environment-in-unreal-engine.md).
-- **5.9:** new pages: docs/ue59/pages/lumen-world-cache-in-unreal-engine.md,
-  docs/ue59/pages/ambient-lighting-volumes-in-unreal-engine.md, docs/ue59/pages/debugging-shadows-in-unreal-engine.md.
+  (`docs/ue59/pages/<section>/<slug>.md`, same slugs as the 5.8 doc URLs above, except the release notes) before these links; on 5.8, the links above
+  (docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md, docs/ue59/pages/worlds/lighting-the-environment-in-unreal-engine.md).
+- **5.9:** new pages: docs/ue59/pages/worlds/lumen-world-cache-in-unreal-engine.md,
+  docs/ue59/pages/worlds/ambient-lighting-volumes-in-unreal-engine.md, docs/ue59/pages/worlds/debugging-shadows-in-unreal-engine.md.

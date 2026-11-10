@@ -92,8 +92,8 @@ default material.
 - Nanite supports **Opaque and Masked** only. Unsupported material on a Nanite mesh = default material + Output Log
   warning. Translucent = non-Nanite mesh.
   **5.9:** the AVBOIT page mentions Nanite translucency, off by default and turned on with `r.Nanite.AllowTranslucency`
-  (docs/ue59/pages/adaptive-voxelbased-order-independent-transparency-in-unreal-engine.md); the 5.9 Nanite page still
-  lists Opaque and Masked only (docs/ue59/pages/nanite-virtualized-geometry-in-unreal-engine.md). Keep glass on
+  (docs/ue59/pages/rendering/adaptive-voxelbased-order-independent-transparency-in-unreal-engine.md); the 5.9 Nanite page still
+  lists Opaque and Masked only (docs/ue59/pages/rendering/nanite-virtualized-geometry-in-unreal-engine.md). Keep glass on
   non-Nanite meshes.
 - Masked and World Position Offset work with Nanite but cost more (programmable raster; unverified on the 5.8 page).
   WPO is "supported, but limited": clamp displacement. Custom UVs / Vertex Interpolator are evaluated 3x per pixel under Nanite. Custom HLSL
@@ -125,7 +125,7 @@ default material.
   recreates all render state (hitch). Limits: surfaces in the same depth slice average; edges step at
   `r.AVBOIT.PixelSize` (8 px); beyond `r.AVBOIT.MaxDistance` (20000 cm) all goes in one slice. Debug views
   `r.AVBOIT.Visualize` need `r.ShaderPrint 1` and are absent in Test/Shipping
-  (docs/ue59/pages/adaptive-voxelbased-order-independent-transparency-in-unreal-engine.md).
+  (docs/ue59/pages/rendering/adaptive-voxelbased-order-independent-transparency-in-unreal-engine.md).
 - Translucent colored shadows need static lighting/Lightmass: **not available to us (dynamic lighting only, no baking)**.
 
 ## Substrate (on by default in our 5.8 project)
@@ -257,7 +257,7 @@ default material.
 - Every new Material / static permutation = shader compiles in editor (grey meshes until done) and more PSOs at runtime.
 - **5.9:** `r.AVBOIT.Support` (default 1, read-only, restart) compiles an extra shader version of every translucent
   material on SM6 desktop even with `r.OIT.Method` 0. If the game doesn't use AVBOIT, set `r.AVBOIT.Support=0` in
-  `DefaultEngine.ini` (docs/ue59/pages/adaptive-voxelbased-order-independent-transparency-in-unreal-engine.md).
+  `DefaultEngine.ini` (docs/ue59/pages/rendering/adaptive-voxelbased-order-independent-transparency-in-unreal-engine.md).
 - **PSO precaching** is on by default in 5.8: if a component's PSOs aren't ready the engine **skips drawing it**
   (pop-in) rather than hitching (`r.PSOPrecache.ProxyCreationStrategy`, default 1 = delay; the older
   `r.PSOPrecache.ProxyCreationWhenPSOReady` is deprecated in 5.8). Values (`EPSOPrecacheProxyCreationStrategy`,
@@ -266,7 +266,7 @@ default material.
   old cvar pair: trust the API and the console (`r.PSOPrecache.` then Tab). Few masters/permutations = fewer PSOs.
   **5.9:** the 5.9 precaching page and the 5.9 console variable reference also list only the old pair
   (`r.PSOPrecache.ProxyCreationWhenPSOReady`, `r.PSOPrecache.ProxyCreationDelayStrategy`), no `ProxyCreationStrategy`
-  (docs/ue59/pages/pso-precaching-for-unreal-engine.md, docs/ue59/pages/unreal-engine-console-variables-reference.md).
+  (docs/ue59/pages/testing-and-optimizing/pso-precaching-for-unreal-engine.md, docs/ue59/pages/cpp/unreal-engine-console-variables-reference.md).
   Check the console on 5.9 the same way.
   First-launch warm-up screen and the cold-cache test: `production.md` "First launch: PSO warm-up".
 

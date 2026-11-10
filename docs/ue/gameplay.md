@@ -113,13 +113,13 @@ project (no pre-jam gameplay code in the kit).
   BPs via `BlueprintFactory` + `parent_class`, then set CDO properties (`get_default_object`) and compile.
 - **5.9:** new scripting functions create and edit Blueprints, graphs, nodes and variables from Python or Editor
   Utility Blueprints; the page names no functions, so grep the 5.9 stub before using them
-  (docs/ue59/pages/unreal-engine-5-9-release-notes.md).
+  (docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md).
 - Verify in PIE from script: pawn/controller/game mode classes, `MaxWalkSpeed` before/after `set_walking(True)`,
   feet on the floor, no warnings from the player's log category.
 - **5.9:** Python wraps each Blueprint class as its own type (`BP_MainGameMode_C`, a subclass of the native parent)
   instead of the nearest native class (default `Engine.Python.WrapBlueprintClassesOnDemand` true). A class check that
   compares `type(obj)` or the Python type name with the C++ class fails on 5.9: use `isinstance()` (works on both),
-  or set the cvar to false (docs/ue59/pages/scripting-the-unreal-editor-using-python.md).
+  or set the cvar to false (docs/ue59/pages/production-pipeline/scripting-the-unreal-editor-using-python.md).
 
 ## Enhanced Input (the only input path in 5.8)
 

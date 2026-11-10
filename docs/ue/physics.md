@@ -188,15 +188,15 @@ Mesh->OnComponentHit.AddDynamic(this, &AMyProp::OnHit);   // in BeginPlay (not t
 - **5.9:** the Unreal MCP page states the naming rule: C++ toolsets are `<Plugin>.<Class>` without the `U` prefix
   (e.g. `GASToolsets.AttributeSetToolset`), Python toolsets use their module path; with tool search on (default) find
   them with `list_toolsets` / `describe_toolsets`. So on 5.9 expect `PhysicsToolsets.PhysicsAssetToolset`
-  (docs/ue59/pages/unreal-mcp-in-unreal-editor.md).
+  (docs/ue59/pages/ai-features/unreal-mcp-in-unreal-editor.md).
 - **5.9:** a Toolset Registry controls which toolsets agents may use; if a physics toolset is missing from
-  `list_toolsets`, check the registry as well as `AllToolsets` (docs/ue59/pages/unreal-engine-5-9-release-notes.md).
+  `list_toolsets`, check the registry as well as `AllToolsets` (docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md).
 - No toolset for physical materials, constraints in levels, Simulate Physics or Geometry Collections: set those in C++
   or via generic object/property tools. `DataflowAgent` can edit Dataflow graphs (Dataflow-driven fracture is possible
   in principle; untested, don't plan on it).
 - **5.9:** new Blueprint and Python libraries edit Dataflow graphs from scripts (alongside Blueprints, chooser tables,
   StateTrees), so a Dataflow fracture graph can be built by script rather than only through `DataflowAgent`
-  (docs/ue59/pages/unreal-engine-5-9-release-notes.md). Still untested; same "don't plan on it" for the jam.
+  (docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md). Still untested; same "don't plan on it" for the jam.
 
 ## Collision lessons (from a prototype)
 

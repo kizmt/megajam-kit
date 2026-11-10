@@ -2,7 +2,7 @@
 
 Verified on the target PC (Windows 11, i5-14500, RTX 4060 8 GB, 32 GB) on 2026-10-24 with the kit's test project.
 Target: ~10 minutes on jam day. Do the steps in order. The steps are the same on the 5.9 Preview (Epic's 5.9 Unreal MCP
-page: `docs/ue59/pages/unreal-mcp-in-unreal-editor.md`); where 5.9 differs the step says so. Which engine a project
+page: `docs/ue59/pages/ai-features/unreal-mcp-in-unreal-editor.md`); where 5.9 differs the step says so. Which engine a project
 uses is the director's call (CLAUDE.md "Engine version"); the kit's scripts follow the project's `.uproject`.
 
 ## Machine prerequisites (already done, re-check only)

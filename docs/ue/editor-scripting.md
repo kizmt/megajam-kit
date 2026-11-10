@@ -20,12 +20,12 @@ Python stub or headers before writing an API call from memory.
   (`LogPython`), not the result. A script can call other tools with `await call_tool(name, **arguments)` (full tool
   name; reading a field the tool doesn't return raises `KeyError` listing the fields). Epic: one script for many
   edits, single tool calls for inspection, screenshots and compile errors. Keep `run_python` where the printed output
-  or traceback is needed in the result (docs/ue59/pages/using-python-with-ai-agents-in-unreal-engine.md).
+  or traceback is needed in the result (docs/ue59/pages/ai-features/using-python-with-ai-agents-in-unreal-engine.md).
 - **MCP calls are serial.** Tools run on the game thread, and Epic says clients must not overlap calls. This is
   why one session drives the editor. Do the next call after the previous one returns.
   **5.9:** Claude Code stops waiting for a call after about 120 s. Send a `progressToken` in `_meta` for
   `notifications/progress` heartbeats, or split long work (Live Coding builds, large scripts, asset scans, automation
-  runs) into shorter calls (docs/ue59/pages/unreal-mcp-in-unreal-editor.md).
+  runs) into shorter calls (docs/ue59/pages/ai-features/unreal-mcp-in-unreal-editor.md).
 - **Read results.** Many tools report failure in the payload, not as an MCP error. `mcp.ts` throws on `isError`;
   for anything else, read back (`get_editor_property`, a find/list tool, `captureViewport()`).
 - **Save points.** Tool edits are not always undoable (imports never are). Save before and after bulk changes.
@@ -37,7 +37,7 @@ Python stub or headers before writing an API call from memory.
   parent class, a Python crash at editor shutdown, and adding a function call node via an editor script.
   **5.9:** every MCP `initialize` result carries `_meta["com.epicgames.unrealengine/instance"]` (instance ID, process
   ID, engine version, branch, changelist, project name, engine and project folders): read it to confirm which editor
-  and engine answered before changing anything (docs/ue59/pages/unreal-mcp-in-unreal-editor.md).
+  and engine answered before changing anything (docs/ue59/pages/ai-features/unreal-mcp-in-unreal-editor.md).
 - **A scripted edit is not saved until the file on disk changed.** Many Python edits don't mark the asset dirty, so a
   normal save (`only_if_is_dirty=True`, `save_directory`, Save All) silently skips it and the edit lives only in the
   editor's memory: it works in PIE, then vanishes from the build and the next session. Seen with input mapping keys,
@@ -101,15 +101,15 @@ Paths / `UE_PYTHONPATH`. The interpreter is isolated by default.
 `IPythonScriptPlugin::GetAdditionalPathsInterface()` (`IPythonAdditionalPaths`: `AddAdditionalPath` takes an existing
 absolute path and returns false if invalid or already on `sys.path`; an optional mount point root gives
 Python-generated types stable names; `RemoveAdditionalPath` / `RemoveAdditionalPaths(Owner)` don't unload modules).
-The Python Foundation Packages plugin was removed (docs/ue59/pages/scripting-the-unreal-editor-using-python.md,
-docs/ue59/pages/unreal-engine-5-9-release-notes.md).
+The Python Foundation Packages plugin was removed (docs/ue59/pages/production-pipeline/scripting-the-unreal-editor-using-python.md,
+docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md).
 **5.9: Blueprint classes and User Defined Structs get their own Python wrapper types.** An Actor Blueprint `BP_MyActor`
 is `BP_MyActor_C` (a subclass of `unreal.Actor`) with its added properties and functions directly accessible; a User
 Defined Struct is its own subclass of `unreal.StructBase`. `isinstance()` checks and `get_editor_property()` reads work
 either way; code that compares `type(obj)` with a native class or relies on the Python type name must change. The 5.8
 behaviour returns with the console variables `Engine.Python.WrapBlueprintClassesOnDemand` and
 `Engine.Python.WrapUserDefinedStructsOnDemand` set to false (both default true)
-(docs/ue59/pages/scripting-the-unreal-editor-using-python.md).
+(docs/ue59/pages/production-pipeline/scripting-the-unreal-editor-using-python.md).
 
 ### APIs we use most (5.8 status)
 
@@ -134,12 +134,12 @@ subsystem for all of them.
 
 - **5.9:** the 5.9 page documents an `UnsavedChangesPolicy` argument on `LevelEditorSubsystem.load_level`: the
   default, Fail, raises an error naming the packages with unsaved changes instead of discarding them; `Save` saves
-  them before the level loads (docs/ue59/pages/scripting-the-unreal-editor-using-python.md).
+  them before the level loads (docs/ue59/pages/production-pipeline/scripting-the-unreal-editor-using-python.md).
 - **5.9: new scripting libraries** (Blueprint and Python): create and edit Blueprints, graphs, nodes and variables
   (from Python or Editor Utility Blueprints); edit StateTrees (add and rearrange tasks, considerations, evaluators and
   global tasks); build and edit chooser tables; edit Dataflow graphs. PCG gains functions to add and validate graph
   edges, and Blueprints can read and write custom HLSL node source. The release notes name no classes or functions,
-  and no 5.9 page documents them: grep the 5.9 stub before using any (docs/ue59/pages/unreal-engine-5-9-release-notes.md).
+  and no 5.9 page documents them: grep the 5.9 stub before using any (docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md).
 
 Import task fields: `filename`, `destination_path`, `destination_name`, `automated=True` (no dialogs),
 `replace_existing`, `save`, `options`; results come back in `imported_object_paths`. Gotcha in the stub:
@@ -190,14 +190,14 @@ module path + class (`megajam_tools.toolsets.MegajamTools`); C++ ones are `Plugi
 **5.9:** tool search returns **4** meta-tools: `list_toolsets`, `describe_toolsets` (plural; one or more toolsets,
 schemas only with `include_schemas: true`), `describe_tools` (full schemas for `Toolset.Tool` names; an error per
 unknown name) and `call_tool` (no toolset name calls a top-level tool). `mcp.ts` was written for 5.8's three
-(docs/ue59/pages/unreal-mcp-in-unreal-editor.md).
+(docs/ue59/pages/ai-features/unreal-mcp-in-unreal-editor.md).
 **5.9:** tools come from the **All Toolsets** plugin (enable it in Edit > Plugins, then restart) on top of Unreal MCP;
 both depend on Toolset Registry. New toolsets cover Blueprints, editor actions, MVVM, Slate inspection, performance,
 files, scene capture, console, Texture Graph, widget animation and more; the Toolset Registry controls which
 toolsets agents may use, and an MCP Client toolset manages a list of external MCP servers. Editor subsystems and
 Blueprint function libraries can implement `IToolsetProvider` and expose tools without a wrapper
 (`LevelSequenceEditorSubsystem`, `PCGEditorSubsystem`, `WidgetBlueprintEditorSubsystem`)
-(docs/ue59/pages/unreal-mcp-in-unreal-editor.md, docs/ue59/pages/unreal-engine-5-9-release-notes.md).
+(docs/ue59/pages/ai-features/unreal-mcp-in-unreal-editor.md, docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md).
 
 **Keep "Enable Tool Search" on** (Editor Preferences > General > Model Context Protocol; default on). With it off,
 `tools/list` returns every tool schema instead of the 3 meta-tools `mcp.ts` expects. The server speaks HTTP/SSE only
@@ -212,8 +212,8 @@ Blueprint function libraries can implement `IToolsetProvider` and expose tools w
   on source builds; JSON configs merge and update that entry's URL). The release notes also add a setting for the
   highest protocol version accepted (no name given). New project page: Project Settings > Agentic Workflows > Model
   Context Protocol > **Instructions**, stored in `DefaultGame.ini`, sent to everyone; clients reconnect to pick up
-  instruction changes (docs/ue59/pages/unreal-mcp-in-unreal-editor.md,
-  docs/ue59/pages/unreal-engine-5-9-release-notes.md).
+  instruction changes (docs/ue59/pages/ai-features/unreal-mcp-in-unreal-editor.md,
+  docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md).
 - **5.9: ports and console.** `ModelContextProtocol.StartServer [port]`, `StopServer`, `RefreshTools`,
   `GenerateClientConfig <ClaudeCode|Cursor|VSCode|Gemini|Codex|All>`; flags `-ModelContextProtocolStartServer`
   (also for commandlets, which don't auto-start) and `-ModelContextProtocolPort=N`. A second editor (another engine
@@ -221,9 +221,9 @@ Blueprint function libraries can implement `IToolsetProvider` and expose tools w
   CVars: `ModelContextProtocol.WrapPODToolResultsInObject` (true: primitive results come as `{"result": ...}`),
   `AudioResultOggFormat`, `ProgressIntervalSeconds`, `PaginationPageSize` (0 = off), `EnableAnalytics`. More detail:
   `Log LogModelContextProtocol Verbose`; registry problems log to `LogToolsetRegistry`
-  (docs/ue59/pages/unreal-mcp-in-unreal-editor.md).
+  (docs/ue59/pages/ai-features/unreal-mcp-in-unreal-editor.md).
 - **5.9: restart from the agent** with `EditorToolset.EditorAppToolset` `ExitEditor` (`bDiscardUnsavedChanges` if
-  needed), then start the editor again; clients reconnect (docs/ue59/pages/unreal-mcp-in-unreal-editor.md).
+  needed), then start the editor again; clients reconnect (docs/ue59/pages/ai-features/unreal-mcp-in-unreal-editor.md).
 
 **Python** (our path, in `unreal/Plugins/MegajamTools/Content/Python/megajam_tools/toolsets.py`):
 
@@ -235,7 +235,7 @@ Blueprint function libraries can implement `IToolsetProvider` and expose tools w
   **5.9:** declare each tool's access mode: `@toolset_registry.tool_call(mode=unreal.ToolAccessMode.READ)` (or
   `WRITE`, `EXECUTE`). Methods without both decorators are not advertised. Type hints: `list[T]` -> `unreal.Array(T)`,
   `dict[str, V]` -> `unreal.Map(str, V)`, `set[T]` -> `unreal.Set(T)`, `T | None` makes a parameter optional. Tools
-  can be `async def` for long work (docs/ue59/pages/using-python-with-ai-agents-in-unreal-engine.md).
+  can be `async def` for long work (docs/ue59/pages/ai-features/using-python-with-ai-agents-in-unreal-engine.md).
 - Google-style docstring (`Args:` / `Returns:`). Document only units, ranges, encodings, and what empty means.
 - Optional: a default (`x: int = 42`) goes into the schema as `default` and is not required. `T | None = None`
   for nullable. (Checked against Epic's `test_demo_toolset.py`.)
@@ -245,11 +245,11 @@ Blueprint function libraries can implement `IToolsetProvider` and expose tools w
 - Don't copy existing tools: `ObjectTools` already does generic property get/set, `AssetTools` does import.
   **5.9:** the `ImportFile` tools (Sound Waves, Textures, Static Meshes, Skeletal Meshes, Data Tables, Curve Tables,
   String Tables) take `bReplaceExisting` and `bSave`, both false by default; each replaces only an asset of its own
-  class, and `bSave` runs save validators (docs/ue59/pages/unreal-mcp-in-unreal-editor.md).
+  class, and `bSave` runs save validators (docs/ue59/pages/ai-features/unreal-mcp-in-unreal-editor.md).
 - **5.9 tests:** put unit tests in a `tests` package inside the toolset's package and register them from
   `init_unreal.py` with `from _unittest_runner.unittest_runner_bridge import register_test_runner` +
   `register_test_runner('<pkg>.tests', '<Automation.Path>')`; they then show in the Session Frontend automation tests
-  (docs/ue59/pages/using-python-with-ai-agents-in-unreal-engine.md).
+  (docs/ue59/pages/ai-features/using-python-with-ai-agents-in-unreal-engine.md).
 
 **C++**: `UCLASS(BlueprintType, Hidden)` subclass of `UToolsetDefinition`; static
 `UFUNCTION(meta=(AICallable))` methods. The doc comment becomes the description; `meta=(AIIgnore)` hides a
@@ -260,8 +260,8 @@ MCP `readOnlyHint`). `AIRuntimeCallable` (implies `AICallable`) is the only tag 
 call tools on an object instead of statically, override `UsesInstanceDispatch()` (the registry finds one target,
 e.g. a subsystem) or `UsesInstanceArgument()` (each tool gets a reserved `instance` argument), not both. A function for
 both Python and agents: `meta = (PythonCallable, AICallable, AIAccessMode = "Read")`. Example toolset:
-`GASToolsets` `UAttributeSetToolset` (docs/ue59/pages/unreal-mcp-in-unreal-editor.md,
-docs/ue59/pages/scripting-the-unreal-editor-using-python.md).
+`GASToolsets` `UAttributeSetToolset` (docs/ue59/pages/ai-features/unreal-mcp-in-unreal-editor.md,
+docs/ue59/pages/production-pipeline/scripting-the-unreal-editor-using-python.md).
 
 **Reload and refresh** (after editing a toolset):
 
@@ -351,8 +351,8 @@ instructions) is a skill when it sits in `/Skills/` of any enabled plugin, the p
 `Engine/Extras/AgentTools/Skills/`. Keys look like `/Skills/<PluginName>/<folder>` or `/Skills/Project/<folder>` (pass
 them to `AgentSkillToolset.GetSkills`); relative links in `SKILL.md` become absolute paths, so files next to it can be
 opened. Python skill classes are "discovered automatically, so you do not need to register them"; C++ ones derive
-from `UAgentSkill` (docs/ue59/pages/unreal-mcp-in-unreal-editor.md,
-docs/ue59/pages/using-python-with-ai-agents-in-unreal-engine.md).
+from `UAgentSkill` (docs/ue59/pages/ai-features/unreal-mcp-in-unreal-editor.md,
+docs/ue59/pages/ai-features/using-python-with-ai-agents-in-unreal-engine.md).
 
 Template for our own skill, as a Python class (version-controlled with the plugin, which is better than a UAsset
 from `CreateSkill`). **Not created yet:** the plugin has no `skills/` package; add it only if editor sessions need it.
@@ -450,7 +450,7 @@ session must follow.
   get_inner_graph) and built the whole ABP from a re-runnable script. A kit editor plugin for this is a candidate.
   **5.9:** new scripting functions create and edit Blueprints, graphs, nodes and variables from Python or Editor
   Utility Blueprints; the release notes don't say whether they cover anim state machines, and no page names the API
-  (docs/ue59/pages/unreal-engine-5-9-release-notes.md).
+  (docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md).
 - **AnimGraph Transform (Modify) Bone: a shown pin overrides the node's value.** Setting `Rotation` in the node struct
   did nothing because the Rotation pin is shown by default and its zero default wins. To hide it from Python:
   changing `show_pin` on an element of `get_editor_property('show_pin_for_properties')` doesn't stick; `p.copy()`
@@ -459,11 +459,11 @@ session must follow.
 - **MCP `call_tool` shape:** `toolset_name` + `tool_name` (the short name) + `arguments`; `toolset` / `tool` keys fail
   with "Missing required parameter".
   **5.9:** with tool search off, tools are listed as `<Toolset>.<Tool>`; `describe_tools` takes that form
-  (docs/ue59/pages/unreal-mcp-in-unreal-editor.md).
+  (docs/ue59/pages/ai-features/unreal-mcp-in-unreal-editor.md).
 - **AnimGraphs can be edited with BlueprintTools** (`find_nodes`, `delete_node`, `connect_pins`, `compile_blueprint`),
   although `read_graph_dsl` returns empty for an AnimGraph.
   **5.9:** GraphDsl is now listed as a framework: "a text-based language for authoring and editing graph assets"
-  (docs/ue59/pages/unreal-engine-5-9-release-notes.md).
+  (docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md).
 - **AnimBlueprint parent class:** `get_editor_property("parent_class")` fails; use
   `BlueprintEditorLibrary.get_blueprint_parent_class`, and `reparent_blueprint` to change it.
 - **AnimGraph nodes from MCP (cached poses, extra slots, layered blends):** `BlueprintTools.find_node_types` needs

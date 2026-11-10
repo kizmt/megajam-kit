@@ -24,7 +24,7 @@ generated crates and shelves with a baked timber texture (5 meshes + texture set
   - **5.9:** with the Lumen World Cache active (Hardware Ray Tracing only, off by default; see Pitfalls), Lumen reads
     ray-hit lighting from a world-space cache instead of mesh cards, so surface-cache coverage of large single meshes
     stops being a reason to split; Software Ray Tracing still uses the Surface Cache and distance fields, so keep the
-    pieces separate (docs/ue59/pages/lumen-world-cache-in-unreal-engine.md).
+    pieces separate (docs/ue59/pages/worlds/lumen-world-cache-in-unreal-engine.md).
 - **Ornament grows outward** from the gameplay plane, never into playable space.
 
 ## 2. Generating with bmesh (no operators, no booleans)
@@ -154,8 +154,8 @@ bpy.ops.export_scene.fbx(filepath=out, use_selection=True, object_types={'MESH'}
   - **5.9:** Nanite translucency exists but is off by default (`r.Nanite.AllowTranslucency`), and the Experimental
     AVBOIT (`r.OIT.Method=1`) blends it order-independently; the 5.9 Nanite page still lists only Opaque and Masked,
     so keep the separate non-Nanite glass mesh unless the project turns Nanite translucency on
-    (docs/ue59/pages/adaptive-voxelbased-order-independent-transparency-in-unreal-engine.md,
-    docs/ue59/pages/nanite-virtualized-geometry-in-unreal-engine.md).
+    (docs/ue59/pages/rendering/adaptive-voxelbased-order-independent-transparency-in-unreal-engine.md,
+    docs/ue59/pages/rendering/nanite-virtualized-geometry-in-unreal-engine.md).
 - LOD group "Level Architecture" for walls and floors.
 
 ## 8. Blender 5.x changes that break older snippets (checked on 5.2.2)
@@ -186,7 +186,7 @@ bpy.ops.export_scene.fbx(filepath=out, use_selection=True, object_types={'MESH'}
     while it is active. It needs Lumen with Hardware Ray Tracing (Hardware Ray Tracing Mode Full or Simplified
     Material, not Inline): add `r.Lumen.WorldCache.Supported=1` under `[SystemSettings]` in `DefaultEngine.ini` and
     restart; `r.Lumen.WorldCache.Allowed 0` switches back to the Surface Cache, which Software Ray Tracing always uses.
-    Check it with View Modes > Lumen > Surface Cache (docs/ue59/pages/lumen-world-cache-in-unreal-engine.md).
+    Check it with View Modes > Lumen > Surface Cache (docs/ue59/pages/worlds/lumen-world-cache-in-unreal-engine.md).
 - Check every new piece in UE from the gameplay camera next to its neighbours: seams, scale, light leaks.
 
 ## Sources

@@ -20,9 +20,9 @@ a BT or StateTree, so an agent-authored tree means hand-editing in the editor. P
 
 **5.9:** new Blueprint and Python libraries edit StateTrees from scripts: tasks, considerations, evaluators and global
 tasks can be added and rearranged in code, so on 5.9 an agent can build the tree asset by script instead of by hand.
-The page names no classes: grep the 5.9 Python stub for them before use (docs/ue59/pages/unreal-engine-5-9-release-notes.md).
+The page names no classes: grep the 5.9 Python stub for them before use (docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md).
 **5.9:** the engine ships a NavMesh toolset with runtime-callable (`AIRuntimeCallable`) tools, usable from MCP in the
-editor and in cooked builds that host an MCP server; `describe_toolsets` before use (docs/ue59/pages/unreal-mcp-in-unreal-editor.md).
+editor and in cooked builds that host an MCP server; `describe_toolsets` before use (docs/ue59/pages/ai-features/unreal-mcp-in-unreal-editor.md).
 
 ## Core setup (any option)
 
@@ -57,7 +57,7 @@ editor and in cooked builds that host an MCP server; `describe_toolsets` before 
     (runtime PCG, destructible walls). Costs CPU on change; tiles are 10 m, so small changes are cheap.
   - **5.9:** the navmesh can build progressively, with control over how many tiles build per tick (spreads a rebuild
     over ticks). The page doesn't name the setting: look on the RecastNavMesh actor / Project Settings > Navigation
-    Mesh (docs/ue59/pages/unreal-engine-5-9-release-notes.md).
+    Mesh (docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md).
 - **Nav Modifier Volume** / `UNavModifierComponent`: mark areas (`NavArea_Null` = blocked, custom area = higher cost).
   5.8 lets a static mesh carry its own nav area (a flag and area class on its NavCollision, e.g. "a couch that AI
   prefers to walk around"): cheaper than hand-placed volumes on props. Untested, including from Python.
@@ -65,7 +65,7 @@ editor and in cooked builds that host an MCP server; `describe_toolsets` before 
   character still has to physically make the jump (launch it yourself on a smart link event).
 - Movable actors that should cut holes: set the component's "Can Ever Affect Navigation" and use Dynamic generation.
 - Navigation Invokers (`UNavigationInvokerComponent`): generate nav only around agents. Only for huge worlds; skip.
-  **5.9:** a new option keeps tiles outside the invoker radius (docs/ue59/pages/unreal-engine-5-9-release-notes.md).
+  **5.9:** a new option keeps tiles outside the invoker radius (docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md).
 - After any level change with `Static`: confirm P still shows nav where needed, then save the level (nav data is saved).
 - **Scripted nav build (editor Python, 5.8.4):** `unreal.SystemLibrary.execute_console_command(editor_world,
   'RebuildNavigation')` builds it, but only once nav data exists (`FNavigationSystemExec::Exec_Runtime` needs a
@@ -148,7 +148,7 @@ virtual void OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult&
   Mass Signals into core; nothing changes for us.)
   **5.9:** new Mass Characters plugin (Mass traits for character interpolation and visualization, selective pawn
   replication, a game feature action that sets up Mass characters). Crowd scale only; still skip
-  (docs/ue59/pages/unreal-engine-5-9-release-notes.md).
+  (docs/ue59/pages/whats-new/unreal-engine-5-9-release-notes.md).
 
 ## Patterns (C++ FSM)
 
