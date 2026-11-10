@@ -224,6 +224,7 @@ Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls nee
 | `gen/character.ts` | Concept -> rigged, PBR-textured, retargeted character (+ BP); see Characters |
 | `gen/views.ts` | Cut a four-view turnaround sheet into front/left/back/right images for Tripo multiview (Four views) |
 | `gen/balances.ts` | Every paid service's balance and key status in one call, no key printed |
+| `gen/hf_token.ts` | Copies `HUGGINGFACE_ACCESS_TOKEN` from `.env` into Hugging Face's token file for 5.9's Kimodo (`SETUP.md` 10b); `--check` compares; never prints it |
 | `gen/tripo.ts` | The `tripo` CLI with the kit `.env` loaded (`node gen\tripo.ts balance --json`, `history`, `task watch`) |
 | `gen/blender/prep_rig.py` | Rigged character: height, facing, armature-safe cm export, textures stripped |
 | `gen/blender/pack_orm.py` | Pack roughness/metallic/AO PNGs into `T_<Name>_orm.png` for M_PBR_Master (v2+) |

@@ -353,8 +353,11 @@ project (its first run downloads ~16 GB and may show dialogs that block MCP).
 2. **Plugins** (Edit > Plugins, Experimental): tick **AnimGenOffline** and **Kimodo**, and **Sequencer Anim Mixer
    Toolset** so MCP can reach the mixer. Restart. If the editor offers to install Python packages for them (PyTorch
    and friends), that is an install: read it and decide.
-3. **Token:** Editor Preferences > Plugins > **Kimodo** > Authentication > **Hugging Face Token**. It is stored per
-   user (`EditorPerProjectUserSettings.ini`), not in the project. Leave Performance at its defaults (the text
+3. **Token:** put it in the kit's `.env` as `HUGGINGFACE_ACCESS_TOKEN` and run `node gen\hf_token.ts` once: it copies
+   it into Hugging Face's own token file (`%USERPROFILE%\.cache\huggingface\token`), which Kimodo reads when its own
+   setting is empty; `--check` confirms it. (Or paste it into Editor Preferences > Plugins > **Kimodo** >
+   Authentication > **Hugging Face Token**: stored per user in `EditorPerProjectUserSettings.ini`, and it wins over
+   the file.) Leave Performance at its defaults (the text
    encoder stays in system RAM). Its "Licenses and Attributions" lists the three licences.
 4. **First clip** (this downloads the weights): put the Third Person character in a level, add a Level Sequence with
    the character in it, then **Add Generated Animation Section**; in the section set **Pose Generator** = Kimodo and
