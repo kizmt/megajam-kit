@@ -1,4 +1,4 @@
-# Procedural environment assets: Blender 5.2 Python -> UE 5.8
+# Procedural environment assets: Blender 5.3 Python -> UE 5.8 / 5.9
 
 Read this before generating architecture or simple props with code (walls, floors, arches, doorways, stairs,
 pillars, crates, simple buildings). Generated during the jam, these are the game's own art and are scored; Fab kits
@@ -172,6 +172,13 @@ bpy.ops.export_scene.fbx(filepath=out, use_selection=True, object_types={'MESH'}
 - Add-on properties: attribute access (`scene.cycles`), not `scene["cycles"]`.
 - OBJ/STL/PLY live under `bpy.ops.wm.*`; Collada export is removed. Python is 3.13 (rebuild compiled wheels).
 - Bake: Cycles only, with an active Image Texture node per material; `gpu.init()` exists for background GPU use.
+- **5.3 (checked on 5.3.0, 2026-11-11):** nothing above changed, and no API the kit's scripts use was removed or
+  renamed. The seven `gen/blender/` scripts were run on 5.2.2 and 5.3.0 with the same inputs: same triangle counts,
+  sizes, bone data and packed/extracted texture pixels. Differences: sRGB PNGs now carry an ICC profile (pixels
+  unchanged; Unreal imports them as before); the Vulkan backend is the Windows default (headless EEVEE previews
+  render with sub-pixel differences); `bpy.data.all_ids` order changed (don't rely on it); `PropertyGroup.name` is
+  read-only. Loop Tools is built in (Relax Edge Loops and others), for hand modelling only. Gaussian splats (glTF,
+  USD) are not for game assets. Release notes: https://developer.blender.org/docs/release_notes/5.3/
 - Log `bpy.app.version_string` in every script's output; pass FBX/glTF kwargs only from
   `bpy.ops.export_scene.fbx.get_rna_type().properties.keys()` (an unknown kwarg raises TypeError).
 

@@ -21,7 +21,8 @@ uses is the director's call (CLAUDE.md "Engine version"); the kit's scripts foll
   needed.
 - Node 24+ (runs the kit's `.ts` scripts directly) and pnpm (`pnpm --version`). Once per machine: `pnpm install` in
   the kit folder (TypeScript + Node types for `pnpm typecheck`; nothing is needed at runtime)
-- Blender 5.2 on PATH (`blender --version`; the pipeline runs it headless)
+- Blender 5.3 on PATH (`blender --version`; the pipeline runs it headless). Verified 2026-11-11: every
+  `gen/blender/` script gives the same results on 5.3.0 as on 5.2.2 LTS (`docs/ue/procedural-assets.md` 8)
 - ffmpeg on PATH (`ffmpeg -version`; audio conversion and video recipes)
 - Tripo CLI (`tripo --version`; install per Tripo's docs)
 

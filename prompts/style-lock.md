@@ -48,7 +48,8 @@ Concrete and checkable, never vague adjectives:
 ## 4. Build the look in-engine *before* the game (Claude, 1–1.5 h)
 The main view's space (sky, or the interior's lights) + fog + post-process volume + master material + the hero (or
 its first generated pass) + 3 generated signature assets, **and 3-4 pieces of the game's real shapes in the locked shape language** (the structures, surfaces or
-silhouettes the key art is made of), not only boxes: light can't fix shape, and a look tuned on grey boxes keeps
+silhouettes the key art is made of: architecture from Blender kit pieces, `docs/ue/procedural-assets.md`; organic
+shapes from Tripo), not only boxes: light can't fix shape, and a look tuned on grey boxes keeps
 being tuned on grey boxes (a practice run spent six light passes while every critic named shapes).
 First apply `SETUP.md` 7b ("All paths" plus the chosen path; `scripts\preflight.ps1` lists any 7b setting still
 missing): every capture and bench before it measures the wrong picture. The Basic level has no post-process volume: build an unbound one here, and on the Lumen path set its
