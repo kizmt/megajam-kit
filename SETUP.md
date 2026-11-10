@@ -363,14 +363,28 @@ project (its first run downloads ~16 GB and may show dialogs that block MCP).
    Authentication > **Hugging Face Token**: stored per user in `EditorPerProjectUserSettings.ini`, and it wins over
    the file.) Leave Performance at its defaults (the text
    encoder stays in system RAM). Its "Licenses and Attributions" lists the three licences.
-4. **First clip** (this downloads the weights): put the Third Person character in a level, add a Level Sequence with
-   the character in it, then **Add Generated Animation Section**; in the section set **Pose Generator** = Kimodo and
-   **Anim Description** = "a person walks forward and waves"; **Generate Animation**. Wait for "Downloading Llama 3
-   weights" / "Downloading Kimodo weights" to finish and "Animation generated successfully". If it asks to
-   **Create Auto-Generated Retargeter Assets** for the character, say yes. The labels come from the plugin's source;
-   where they sit in the UI is untested.
-5. **Export Animation** saves it as an Animation Sequence. Play it on the character.
-6. Note for the kit: time per clip, the **VRAM Used** figure, and how the clip looks (feet, hands, timing).
+   **Then the missing wheels** (also seen 2026-11-10): the Preview ships without Kimodo's `PipWheels` folder, so the
+   worker fails with `No module named 'omegaconf'`. Install the two versions it expects into the project's Python
+   environment (an install: your call), once per project:
+   `& "C:\dev\<Project>\Intermediate\PipInstall\Scripts\python.exe" -m pip install --no-deps antlr4-python3-runtime==4.9.3 omegaconf==2.3.0`
+4. **First clip** (worked 2026-11-10 on the target PC; this downloads ~17.5 GB the first time):
+   - A scratch level (File > New Level > Basic) with `SKM_Manny_Simple` (Content > Characters > Mannequins > Meshes)
+     dragged in; save test assets in a `_KimodoTest` folder.
+   - Clapperboard > **Add Level Sequence**; **+ Track > Actor To Sequencer** > the mannequin.
+   - On the character's row: **Add Generated Animation Section**. Right-click the section bar > **Properties**:
+     **Pose Generator** = Kimodo, **Anim Description Override** = the prompt, and **Movement Source** =
+     **Generated Animation** (the default, Sequencer, takes the root path from Sequencer: with no path the character
+     stands still). **Quality Level** Medium (High for final clips), **Variations** 2-3 to pick from.
+   - In the track list, expand **Generated Animation** and set **Weight** to 1.0 (it was 0.0).
+   - If Animation Mode added a **Control Rig track** (`CR_Mannequin_Body`) to the character, delete or mute it: it
+     overrides the generated clip.
+   - Right-click the bar > **Generate Animation**. The first run downloads the Llama 3 text encoder, applies the
+     adapter and quantizes it (cached afterwards). Changing an input regenerates on its own (Allow Auto Generate On
+     Change). The root motion lands in the Transform track; the character walks off: press |◀ and frame it (F).
+   - Measured: ~20 s for a 5 s clip (8 s of it encoding a new prompt on the CPU; a repeated prompt is cached), the
+     text encoder in system RAM (4.6 GB in NF4), the diffusion model ~1.1 GB of VRAM.
+5. **Export Animation** (right-click the bar) saves it as an Animation Sequence. Play it on the character.
+6. Note for the kit: how the clip looks (feet, hands, timing).
 
 ## 11. Autonomous practice run (no director input; `prompts/autonomous.md`)
 
