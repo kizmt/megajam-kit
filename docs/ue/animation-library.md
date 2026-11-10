@@ -80,6 +80,17 @@ Researched 2026-10-26/28; prices and terms change, so re-check a source before r
     and where it goes; for actions in sequence, key the **Anim Description** channel over time (or Multi-Prompt
     Transitions) so each stretch has one action, as Kimodo's training data is described moment by moment. Variations
     2-3 and Quality High for clips that will ship.
+  - **Workflow that worked (2026-11-10, by hand):** add the character with the plugin's own **Add Character**
+    (Sequencer toolbar > the AnimGenOffline drop-down, a running-figure icon > Actions): pick the mesh, tick **Control
+    Rig** (Auto finds Manny's `CR_Mannequin_Body`) for pose editing, and tick **Spline** only for "walk along this
+    path" clips: it attaches the character to a path, and an on-the-spot action then slides along it (mute or delete
+    the **Attach** track, set Movement Source = Generated Animation). The character is a Sequencer spawnable; delete
+    any hand-placed copy. The toolbar's **Generate** button appears only while the sequence holds a generator section.
+    The actor row's pencil toggles **Edit Poses** (the Control Rig pose) and the generated animation.
+  - **Quality seen:** walks and gestures convincing on the mannequin; a punch worked with slightly unnatural legs and a
+    little foot slide even on the spot (Quality High, Variations 3, foot-describing prompts, Post Processing foot
+    cleanup, and keyed foot **Effector Target** keys are the levers; runtime foot IK hides the rest in game). Sharp
+    combat moves: try Pose Targets on the key frame, or library clips.
   - **Show Retarget Debug** draws only on Pose Targets you key (the poses given to the model); with none it draws
     nothing. To tell a retarget problem from a model one, play the same seed and prompt on Kimodo's own
     `soma_neutral` mesh (Content Browser > Settings > Show Plugin Content > Kimodo Content > Characters > Soma) next
