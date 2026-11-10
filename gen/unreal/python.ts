@@ -12,7 +12,9 @@ export async function runPythonCode(code: string, args: Record<string, string> =
 }
 
 export async function runPythonFile(file: string, args: Record<string, string> = {}): Promise<PythonResult> {
-  return runPythonCode(readFileSync(file, 'utf8'), args);
+  // Strip a byte-order mark: Windows PowerShell 5's Set-Content -Encoding utf8 writes one, and Python's compile()
+  // rejects it as U+FEFF.
+  return runPythonCode(readFileSync(file, 'utf8').replace(/^\uFEFF/, ''), args);
 }
 
 /** Run a script and throw (with its output) if it raised. */

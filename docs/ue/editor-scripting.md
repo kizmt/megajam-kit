@@ -27,7 +27,7 @@ Python stub or headers before writing an API call from memory.
   `notifications/progress` heartbeats, or split long work (Live Coding builds, large scripts, asset scans, automation
   runs) into shorter calls (docs/ue59/pages/ai-features/unreal-mcp-in-unreal-editor.md).
 - **Read results.** Many tools report failure in the payload, not as an MCP error. `mcp.ts` throws on `isError`;
-  for anything else, read back (`get_editor_property`, a find/list tool, `captureViewport()`).
+  for anything else, read back (`get_editor_property`, a find/list tool, `captureView()` in `ue.ts`).
 - **Save points.** Tool edits are not always undoable (imports never are). Save before and after bulk changes.
   Since 5.8.1 Epic's MCP disables transactions during tool script execution (`execute_tool_script` and the AI
   Assistant), so Ctrl+Z can't revert such a batch as one step, and Recovery Hub, which replays transactions, likely
@@ -283,8 +283,8 @@ docs/ue59/pages/production-pipeline/scripting-the-unreal-editor-using-python.md)
 4. Verify: `mcp.ts describe <toolset>` shows the new signature, then call it once.
 
 **Schema strictness (C++ tools).** The `required` list comes from the C++ signature, and struct parameters
-are often required even when the docs call them optional. Found so far: `EditorAppToolset.CaptureViewport` needs
-`captureTransform` + `annotations` (see `captureViewport()` in `mcp.ts`); `find_actors` needs `tag: ''` +
+are often required even when the docs call them optional. Found so far: `EditorAppToolset.CaptureViewport` (5.8 only; 5.9
+removed it, see `captureView()` in `ue.ts`) needs `captureTransform` + `annotations`; `find_actors` needs `tag: ''` +
 `collision_channels: []`; `AgentSkillToolset.GetSkills` needs `{"skillPaths": [...]}`; `LogsToolset.GetLogEntries`
 needs `pattern`, `category` and `maxEntries` (all required). If a call fails with "input param X is required",
 pass an empty/zero value, and add the case to PIPELINE.md.

@@ -42,6 +42,7 @@ const MCP_URL = env('UNREAL_MCP_URL') ?? 'http://127.0.0.1:8000/mcp';
 // Node's fetch gives up waiting for response headers after 300 s anyway, so stay just under it and report it clearly.
 // A single tool call that needs longer must be split (e.g. retarget_library.ts --limit batches).
 const CALL_TIMEOUT_MS = Math.min(Number(env('UNREAL_MCP_TIMEOUT_S')) || 290, 290) * 1000;
+const SLOW_TASK_WAIT_MS = (Number(env('UNREAL_SLOW_TASK_WAIT_S')) || 300) * 1000;
 let session: string | null = null;
 let nextId = 1;
 
@@ -149,9 +150,19 @@ export async function describeToolset(toolset: string): Promise<string> {
 
 /** Call one tool and return the raw MCP result. Throws on tool errors. */
 export async function mcpCallRaw(toolset: string, tool: string, args: ToolArgs = {}): Promise<McpToolResult> {
-  const result = await metaCall('call_tool', { toolset_name: toolset, tool_name: tool, arguments: args });
-  if (result.isError) throw new Error(`${toolset}.${tool}: ${contentText(result)}`);
-  return result;
+  // UE 5.9 refuses tool calls while the editor runs a slow task (a Nanite build, shader compiles after an import,
+  // asset loading after startup) and says the call made no changes, so waiting and calling again is safe.
+  const deadline = Date.now() + SLOW_TASK_WAIT_MS;
+  let told = false;
+  for (;;) {
+    const result = await metaCall('call_tool', { toolset_name: toolset, tool_name: tool, arguments: args });
+    if (!result.isError) return result;
+    const text = contentText(result);
+    if (!/running a slow task/i.test(text) || Date.now() > deadline) throw new Error(`${toolset}.${tool}: ${text}`);
+    if (!told) console.log(`    editor busy with a slow task: waiting for it (up to ${SLOW_TASK_WAIT_MS / 60000} min)`);
+    told = true;
+    await new Promise((r) => setTimeout(r, 5000));
+  }
 }
 
 /** Call one tool. Returns parsed JSON when the tool returns JSON text, otherwise the raw text. */

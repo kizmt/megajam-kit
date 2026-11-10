@@ -206,5 +206,20 @@ def op_set_material(a):
     return True
 
 
+def op_screenshot(a):
+    # 5.9 has no CaptureViewport tool. HighResShot renders the active level viewport on its next frame and writes
+    # the file then, so the caller waits for the file. The old file is removed first so a stale one can't be read.
+    import os
+    out = a["file"]
+    if os.path.exists(out):
+        os.remove(out)
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    if a.get("view"):
+        op_camera(a["view"])
+    w, h = a.get("size") or [1600, 900]
+    unreal.SystemLibrary.execute_console_command(None, f'HighResShot {int(w)}x{int(h)} filename="{out}"')
+    return True
+
+
 _result = globals()["op_" + ARGS["op"]](json.loads(ARGS.get("json") or "{}"))  # noqa: F821 (ARGS is set by run_python)
 print("UE_OPS_JSON " + json.dumps(_result))

@@ -218,7 +218,8 @@ Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls nee
 | `tripo` CLI | Image-to-3D, rig, retarget, decimate, convert (`tripo docs --llm`) |
 | `gen/blender/prep.py` | Size, pivot at base, texture budget, single mesh, UE-scaled FBX |
 | `gen/blender/inspect.py` | Stats JSON + preview render |
-| `gen/unreal/mcp.ts` | Call any Unreal MCP tool from scripts; `captureViewport()`. CLI: `toolsets`, `describe <toolset>`, `call <toolset> <tool> [json \| '@args.json']` |
+| `gen/unreal/mcp.ts` | Call any Unreal MCP tool from scripts (waits out 5.9's slow-task refusals). CLI: `toolsets`, `describe <toolset>`, `call <toolset> <tool> [json \| '@args.json']` |
+| `gen/unreal/ue.ts` | Editor operations for the generators on either engine (5.8 toolsets, 5.9 plain Python): import, Nanite, collision, place, materials, `captureView()` |
 | `gen/unreal/py.ts` | Run a Python file (or `-c` code) in the editor via `run_python`; `--arg k=v` -> `ARGS` dict. On 5.9 Epic's `execute_python` also exists (rules and when to use which: `docs/ue/editor-scripting.md`) |
 | `gen/unreal/shot.ts` | Viewport screenshot to PNG (`--wait N` for shader compiles) |
 | `gen/character.ts` | Concept -> rigged, PBR-textured, retargeted character (+ BP); see Characters |
@@ -277,7 +278,8 @@ Shared modules, not run on their own: `gen/paths.ts` (kit and project paths, `.e
 - FBX from Blender must use `apply_scale_options=FBX_SCALE_NONE`; the other modes import 100x too small and UE drops
   triangles.
 - The FBX importer's auto materials drop the metallic map and can fail to compile. Always use `M_PBR_Master`.
-- `CaptureViewport` requires `captureTransform` and `annotations`; the image comes back inside JSON.
+- 5.8: `CaptureViewport` requires `captureTransform` and `annotations`; the image comes back inside JSON. 5.9 has no
+  `CaptureViewport`: use `captureView()` in `gen/unreal/ue.ts` (works on both).
 - `add_to_scene_from_asset` `snap_to_ground` did not move the actor; place at z=0 (pivots are at the base).
 - Generated props import with 1 LOD and Nanite off; the pipeline enables Nanite. See `docs/ue/performance.md`.
 - Master material needs usage flags (Nanite, skeletal, instanced) set up front; a missing flag in a packaged build =

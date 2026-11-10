@@ -16,8 +16,8 @@ import { parseArgs } from 'node:util';
 import { KIT, errorMessage, generatedDir, pascal } from './paths.ts';
 import { packOrm, parseMarkedJson, parseTripo, requireTripoCredits, run, secs, type OrmResult } from './proc.ts';
 import { applyPbr, type ApplyPbrResult } from './unreal/materials.ts';
-import { McpUnreachableError, captureViewport, type CameraTransform } from './unreal/mcp.ts';
-import { assetExists, convexCollisions, deleteAsset, importStaticMesh, placeAsset, setNanite, setViewportCamera } from './unreal/ue.ts';
+import { McpUnreachableError, type CameraTransform } from './unreal/mcp.ts';
+import { assetExists, captureView, convexCollisions, deleteAsset, importStaticMesh, placeAsset, setNanite, setViewportCamera } from './unreal/ue.ts';
 import { runPythonCode } from './unreal/python.ts';
 import { TURNAROUND_RULES, VIEW_ORDER, parseViews, splitSheet } from './views.ts';
 
@@ -272,7 +272,7 @@ try {
         const pitch = (Math.atan2(c.z - cam.z, Math.hypot(c.x - cam.x, c.y - cam.y)) * 180) / Math.PI;
         const view: CameraTransform = { location: cam, rotation: { pitch, yaw, roll: 0 } };
         await setViewportCamera(view);
-        const shot = await captureViewport(join(dir, 'shot.png'), { captureTransform: view });
+        const shot = await captureView(join(dir, 'shot.png'), view);
         // The placed actor lives in the open level, which stays unsaved: say so.
         await saveFolder();
         console.log('    the level now has an unsaved change (the placed actor): save it if you keep it');

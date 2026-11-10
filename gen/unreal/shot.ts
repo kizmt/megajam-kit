@@ -10,7 +10,8 @@ import { isAbsolute, join } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { parseArgs } from 'node:util';
 import { errorMessage, generatedDir } from '../paths.ts';
-import { captureViewport, mcpCall } from './mcp.ts';
+import { mcpCall } from './mcp.ts';
+import { captureView } from './ue.ts';
 
 const { values: o, positionals } = parseArgs({
   allowPositionals: true,
@@ -30,7 +31,7 @@ const wait = Number(o.wait) || 0;
 try {
   if (o.converge) for (const command of CONVERGE) await mcpCall(MT, 'run_console_command', { command });
   if (wait > 0) await sleep(wait * 1000);
-  console.log(await captureViewport(file));
+  console.log(await captureView(file));
 } catch (e) {
   console.error(`FAIL: ${errorMessage(e)}`);
   process.exit(1);

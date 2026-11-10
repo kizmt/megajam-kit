@@ -6,9 +6,10 @@
 //           unreal.* Python through MegajamTools.run_python (gen/unreal/py/ue_ops.py), which works on both.
 // The engine is told apart by its tool search (mcp.ts hasNewToolSearch). Paths are '/Game/X/Y' or object paths.
 
-import { join } from 'node:path';
+import { existsSync, statSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { KIT } from '../paths.ts';
-import { callTool, hasNewToolSearch, mcpCall, type Box, type CameraTransform, type ObjectRef } from './mcp.ts';
+import { callTool, captureViewport, hasNewToolSearch, mcpCall, type Box, type CameraTransform, type ObjectRef } from './mcp.ts';
 import { runPythonFile } from './python.ts';
 
 const AS = 'editor_toolset.toolsets.asset.AssetTools';
@@ -127,4 +128,25 @@ export async function materialSlots(mesh: string, kind: MeshKind): Promise<strin
 export async function setSlotMaterial(mesh: string, kind: MeshKind, slot: string, material: ObjectRef): Promise<void> {
   if (await usePython()) await op('set_material', { mesh, kind, slot, material: material.refPath });
   else await mcpCall(kind === 'skeletal' ? SK : SM, 'set_material', { mesh: ref(mesh), slot_name: slot, material });
+}
+
+/**
+ * Capture the level viewport to a PNG (from `view` when given). 5.8: EditorAppToolset.CaptureViewport. 5.9 has no
+ * such tool: HighResShot writes the file on the viewport's next frame, so this waits for it (a viewport that is not
+ * drawing, e.g. the editor minimised, never writes: the error says so).
+ */
+export async function captureView(outFile: string, view?: CameraTransform, size: [number, number] = [1600, 900]): Promise<string> {
+  if (!(await usePython())) return captureViewport(outFile, view ? { captureTransform: view } : {});
+  const file = resolve(outFile).replace(/\\/g, '/');
+  await op('screenshot', { file, view, size });
+  const deadline = Date.now() + 30000;
+  let last = -1;
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 500));
+    if (!existsSync(file)) continue;
+    const n = statSync(file).size;
+    if (n > 0 && n === last) return outFile;
+    last = n;
+  }
+  throw new Error(`viewport capture: ${file} not written in 30 s (is the editor minimised or behind a modal dialog?)`);
 }
