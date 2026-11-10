@@ -24,11 +24,13 @@ in the morning; the window fits either.
 - Read the jam page at kickoff: the exact submission deadline (with time zone), the theme wording, any new rules.
   Write them at the top of `design/concept.md`. Schedule from the real times, not from memory (CLAUDE.md "Jam
   compliance": S = 14:00 JST Nov 12, D = 10:59 JST Nov 16, 93 h).
-- **The itch overview's start and end times are UTC** but show no time zone ("Submissions open from 2026-11-12
-  05:00:00 to 2026-11-16 01:59:00"). Convert them, and check they match the EST times in the page text.
-- **AI tool credits:** the jam page has an "AI tool credits" section (details were "coming soon" in late October).
-  If credits are offered, tell the director: they claim them before S (a sign-up may accept terms). Note which
-  services they cover and the balance; they change the paid-generation budget (CLAUDE.md "Money, keys and installs").
+- **The itch overview's times carry no time zone**, and which zone it uses has varied: in late October it showed UTC
+  ("2026-11-12 05:00:00 to 2026-11-16 01:59:00"); on 2026-11-11 it showed the viewer's local time ("November 12th
+  2026 at 2:00 PM to November 16th 2026 at 10:59 AM", JST). Check them against the ET times in the page text and
+  the rules (00:00 EST Nov 12 to 20:59 EST Nov 15).
+- **Partner credits** (emailed on Nov 10; the list and claim deadlines are in `docs/submission.md` "Partner credits").
+  Ask the director which are claimed and their balances: they change the paid-generation budget (CLAUDE.md "Money,
+  keys and installs"). Claiming is the director's (sign-ups accept terms; Meshy asks for a card).
 - The judging categories (CLAUDE.md "Jam compliance"): Ambition and Innovation, Use of Theme, Fun Factor, Gameplay,
   Visuals, Level Design and Game Progression, Audio. Ties are re-scored with Fun Factor doubled. Copy the jam page's
   one-line definition of each into `design/concept.md`; score against the judges' words (`docs/design.md` "Mapping

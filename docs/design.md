@@ -188,10 +188,21 @@ Pass/fail checks for each playtest round (report before and after):
 
 ## Mapping to the judging categories
 
-The jam page defines each category in one line; copy all seven into `design/concept.md` at kickoff
-(`prompts/concept.md` step 0). Ambition and Innovation reads: "Something you couldn't usually pull off in a four-day
-jam: a new mechanic, a bold art style, or a bigger scope." Placement, and the grants that follow it, come from the
-total across all seven (`docs/submission.md`).
+The jam page defines each category in one line (as of 2026-11-11; recheck at kickoff and copy all seven into
+`design/concept.md`, `prompts/concept.md` step 0). Each is scored 1-5:
+
+| Category | What judges look for (jam page) |
+|---|---|
+| Ambition and Innovation | "Something you couldn't usually pull off in a four-day jam: a new mechanic, a bold art style, or a bigger scope" |
+| Theme | "A fresh, clever take on the theme" |
+| Fun Factor | "Gameplay that's fun and satisfying" |
+| Gameplay | "Solid, original mechanics that feel good" |
+| Visuals | "A strong, consistent look, photoreal or stylized" |
+| Level design and game progression | "Spaces that support the gameplay and guide the player" |
+| Audio | "Sound and music that add to the experience" |
+
+Placement, and the grants that follow it, come from the total across all seven (`docs/submission.md`). Ties are
+re-scored with Fun Factor doubled (rule 9).
 
 Write one line per category in `design/concept.md` and check it at feature freeze:
 - **Fun Factor / Gameplay:** the core verb feels good in a grey room; the juice pass is done; playtest checks pass.

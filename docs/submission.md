@@ -13,9 +13,13 @@ CLAUDE.md "Shipping" and `SETUP.md` 9, the video in `docs/ue/cinematics-video.md
       (20:59 ET Nov 15). Late or broken entries are not accepted, and "proof of submission is not proof of receipt".
 - [ ] Packaged for Windows, playable on Windows 10/11, needing **no additional software** (rules 1, 7(f)): the
       VC++ runtime check in Windows Sandbox (`docs/ue/production.md` "Packaging and what gets shipped").
-- [ ] A **development build** (jam page, Unreal Engine teams: "Package your game for Windows (development build)"):
-      `package.ps1` without `-Config`, never Shipping. Zip named `TeamName_GameName`, under 1 GB, uploaded to our
-      own itch.io account, then submitted to the jam.
+- [ ] A **development build** (jam page, Unreal Engine teams, as of 2026-11-11: "Desktop or mobile: Windows, macOS,
+      Android, or iOS (development build). Windows builds must run on Windows 10 or 11."): `package.ps1` without
+      `-Config`, never Shipping. Zip named `TeamName_GameName`, under 1 GB (bigger: butler, which `upload.ps1`
+      uses anyway), uploaded to our own itch.io account, then submitted to the jam.
+      The page also offers an experimental **web** build (5.9 MegaJam Preview, Shipping, `index.html` at the zip's
+      top level, under 500 MB total and 200 MB per file, marked playable in the browser). Not for us: rule 1(b)
+      names Windows, macOS, Android and iOS only, and a web export is an untested pipeline four days out.
 - [ ] **Team name, game name, and every entrant's full name and the email linked to their Epic Games account**, one
       named as the team owner (rule 1(c); the jam page asks for the Epic-account email). Winners are notified at that
       email around 2027-01-29 and have 72 hours to answer (rule 14).
@@ -26,6 +30,8 @@ CLAUDE.md "Shipping" and `SETUP.md` 9, the video in `docs/ue/cinematics-video.md
       the team) and not by an AI agent or other automated means". The agent prepares everything; the director fills
       and sends the form.
 - [ ] **Sourced assets noted at submission** (rule 1(d)): the list from `SOURCED_ASSETS.md`, with licences.
+- [ ] **Dev log link** (form field, optional; required for Glass Box) and **Tools you used** (optional; partner prizes
+      need it: Hyper3D's Rodin cash pool, the NVIDIA RTX Award). List every AI tool and service actually used.
 - [ ] **Video:** 30-60 s of recorded gameplay, 1920x1080 or higher, English (rules 1(e), 7(c), 7(i)).
 - [ ] **Uses the theme** visibly (rule 7(g)).
 - [ ] Not an obvious extension of an Epic tutorial; gameplay beyond the starter templates (rules 7(d), 7(e)).
@@ -38,8 +44,26 @@ CLAUDE.md "Shipping" and `SETUP.md` 9, the video in `docs/ue/cinematics-video.md
 - **Development Continuation Grants:** the jam page lists them per engine as $50,000 / $25,000 / $10,000 for first,
   second and third place. They follow overall placement, the total across all seven categories, not one category.
   At kickoff, check whether they need anything on the submission form.
-- **AI tool credits:** a jam page section ("coming soon" in late October); claim them before S
-  (`prompts/concept.md` step 0).
+- **Fab credits** go to each winning team's lead. Partner prizes are per team unless marked per member.
+- **Hyper3D:** $10,000 split equally among *winning* teams (any category) that used Rodin and listed it under
+  "Tools you used". Only pays if the game wins something; one honest Rodin asset in the game qualifies.
+
+## Partner credits (jam page, 2026-11-11)
+
+Codes and claim links were emailed on Nov 10 (check spam). The director claims them; times are as the page gives
+them (PST where stated).
+
+| Partner | What | Claim by | Notes |
+|---|---|---|---|
+| Tripo | 3,000 credits + Pro | Nov 16 (code from worlds.tripo3d.ai/epicaimegajam2026promotion, then tripo3d.ai > Upgrade > Redeem Code) | Pro ends Nov 18 00:00 PST (17:00 JST); the kit's main 3D generator |
+| Hyper3D (Rodin) | Business plan, 208 credits | Nov 16 | Benefits end Nov 20; see the Rodin pool above |
+| Meshy | Pro month, 1,000 credits (web or API) | Nov 17 | Sign-up link only; card required |
+| PBRgen | Tileable PBR materials from text or an image | Valid Nov 7-15 | Floors, walls, terrain: albedo, normal, roughness, metallic, height, AO |
+| fal | $30 | Nov 30 | Image, video, audio, 3D models through one API |
+| Claude | $25 API credits (platform.claude.com) | 90 days from claiming | API, not the Claude Code plan |
+| SpaceXSI | $50 across Cursor and Grok Bot | Nov 15 | Lasts 7 days from claiming |
+| WeLoveIndies | Sound and music | -- | **Non-commercial licence**: fine for the jam, a commercial licence if the game is ever sold (a grant could lead there). Sourced assets: log them |
+| Diversion, Rokoko, Reallusion | Version control, mocap, iClone | -- | Not in the kit's pipeline |
 
 ## The game page (itch.io)
 
@@ -98,7 +122,7 @@ appends `devlog/YYYY-MM-DD.md` (CLAUDE.md "Devlog (Glass Box)"). At content lock
 3. Upload the zip with `scripts/upload.ps1 -Push` (the director's go-ahead), then download it from the page,
    unzip to a fresh folder and play the first minute.
 4. The director fills and sends the submission form (rule 17): team and game name, entrants with their Epic-account
-   emails, sourced assets, the pre-jam declaration, video link, devlog link. Submit by **D − 3 h**.
+   emails, sourced assets, the pre-jam declaration, video link, devlog link, tools used. Submit by **D − 3 h**.
 5. Check the submission from a logged-out browser: the page, the video, the download. Screenshot the confirmation.
 6. Keep the remaining hours for problems. Whether a fixed build may replace the submitted one depends on the jam's
    settings (check the jam page at kickoff); if it is allowed, only before the deadline, and say so in the devlog.

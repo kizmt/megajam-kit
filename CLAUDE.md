@@ -324,6 +324,10 @@ add an entry to the project's `KIT_NOTES.md` in the same round.
   Progression, Audio (up to 5 points each; ties re-scored with Fun Factor doubled; scoring against the jam page's
   definitions: `docs/design.md` "Mapping to the judging categories"). The amount of AI used doesn't change the score.
 - The Glass Box devlog must be submitted with the game, during the contest.
+- The submission form has an optional **"Tools you used"** field: fill it (every AI tool and service used). Partner
+  prizes depend on it, e.g. Hyper3D's $10,000 pool split among winning teams that used Rodin (`docs/submission.md`).
+- The jam page offers an experimental **web build** (5.9 MegaJam Preview, Shipping). The kit doesn't use it: the
+  rules (1(b)) name Windows, macOS, Android and iOS only, and the desktop build must be Development.
 - Content must be Teen-appropriate, contain no third-party IP, and show no trademarks except the
   Unreal Engine logo. All in-game text and audio in English.
 
