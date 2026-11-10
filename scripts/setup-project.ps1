@@ -10,8 +10,10 @@
   and re-copies CLAUDE.md, the critic, the scripts and the plugin from the kit).
 .DESCRIPTION
   What it does (SETUP.md step numbers):
-    2    enables the plugins in the .uproject: All Toolsets; on 5.9 also AnimGenOffline, Kimodo and Sequencer Anim
-         Mixer Toolset (Kimodo's animation generation), unless -NoKimodo
+    2    enables the plugins in the .uproject: All Toolsets; on 5.9 also Geometry Toolset (mesh editing tools that
+         All Toolsets leaves out), and AnimGenOffline, Kimodo and Sequencer Anim Mixer Toolset (Kimodo's animation
+         generation) unless -NoKimodo. -Plugins adds more by name, for a game that needs them, e.g.
+         -Plugins PCGPrimitives,ProceduralVegetationEditor (procedural levels; scripted trees)
     3.5  5.9: writes the MCP project Instructions (agents\mcp-instructions.md) into Config\DefaultGame.ini
     5    .claude\settings.local.json (kit read-only, unreal-mcp enabled), CLAUDE.md, the critic subagent
     6    scripts\ and Plugins\MegajamTools
@@ -24,7 +26,8 @@
 #>
 param(
     [Parameter(Mandatory)][string]$Project,
-    [switch]$NoKimodo
+    [switch]$NoKimodo,
+    [string[]]$Plugins = @()
 )
 $ErrorActionPreference = 'Stop'
 $Kit = Split-Path $PSScriptRoot
@@ -51,7 +54,9 @@ Write-Host "Project $name, engine $($bv.MajorVersion).$($bv.MinorVersion).$($bv.
 $u = Get-Content -Raw $uproject | ConvertFrom-Json
 if (-not ($u.PSObject.Properties.Name -contains 'Plugins')) { $u | Add-Member -NotePropertyName Plugins -NotePropertyValue @() }
 $want = @('AllToolsets')
+if ($is59) { $want += 'GeometryToolset' }
 if ($kimodo) { $want += 'AnimGenOffline', 'Kimodo', 'SequencerAnimMixerToolset' }
+$want += @($Plugins | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 $added = @()
 foreach ($w in $want) {
     $have = @($u.Plugins) | Where-Object { $_.Name -eq $w }
