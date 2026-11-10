@@ -5,6 +5,11 @@
 //        --name A_Hero_Punch --seq /Game/Characters/Hero/Kimodo/LS_HeroKimodo [--map /Game/.../L_HeroKimodo]
 //        [--for Hero] [--dest /Game/Characters/Hero/Anims] [--mesh /Game/.../SK_Hero] [--seed 7] [--timeout 300]
 //   node gen/unreal/kimodo.ts --state --seq /Game/.../LS_HeroKimodo        (sections, prompts, seeds; changes nothing)
+//   node gen/unreal/kimodo.ts --probe hand_r,head --clip /Game/.../A_Hero_Punch_Hero   (where those bones go; any clip)
+//
+// --probe <bones>: after the clip is made (and retargeted), print each bone's path through it in cm, component
+// space: lowest and highest point and when. Check a prompt's target by number before judging by eye ("knock on the
+// drum at the hip" peaked at head height in a rehearsal). With --clip it measures an existing clip and makes nothing.
 //
 // --for <Name>: the clip is for a character built by gen/character.ts. Generate on the mannequin's Kimodo sequence
 // (one sequence serves every character), and the clip is then retargeted onto <Name> with the retargeter
@@ -44,14 +49,19 @@ const { values: o, positionals } = parseArgs({
     section: { type: 'string' },
     timeout: { type: 'string', default: '300' },
     state: { type: 'boolean', default: false },
+    probe: { type: 'string' },
+    clip: { type: 'string' },
     help: { type: 'boolean', short: 'h', default: false },
   },
 });
 const prompt = positionals.join(' ').trim();
-if (o.help || !o.seq || (!o.state && (!prompt || !o.name))) {
+const probeOnly = Boolean(o.probe && o.clip);
+if (o.help || (!probeOnly && (!o.seq || (!o.state && (!prompt || !o.name))))) {
   console.log(`usage: node gen/unreal/kimodo.ts "<prompt>" --name A_Name --seq /Game/.../LS_X [--for <Character>] [--map /Game/.../L_X]
             [--dest /Game/.../Anims] [--mesh /Game/.../SK_X] [--seed N] [--section i] [--timeout 300]
-       node gen/unreal/kimodo.ts --state --seq /Game/.../LS_X`);
+            [--probe hand_r,head]
+       node gen/unreal/kimodo.ts --state --seq /Game/.../LS_X
+       node gen/unreal/kimodo.ts --probe hand_r,head --clip /Game/.../A_Name   (measure an existing clip)`);
   process.exit(o.help ? 0 : 2);
 }
 
@@ -69,11 +79,30 @@ function editorLog(): string {
   const name = (readdirSync(proj).find((f) => f.endsWith('.uproject')) ?? '').replace(/\.uproject$/, '');
   return join(proj, 'Saved', 'Logs', `${name}.log`);
 }
+interface Probe { anim: string; length: number; missing: string[]; all_bones: string[];
+  bones: Record<string, { min: number[]; max: number[]; samples: number[][] }> }
+/** Print where the named bones go through a clip (cm, component space: z is height above the character's origin). */
+async function probe(clip: string, bones: string): Promise<void> {
+  const r = parseMarkedJson<Probe>(await runPythonFileOrThrow(join(KIT, 'gen', 'unreal', 'py', 'anim_probe.py'), { anim: clip, bones }), 'PROBE_JSON');
+  console.log(`    probe ${r.anim} (${r.length} s; cm, z = height above the character's origin):`);
+  for (const [bone, b] of Object.entries(r.bones)) {
+    const at = (i: number, v: number | undefined): string => `${v} at ${b.samples.find((s) => s[i] === v)?.[0] ?? '?'} s`;
+    const first = b.samples[0] ?? [], last = b.samples[b.samples.length - 1] ?? [];
+    console.log(`      ${bone.padEnd(12)} height ${at(3, b.min[2])} .. ${at(3, b.max[2])}; starts (${first.slice(1).join(', ')}), ends (${last.slice(1).join(', ')}); ` +
+      `x ${b.min[0]}..${b.max[0]}, y ${b.min[1]}..${b.max[1]}`);
+  }
+  if (r.missing.length) console.log(`      not found: ${r.missing.join(', ')}. Bones: ${r.all_bones.slice(0, 90).join(', ')}`);
+}
+
 const DONE = /LogAnimGenOffline: .*Stage=CleanupAndPostGenerate/;
 const FAILED = /LogAnimGenOffline: (Error|Warning): .*|Async generation failed.*/;
 
 try {
   if (!(await hasNewToolSearch())) fail('Kimodo needs UE 5.9 (the AnimGenOffline plugin): this editor is 5.8');
+  if (probeOnly) {
+    await probe(o.clip ?? '', o.probe ?? '');
+    process.exit(0);
+  }
   if (o.state) {
     console.log(JSON.stringify(await py<State>({ op: 'state' }), null, 2));
     process.exit(0);
@@ -122,6 +151,9 @@ try {
       fail(r.skipped_existing ? `${r.dest}/${o.name}_${o.for} already exists (the retarget never overwrites): use a new --name for a new take` : `nothing was retargeted onto ${o.for}`);
     }
     console.log(`[5] retargeted onto ${o.for}: ${r.assets.join(', ') || r.dest} (via ${r.retargeter})`);
+    if (o.probe) await probe(r.assets[0] ?? `${r.dest}/${o.name}_${o.for}`, o.probe);
+  } else if (o.probe) {
+    await probe(exp.out, o.probe);
   }
   console.log('    the sequence stays open with its prompt changed (unsaved): save it to keep the prompt, or close without saving');
 } catch (e) {

@@ -139,8 +139,16 @@ if ($ini -notmatch '(?m)^bAllowHighDPIInGameMode=True') { $missing7b += 'bAllowH
 if ($ini -notmatch '(?m)^r\.DefaultFeature\.MotionBlur=False') { $missing7b += 'r.DefaultFeature.MotionBlur=False' }
 if ($ini -notmatch '(?m)^r\.Tonemapper\.Sharpen=0') { $missing7b += 'r.Tonemapper.Sharpen=0' }
 if ($scalIni -notmatch '(?m)^r\.TSR\.History\.ScreenPercentage=100') { $missing7b += 'r.TSR.History.ScreenPercentage=100 (DefaultScalability.ini)' }
-if ($missing7b) { foreach ($m in $missing7b) { Warn "SETUP 7b not applied: $m (apply before the first capture or bench; the style lock does it)" } }
-else { Pass 'SETUP 7b display settings applied' }
+if ($ini -notmatch '(?m)^r\.ScreenPercentage\.Default=') { $missing7b += 'r.ScreenPercentage.Default (the internal resolution)' }
+if ($scalIni -notmatch '(?m)^r\.Streaming\.PoolSize=') { $missing7b += 'r.Streaming.PoolSize per quality level (DefaultScalability.ini)' }
+$gusFile = Join-Path $Project 'Config\DefaultGameUserSettings.ini'
+if (-not ((Test-Path $gusFile) -and (Get-Content -Raw $gusFile) -match '(?m)^FullscreenMode=1')) { $missing7b += 'FullscreenMode=1 (DefaultGameUserSettings.ini)' }
+$inFile = Join-Path $Project 'Config\DefaultInput.ini'
+if (-not ((Test-Path $inFile) -and (Get-Content -Raw $inFile) -match '(?m)^\+ConsoleKeys=F10')) { $missing7b += '+ConsoleKeys=F10 (DefaultInput.ini)' }
+if ($missing7b) {
+    Warn "SETUP 7b not applied ($($missing7b.Count) setting(s), e.g. $($missing7b[0])): with the editor closed run  $Kit\scripts\apply-7b.ps1 -Project $Project -Path lumen|lite|none  (before the first capture or bench; the style lock chooses the path; -Check lists every line)"
+}
+else { Pass 'SETUP 7b display settings applied (apply-7b.ps1 -Check -Path <path> lists every line)' }
 if (Test-Path (Join-Path $Project 'Intermediate\PythonStub\unreal.py')) { Pass 'Python API stub present' }
 else { Warn 'no Intermediate\PythonStub\unreal.py: tick Python Developer Mode and restart the editor (SETUP step 2.4)' }
 if ($is59) {

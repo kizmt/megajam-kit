@@ -60,8 +60,8 @@ its first generated pass) + 3 generated signature assets, **and 3-4 pieces of th
 silhouettes the key art is made of: architecture from Blender kit pieces, `docs/ue/procedural-assets.md`; organic
 shapes from Tripo), not only boxes: light can't fix shape, and a look tuned on grey boxes keeps
 being tuned on grey boxes (a practice run spent six light passes while every critic named shapes).
-First apply `SETUP.md` 7b ("All paths" plus the chosen path; `scripts\preflight.ps1` lists any 7b setting still
-missing): every capture and bench before it measures the wrong picture. The Basic level has no post-process volume: build an unbound one here, and on the Lumen path set its
+First apply `SETUP.md` 7b with the editor closed, in one command: `C:\dev\megajam-kit\scripts\apply-7b.ps1 -Project
+C:\dev\<Project> -Path lumen|lite|none` (it prints what is left for the session; `-Check` lists every line): every capture and bench before it measures the wrong picture. The Basic level has no post-process volume: build an unbound one here, and on the Lumen path set its
 `LumenMaxRoughnessToTraceReflections` to 0.25 (`SETUP.md` 7b).
 Set the shared style values from the spec (`node gen/unreal/materials.ts style ...`) once the hero and the signature
 assets are in, and tune them on those in the key frames' light: the test is that the assets read as one set.

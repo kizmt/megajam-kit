@@ -15,6 +15,8 @@
 // the prop's root (Unreal cm). Build the actor from those: one StaticMeshComponent per part at that location; the
 // part then turns or slides about its own origin. --place spawns the parts assembled in the open level as a check;
 // --replace first removes the fused prop actor gen/asset.ts placed and the part actors of an earlier --place.
+// --blueprint also makes BP_<Name>: one actor with a component per part (named after the part, at its location),
+// a thin asset wrapper for the game's C++ to move; --parent gives it a C++ parent class. --place then spawns that.
 // A selector can join planes with & (inside all of them), and a part name given twice is one part made of both cuts.
 
 import { existsSync, writeFileSync } from 'node:fs';
@@ -23,7 +25,7 @@ import { parseArgs } from 'node:util';
 import { KIT, errorMessage, fail, generatedDir, pascal } from './paths.ts';
 import { parseMarkedJson, run, secs } from './proc.ts';
 import { McpUnreachableError, type CameraTransform } from './unreal/mcp.ts';
-import { runPythonCode } from './unreal/python.ts';
+import { runPythonCode, runPythonFileOrThrow } from './unreal/python.ts';
 import { assetExists, captureView, convexCollisions, deleteAsset, importStaticMesh, materialSlots, placeAsset, ref,
   saveAssets, setNanite, setSlotMaterial, setViewportCamera } from './unreal/ue.ts';
 
@@ -37,6 +39,8 @@ const { values: o, positionals } = parseArgs({
     sliver: { type: 'string' },
     slabs: { type: 'string' },
     replace: { type: 'boolean', default: false },
+    blueprint: { type: 'boolean', default: false },
+    parent: { type: 'string' },
     dest: { type: 'string', default: '/Game/Props' },
     hulls: { type: 'string' },
     place: { type: 'string' },
@@ -48,11 +52,13 @@ const { values: o, positionals } = parseArgs({
 if (o.help || !positionals[0] || (!o.list && o.part.length === 0)) {
   console.log(`usage: node gen/parts.ts <Name> --list [--slabs z:12] [--part ...]   (with --part: what is left after those cuts)
        node gen/parts.ts <Name> --part "<Part>:<selector>[:pivot=x,y,z]" [--part ...] [--rest Body] [--keep-bits]
-            [--sliver 0.05] [--dest /Game/Props] [--hulls N] [--place=x,y,z [--replace]] [--no-unreal]
+            [--sliver 0.05] [--dest /Game/Props] [--hulls N] [--blueprint [--parent /Script/<Module>.<Class>]]
+            [--place=x,y,z [--replace]] [--no-unreal]
   selector  x>v x<v y>v y<v z>v z<v (metres, the prepped mesh's space), joined with & for "inside all of these"
             ("x>0.33&z>4.31"),  or  shell=i[,j] (indices from --list, which change after every cut)
   pivot     where the part turns or slides; default: the centre of its bounds at its lowest point
   The same <Part> name twice makes one part from both cuts (first pivot given wins).
+  --blueprint  also make BP_<Name>: one actor, a Movable StaticMeshComponent per part at its relative location
   --slabs   with --list: bounds of the geometry inside n slabs along an axis, to read cut values from
   --sliver  a loose bit under this fraction of its side's main shell goes back across the cut (default 0.05)`);
   process.exit(o.help ? 0 : 2);
@@ -122,6 +128,41 @@ try {
     try {
       console.log(`[2] Unreal import to ${folder}`);
       const paths = split.parts.map(asset);
+      // What is already in the level for this prop: the fused actor gen/asset.ts placed as its check, part actors
+      // from an earlier --place, an earlier BP_<Name> actor. With --place they would overlap the new ones.
+      const bpPath = `${folder}/BP_${name}`;
+      if (o.place || o.replace) {
+        const old = await runPythonCode(
+          `import unreal, json
+sub = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
+labels, fused, bp, do = set(json.loads(ARGS["labels"])), ARGS["fused"], ARGS["bp"], ARGS["replace"] == "1"
+hit = []
+for a in sub.get_all_level_actors():
+    lab = a.get_actor_label()
+    mine = lab in labels or a.get_class().get_path_name().split(".")[0] == bp
+    if not mine and isinstance(a, unreal.StaticMeshActor):
+        m = a.static_mesh_component.static_mesh
+        mp = m.get_path_name().split(".")[0] if m else ""
+        mine = mp == fused or mp.startswith(fused + "_")
+    if mine:
+        hit.append(lab)
+        if do:
+            sub.destroy_actor(a)
+print("OLD_JSON=" + json.dumps(hit))`,
+          { labels: JSON.stringify(split.parts.map((p) => `${name}_${p.name}`)), fused: `${folder}/SM_${name}`, bp: bpPath, replace: o.replace ? '1' : '0' });
+        const oldActors = old.ok ? parseMarkedJson<string[]>(old.output, 'OLD_JSON') : [];
+        if (oldActors.length) {
+          console.log(o.replace
+            ? `    removed from the level: ${oldActors.join(', ')}`
+            : `    NOTE: already in the level and left there: ${oldActors.join(', ')} (the fused prop or earlier parts; --replace removes them first)`);
+        }
+      }
+      // An earlier BP_<Name> uses the old parts: it is rebuilt below, so remove it before the parts are checked
+      // (refused, with the list, when something still uses it, such as a placed actor without --replace).
+      if (o.blueprint && await assetExists(bpPath)) {
+        const del = await runPythonCode('from megajam_tools.refs import delete_asset_safely\ndelete_asset_safely(ARGS["bp"])', { bp: bpPath });
+        if (!del.ok) throw new Error(`could not replace ${bpPath}: ${del.output.trim().split('\n').slice(-4).join('\n')}${o.replace ? '' : '\n(--replace removes its placed actors first)'}`);
+      }
       // Replacing a part that something still uses opens a modal dialog on delete: check first, refuse with a list.
       const existing: string[] = [];
       for (const p of paths) if (await assetExists(p)) existing.push(p);
@@ -151,42 +192,30 @@ try {
       if (hasInst && await assetExists(autoMat)) await deleteAsset(autoMat);
       if (!(await saveAssets(paths))) throw new Error(`saving ${paths.join(', ')} failed`);
 
+      if (o.blueprint) {
+        interface PartsBp { blueprint: string; parent: string; components: string[] }
+        const bp = parseMarkedJson<PartsBp>(
+          await runPythonFileOrThrow(join(KIT, 'gen', 'unreal', 'py', 'make_parts_bp.py'), {
+            name, folder, ...(o.parent ? { parent: o.parent } : {}),
+            parts: JSON.stringify(split.parts.map((p) => ({ name: p.name, asset: asset(p), loc: p.pivot_ue_cm }))),
+          }), 'PARTS_BP_JSON');
+        console.log(`    ${bp.blueprint} (parent ${bp.parent}): Root + ${bp.components.join(', ')}`);
+      }
+
       if (o.place) {
         const [x = 0, y = 0, z = 0] = o.place.split(',').map(Number);
-        // The fused prop gen/asset.ts placed as its check, and part actors from an earlier --place, would overlap these.
-        const old = await runPythonCode(
-          `import unreal, json
-sub = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
-labels, fused, do = set(json.loads(ARGS["labels"])), ARGS["fused"], ARGS["replace"] == "1"
-hit = []
-for a in sub.get_all_level_actors():
-    lab = a.get_actor_label()
-    if lab in labels:
-        hit.append(lab)
-    elif isinstance(a, unreal.StaticMeshActor):
-        m = a.static_mesh_component.static_mesh
-        if m and m.get_path_name().split(".")[0] == fused:
-            hit.append(lab)
-        else:
-            continue
-    else:
-        continue
-    if do:
-        sub.destroy_actor(a)
-print("OLD_JSON=" + json.dumps(hit))`,
-          { labels: JSON.stringify(split.parts.map((p) => `${name}_${p.name}`)), fused: `${folder}/SM_${name}`, replace: o.replace ? '1' : '0' });
-        const oldActors = old.ok ? parseMarkedJson<string[]>(old.output, 'OLD_JSON') : [];
-        if (oldActors.length) {
-          console.log(o.replace
-            ? `    removed from the level: ${oldActors.join(', ')}`
-            : `    NOTE: already in the level and left there: ${oldActors.join(', ')} (the fused prop or earlier parts; --replace removes them first)`);
-        }
         const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
-        for (const p of split.parts) {
-          const [px, py, pz] = p.pivot_ue_cm;
-          const { box } = await placeAsset(asset(p), `${name}_${p.name}`, [x + px, y + py, z + pz], 0);
+        const grow = (box: { min: { x: number; y: number; z: number }; max: { x: number; y: number; z: number } }): void => {
           [box.min.x, box.min.y, box.min.z].forEach((v, i) => { lo[i] = Math.min(lo[i] ?? v, v); });
           [box.max.x, box.max.y, box.max.z].forEach((v, i) => { hi[i] = Math.max(hi[i] ?? v, v); });
+        };
+        if (o.blueprint) {
+          grow((await placeAsset(bpPath, name, [x, y, z], 0)).box);
+        } else {
+          for (const p of split.parts) {
+            const [px, py, pz] = p.pivot_ue_cm;
+            grow((await placeAsset(asset(p), `${name}_${p.name}`, [x + px, y + py, z + pz], 0)).box);
+          }
         }
         const c = { x: ((lo[0] ?? 0) + (hi[0] ?? 0)) / 2, y: ((lo[1] ?? 0) + (hi[1] ?? 0)) / 2, z: ((lo[2] ?? 0) + (hi[2] ?? 0)) / 2 };
         const r = Math.max((hi[0] ?? 0) - (lo[0] ?? 0), (hi[1] ?? 0) - (lo[1] ?? 0), (hi[2] ?? 0) - (lo[2] ?? 0));
@@ -203,7 +232,7 @@ print("OLD_JSON=" + json.dumps(hit))`,
           if (e instanceof McpUnreachableError) throw e;
           console.log(`    WARN: no check screenshot (${errorMessage(e)})`);
         }
-        console.log(`    placed assembled at ${o.place} (actors ${name}_<Part>; the level has unsaved changes)${shot ? `, screenshot ${shot}` : ''}`);
+        console.log(`    placed assembled at ${o.place} (${o.blueprint ? `one BP_${name} actor labelled ${name}` : `actors ${name}_<Part>`}; the level has unsaved changes)${shot ? `, screenshot ${shot}` : ''}`);
       }
     } catch (e) {
       if (!(e instanceof McpUnreachableError)) throw e;
@@ -213,8 +242,13 @@ print("OLD_JSON=" + json.dumps(hit))`,
 
   console.log('\nPart            Asset                                              Relative location (cm)');
   for (const p of split.parts) console.log(`${p.name.padEnd(15)} ${asset(p).padEnd(50)} ${p.pivot_ue_cm.join(', ')}`);
-  console.log(`\nBuild the prop's actor with one StaticMeshComponent per part at its relative location: the assembled prop then
-looks like the original, and each part turns or slides about its own origin (the hinge or axle given as pivot).
+  console.log(o.blueprint
+    ? `\n${folder}/BP_${name} holds the parts as components named after them: move one from C++ by finding it by name
+(GetComponents, GetName() == "<Part>") and turning or sliding it about its own origin (the hinge or axle given as pivot).
+${join(dir, 'parts.json')}`
+    : `\nBuild the prop's actor with one StaticMeshComponent per part at its relative location (--blueprint makes that
+actor as BP_${name}): the assembled prop then looks like the original, and each part turns or slides about its own
+origin (the hinge or axle given as pivot).
 ${join(dir, 'parts.json')}`);
 } catch (e) {
   console.error(`\nFAIL: ${errorMessage(e)}`);

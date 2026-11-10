@@ -229,7 +229,13 @@ Verified 2026-10-24 on a test project: 17 files tracked (0.07 MB), `Main.umap` v
   symbols (they stay in the build folder for crash debugging), so the empty-project zip is 401 MB.
   That is engine baseline: the game's own content has about 600 MB before the jam's 1 GB archive limit.
 
-## 7b. Game display + render path (Claude applies, 5 min; editor closed)
+## 7b. Game display + render path (Claude applies, 1 min; editor closed)
+
+**One command (added 2026-11-11):** `C:\dev\megajam-kit\scripts\apply-7b.ps1 -Project C:\dev\<Name> -Path
+lumen|lite|none [-Internal 50] [-Title "<Game Name>" -Version 0.1.0 -Company <Team>]` writes every ini line below
+for the chosen path (an existing key is updated, a missing one added; safe to rerun and to switch paths) and prints
+the few steps it can't do (the level's cloud actor, the post-process volume, the icon). `-Check` lists each line as
+set, different or missing without writing. The text below is the reference for what each line is for.
 
 Decide the render path **with the style lock**, before gameplay. Switching later costs a look re-tune. Measured
 numbers: `docs/ue/performance.md` "Render paths"; re-measure with `bench.ts` (its built-in comparison runs all
@@ -256,7 +262,9 @@ needs dynamic bounce light but full Lumen doesn't fit the target fps (softer GI,
   distance scale at 1-2 (higher washes out the far end).
 - Release identity, `Config/DefaultGame.ini` `[/Script/EngineSettings.GeneralProjectSettings]`: `ProjectName`,
   `ProjectDisplayedTitle` (the window title), `ProjectVersion`, `CompanyName`, `CopyrightNotice` (Project Settings >
-  Description). The exe keeps the project's name. Icon and splash: Project Settings > Platforms > Windows > **Game
+  Description). Written as plain text, e.g. `ProjectDisplayedTitle=Thirteen O'Clock` (no quotes, no `NSLOCTEXT`:
+  the engine reads a bare value as raw text, `FTextStringHelper::ReadFromBuffer` in 5.9's `Text.cpp`). A
+  Development build's title bar still adds "(64-bit Development ...)" after it (`GameEngine.cpp`). The exe keeps the project's name. Icon and splash: Project Settings > Platforms > Windows > **Game
   Icon** (`.ico` with a 256x256 layer, stored as `Build/Windows/Application.ico`, compiled into the exe, so it needs a
   package) and **Game Splash** (`.bmp`); field names unverified in 5.8.4.
 - Window mode: `Config/DefaultGameUserSettings.ini` `[/Script/Engine.GameUserSettings]` `FullscreenMode=1` and
