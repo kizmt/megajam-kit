@@ -156,8 +156,9 @@ default material.
 
 Generated props each arrive with their own texture style; side by side they read as assets from different games,
 and Visuals is judged on "a strong, consistent look". The master's style layer pulls them together from **one
-place**, `/Game/Kit/Materials/MPC_Style`, without touching any prop's own assets. Verified on the 5.9 Preview
-(2026-11-11): one command recoloured the edges and palette of a placed Tripo prop.
+place**, `/Game/Kit/Materials/MPC_Style`, without touching any prop's own assets. Verified on the 5.9 Preview and
+5.8.4 (2026-11-11): one command recoloured the edges and palette of a placed Tripo prop, and of a rigged character
+rebuilt with `character.ts --rig --pbr` (its mask lines up with the re-textured maps).
 
 - **The mask.** `gen/blender/bake_style.py` bakes `T_<Name>_style.png` in the mesh's own UVs (Cycles CPU, about 6 s
   at 1024 px for a 28k-triangle prop): **R** convex edges and corners, **G** occlusion (1 open, 0 crevice), **B**

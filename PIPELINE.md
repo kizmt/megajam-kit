@@ -57,7 +57,7 @@ concepts (even with a "style only, no fog or scenery" prefix), and half of the c
 cartoon style. Generate one subject with the key art, get it approved, then send that concept as the first `--ref`
 (a subject on plain grey: the style anchor) and at most one key-art frame after it, for palette only.
 
-## Moving parts: one fused mesh into parts with pivots (tested 2026-11-11, UE 5.9 Preview, Blender 5.3)
+## Moving parts: one fused mesh into parts with pivots (tested 2026-11-11 on UE 5.9 Preview and 5.8.4, Blender 5.3)
 
 A generator returns one fused mesh, so a chest can't open and a wheel can't turn. `gen/parts.ts` cuts the prop's
 prepped mesh into parts, puts each pivot on its hinge or axle, and imports them next to the prop.
