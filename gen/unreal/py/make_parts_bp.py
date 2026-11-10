@@ -1,6 +1,8 @@
 # One Blueprint actor for a prop cut into parts by gen/parts.ts: a "Root" scene component and one Movable
 # StaticMeshComponent per part, named after the part, at the part's relative location. Assembled it looks like the
-# original prop; each part turns or slides about its own origin (the pivot given to parts.ts). A thin asset wrapper:
+# original prop; each part turns or slides about its own origin (the pivot given to parts.ts). Checked on 5.9
+# (2026-11-11): a spawned actor has the components under their part names, Movable, at the given locations, attached
+# to Root (which sits under the Blueprint's DefaultSceneRoot). A thin asset wrapper:
 # no graph, no logic. The game's C++ moves the parts, finding each by name:
 #   for (UStaticMeshComponent* C : TInlineComponentArray<UStaticMeshComponent*>(this)) if (C->GetName() == TEXT("Lid")) ...
 # Run via gen/parts.ts --blueprint. ARGS:
@@ -54,7 +56,7 @@ for p in parts:
     comp.set_static_mesh(mesh)
     comp.set_editor_property("mobility", unreal.ComponentMobility.MOVABLE)
     comp.set_editor_property("relative_location", unreal.Vector(*p["loc"]))
-    made.append(str(comp.get_name()))
+    made.append(p["name"])  # the template is <name>_GEN_VARIABLE; the component on a spawned actor is <name>
 
 unreal.BlueprintEditorLibrary.compile_blueprint(bp)
 unreal.EditorAssetLibrary.save_loaded_asset(bp, False)
