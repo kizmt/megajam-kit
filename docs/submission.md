@@ -39,6 +39,35 @@ CLAUDE.md "Shipping" and `SETUP.md` 9, the video in `docs/ue/cinematics-video.md
 - [ ] Teen-appropriate, no third-party IP, no trademarks except the Unreal Engine logo (CLAUDE.md "Jam compliance").
 - [ ] **Devlog submitted with the game, during the contest** (rule 10, Glass Box), if competing for it.
 
+## What a solo Unreal Engine entry can win (jam page, 2026-11-11; cash, then partner prizes)
+
+One main-category prize and one modifier prize per submission at most (rule 13), and a winner takes only one modifier
+unless no other eligible entry remains (rule 10). Modifiers are judged on the same seven criteria among the entries
+that meet the modifier's condition.
+
+| Prize | For | Cash | Open to us? |
+|---|---|---|---|
+| Best Overall, Unreal Engine | highest total score | $7,500 / $5,000 / $2,500 | Yes: the main target |
+| Solo Driver | best game by a solo developer | $2,500 | **Yes** (solo entry): say so on the form. Partners: Rokoko headcam and gloves, fal $1,000 credits, an Intel laptop |
+| Render Royalty | best visuals, photoreal or stylized | $2,500 | **Yes**: the style lock and the shared style are aimed here. Partners: PBRgen $500, fal $1,000 credits, Rokoko, NetApp (US only) |
+| Glass Box | best dev log of how the game was built | $2,500 | **Yes**, only with the dev log link submitted with the game (below). Partner: AMD handheld |
+| NVIDIA RTX Award | a GeForce RTX 5090; the form has NVIDIA questions to answer | hardware | **To confirm at kickoff:** the page ties it to "Tools you used" and names the NvRTX engine branch as "one way to qualify". See the note below |
+| Best Team | a team of two or more | $5,000 | No (solo) |
+| Best Student Project | every entrant enrolled in higher education | $7,500 / $5,000 / $2,500 | Only if the director is enrolled |
+| Pocket Powerhouse | best mobile game | $2,500 | No (Windows build) |
+| Walkie-Talkie | UEFN with LLM-powered NPCs | $2,500 | No (UEFN) |
+
+Every winning team also gets: Hyper3D Rodin Business for a year (and a share of the $10,000 pool if Rodin was used
+and listed), Tripo Max for a month or a Tripo Teams plan, Meshy Pro for a year.
+
+**NVIDIA RTX Award: what we know and don't.** The kit's copy of the page (2026-11-11) shows the RTX 5090 and "Answer
+the NVIDIA questions when you submit", the "Tools you used" field as needed for it, and the NvRTX branch of Unreal
+Engine as "one way to qualify"; the director reads it as sitting with Render Royalty. The page doesn't list the other
+ways. Don't switch engines for it: NvRTX is a source build, and the jam engine is the 5.9 Preview. What an entry on
+this kit can truthfully put in the NVIDIA answers: built and benched on a GeForce RTX 4060; NVIDIA's Kimodo
+motion-diffusion model for the animation (through UE 5.9's AnimGenOffline); hardware ray tracing only if the game
+ships with it on (`docs/ue/lighting.md`). Read the form's NVIDIA questions at kickoff and write down what they ask.
+
 ## Grants and credits
 
 - **Development Continuation Grants:** the jam page lists them per engine as $50,000 / $25,000 / $10,000 for first,

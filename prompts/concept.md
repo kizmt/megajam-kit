@@ -28,6 +28,9 @@ in the morning; the window fits either.
   ("2026-11-12 05:00:00 to 2026-11-16 01:59:00"); on 2026-11-11 it showed the viewer's local time ("November 12th
   2026 at 2:00 PM to November 16th 2026 at 10:59 AM", JST). Check them against the ET times in the page text and
   the rules (00:00 EST Nov 12 to 20:59 EST Nov 15).
+- **Prizes this entry can win** (`docs/submission.md` "What a solo Unreal Engine entry can win"): Best Overall,
+  Solo Driver, Render Royalty, Glass Box, and the NVIDIA RTX Award if its conditions fit. Read the submission form's
+  questions now (the NVIDIA ones included) and note anything a prize needs from the game or the dev log.
 - **Partner credits** (emailed on Nov 10; the list and claim deadlines are in `docs/submission.md` "Partner credits").
   Ask the director which are claimed and their balances: they change the paid-generation budget (CLAUDE.md "Money,
   keys and installs"). Claiming is the director's (sign-ups accept terms; Meshy asks for a card).
