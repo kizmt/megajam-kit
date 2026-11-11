@@ -6,7 +6,7 @@ Contest: **14:00 Thu Nov 12 to 10:59 Mon Nov 16** (93 h). Theme reveal: **04:00 
 
 ## The night before
 
-- Kit: `git -C C:\dev\megajam-kit status` is clean and on `ue-5.9`, pushed. `node gen\balances.ts` shows every
+- Kit: `git -C C:\dev\megajam-kit status` is clean and on `main`, pushed. `node gen\balances.ts` shows every
   service OK. Partner credits claimed where wanted (`docs/submission.md` "Partner credits").
 - `C:\dev\_plan` holds only an empty `design\`, `CLAUDE.md` and `.claude\` (`SETUP.md` step 0).
 - Machine: Launcher signed in, 5.9 opens, no editor or packaged game left running, 40+ GB free on `C:` (preflight checks it).
