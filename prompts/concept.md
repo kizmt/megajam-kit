@@ -33,7 +33,9 @@ in the morning; the window fits either.
   Solo Driver, Render Royalty, Glass Box (the NVIDIA RTX Award needs DLSS 4.5, NvRTX or ACE: not on the 5.9 Preview). Read the submission form's
   questions now (the NVIDIA ones included) and note anything a prize needs from the game or the dev log.
 - **Partner credits** (the list and claim deadlines are in `docs/submission.md` "Partner credits").
-  Ask the director which are claimed and their balances: they change the paid-generation budget (CLAUDE.md "Money,
+  Ask the director which are claimed and their balances (most are web app credits the director spends by hand,
+  `PIPELINE.md` "The director as a second generator"; the scripts use the API balances): they change the
+  paid-generation budget (CLAUDE.md "Money,
   keys and installs"). Claiming is the director's (sign-ups accept terms; Meshy asks for a card).
 - The judging categories (CLAUDE.md "Jam compliance"): Ambition and Innovation, Use of Theme, Fun Factor, Gameplay,
   Visuals, Level Design and Game Progression, Audio. Ties are re-scored with Fun Factor doubled. Copy the jam page's

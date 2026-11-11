@@ -97,6 +97,27 @@ under "Tools you used" on the form.
   `--model`. Its video models are not for the submission video, which shows the game itself
   (`docs/ue/cinematics-video.md`). Check a model's licence line on its fal page before shipping its output.
 
+### The director as a second generator (web apps, in parallel)
+
+Partner credits are mostly **web app credits**: Tripo's 3,000 can't be spent by the kit's scripts, which use the API
+balance. So the session hands the director generations to run by hand while it keeps working: two generators at
+once, and the web credits get used.
+
+- **The session prepares the request** and asks once, with everything needed: the concept image's full path
+  (`<Project>\Generated\assets\<name>\concept-*.jpg`, made with `gen\image.ts` so it follows the style lock), which
+  service (Tripo web, Rodin, Meshy), the settings (image to 3D, PBR textures on, a prop's triangle count), and the
+  file name to save as. Batch several props into one ask; say which are most urgent.
+- **The director generates, downloads** the GLB or FBX with textures into `<Project>\Generated\inbox\<Name>.glb`,
+  and says "done". Nothing else is needed from them.
+- **The session imports it:** `node gen\asset.ts --model <Project>\Generated\inbox\<Name>.glb --name <Name> [--max
+  0.8]` (prep, material, style mask, Nanite, placement), then `gen\parts.ts` if it has a moving part. It judges the
+  result by the import report and a screenshot, like any other prop.
+- **Characters stay on the scripted Tripo route** (`character.ts`: it rigs through the API and the retarget expects
+  that rig). A character generated **and rigged** in Tripo's web app can be tried with `character.ts --rig <rigged
+  fbx> --pbr <textured model> --name <Name>`: untested with a web export, so not for the hero.
+- **Count it:** web generations don't show in `balances.ts`; the session logs each in the devlog and `PROGRESS.md`
+  (service, asset, who ran it) so "Tools you used" and the spend stay accurate.
+
 ## Moving parts: one fused mesh into parts with pivots (tested 2026-11-11 on UE 5.9 Preview and 5.8.4, Blender 5.3)
 
 A generator returns one fused mesh, so a chest can't open and a wheel can't turn. `gen/parts.ts` cuts the prop's

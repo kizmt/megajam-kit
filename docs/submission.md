@@ -89,7 +89,7 @@ them (PST where stated).
 
 | Partner | What | Claim by | Notes |
 |---|---|---|---|
-| Tripo | 3,000 credits + Pro | Nov 16 (code from worlds.tripo3d.ai/epicaimegajam2026promotion, then tripo3d.ai > Upgrade > Redeem Code) | Pro ends Nov 18 00:00 PST (17:00 JST); the kit's main 3D generator |
+| Tripo | 3,000 credits + Pro | Nov 16 (code from worlds.tripo3d.ai/epicaimegajam2026promotion, then tripo3d.ai > Upgrade > Redeem Code) | Pro ends Nov 18 00:00 PST (17:00 JST); the kit's main 3D generator. **Web app credits, not API credits**: the kit's scripts spend the API balance (`node gen\balances.ts`), which the director tops up separately; the 3,000 are spent by the director generating in the web app (`PIPELINE.md` "The director as a second generator") |
 | Hyper3D (Rodin) | Business plan, 208 credits | Nov 16 | Benefits end Nov 20; see the Rodin pool above |
 | Meshy | Pro month, 1,000 credits (web or API) | Nov 17 | Sign-up link only; card required |
 | PBRgen | Tileable PBR materials from text or an image | Valid Nov 7-15 | Floors, walls, terrain: albedo, normal, roughness, metallic, height, AO |
