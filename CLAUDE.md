@@ -155,8 +155,8 @@ director). **The target PC** is the machine the game is built and measured on (R
 ## Money, keys and installs
 
 - **Paid generations cost real money** (Tripo prop ~45 credits, character ~90, re-texture 20; image, Uthana and
-  ElevenLabs calls are billed too; see `PIPELINE.md`). Before a batch, say how many generations and roughly
-  what they cost. The director decides on paid experiments. Read the balances when quoting (`node gen\balances.ts`;
+  ElevenLabs calls are billed too, and so are the partner generators Hyper3D Rodin, Meshy and fal; see
+  `PIPELINE.md`). Before a batch, say how many generations and roughly what they cost. The director decides on paid experiments. Read the balances when quoting (`node gen\balances.ts`;
   the bare `tripo` CLI has no key: use `node gen\tripo.ts ...`).
   `asset.ts` and `character.ts` refuse a run the Tripo balance can't finish; other paid scripts don't check it.
 - **Never re-roll a paid generation to fix a problem you haven't diagnosed.** Find the cause first (inspect

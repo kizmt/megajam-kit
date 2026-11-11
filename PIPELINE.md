@@ -51,19 +51,51 @@ The per-image cost depends on size and quality: estimate it with the calculator 
 
 Known limits: master material is opaque (glass renders dark).
 
-**A model from another generator (Hyper3D Rodin, Meshy):** generate it in that tool's web app, export FBX or GLB with
-textures, then `node gen\asset.ts --model <file> --name <Name> [--max 0.8]`: the same prep, material, style mask,
-Nanite and placement as a Tripo model, no Tripo credits. For a character, rig it with Tripo (`character.ts --task`
-needs a Tripo task, so a Rodin character is a prop unless it is rigged elsewhere). Log the tool in the game's
-credits and in the submission's "Tools you used" field: Hyper3D's $10,000 pool is split among winning teams that
-used Rodin (`docs/submission.md`). Rodin Business credits (208) and Meshy Pro (1,000) come with the jam's partner
-perks; both are the director's accounts.
+**A model from another generator (Hyper3D Rodin, Meshy, fal):** `node gen\asset.ts --model <file> --name <Name>
+[--max 0.8]` gives it the same prep, material, style mask, Nanite and placement as a Tripo model, with no Tripo
+credits. Which generator, what it costs and how to export: "Partner generators" below.
 
 **Style references for a set of subjects (a cast, a bestiary):** a painted key-art scene is a weak `--ref` for an
 isolated subject. In the rehearsal it leaked haze and scenery into 3 of 9 creature concepts and 7 of 24 character
 concepts (even with a "style only, no fog or scenery" prefix), and half of the clean ones came out in a flatter
 cartoon style. Generate one subject with the key art, get it approved, then send that concept as the first `--ref`
 (a subject on plain grey: the style anchor) and at most one key-art frame after it, for palette only.
+
+## Partner generators: Hyper3D Rodin, Meshy, fal
+
+Tripo stays the kit's main 3D generator (scripted end to end). These three are jam partners with credits to claim
+(`docs/submission.md` "Partner credits") and prizes attached, used for a few assets each. None has a kit script:
+generate in the web app (or by API), export, and bring the file in with `asset.ts --model`. **Untested in the kit
+with a real export from any of the three** (the `--model` path is tested with Tripo files): do the first one early
+and check the import report. They are paid generations like any other: quote first (CLAUDE.md "Money, keys and
+installs"). What they make is generated content, not a sourced asset; log each use in the devlog and list the tool
+under "Tools you used" on the form.
+
+| | Hyper3D Rodin | Meshy | fal |
+|---|---|---|---|
+| Use it for | A signature prop or two: a second look at a hard shape, and the Rodin prize pool | A fallback when Tripo's result is rejected; remesh | A model the others lack, through one key: other image and 3D models, video, audio |
+| Jam credits | Business plan, 208 credits (claim by Nov 16; ends Nov 20) | Pro month, 1,000 credits (claim by Nov 17; card needed) | $30 (claim by Nov 30) |
+| Cost | From 0.5 credit per generation, HighPack from +1 (hyper3d.ai/features/api, 2026-11-11: "from" prices, check the app's quote) | Image to 3D on `meshy-7.1`: 20 mesh only, 30 with 2K or 4K textures, 35 with 8K; `meshy-6-lite` 5 / 15; remesh 5; retexture 10; rigging 5; animation 3 per action (docs.meshy.ai/api/pricing, 2026-11-11) | Per call, on each model's page (e.g. Rodin 2.5 through fal: $0.40, HighPack +$0.80) |
+| Key (`.env`, optional) | `HYPER3D_API_KEY` (API needs Business or Enterprise; the perk is Business) | `MESHY_API_KEY` (API credits are prepaid, bought in the subscription settings) | `FAL_KEY` |
+| API | `POST https://api.hyper3d.com/api/v2/rodin`, `Authorization: Bearer <key>`; poll, then download (docs.hyper3d.ai) | `https://api.meshy.ai` (docs.meshy.ai) | `POST https://fal.run/<model id>`, `Authorization: Key <key>` (fal.ai/docs) |
+
+- **Export for the kit:** GLB (or FBX) **with PBR textures**, one mesh. Triangles are fine (Nanite is on; the
+  Blender prep doesn't need quads); pick a count near a Tripo prop's (tens of thousands), not the millions the top
+  tiers offer. Rodin: geometry format `glb`, material `PBR` (not `Shaded`: that bakes light into the colour);
+  `texture_delight` removes baked light when the source image had strong lighting.
+- **Feed them the kit's concept image.** Generate the concept with `gen\image.ts` (or take the one `asset.ts` made:
+  `<Project>\Generated\assets\<name>\concept-*.jpg`) and upload it, so the prop follows the style lock like the
+  Tripo ones; then the shared style layer pulls it into the set (`docs/ue/materials.md`).
+- **Props, not characters.** `character.ts` rigs through Tripo and its retarget expects that skeleton. A Rodin or
+  Meshy model is a prop, or a creature moved as parts (`gen\parts.ts`). Meshy's own rigging and animation library
+  give a different skeleton: untested here (`docs/ue/animation-library.md`).
+- **Hyper3D's prize pool** ($10,000 split among winning teams that used Rodin and listed it) pays only if the game
+  wins a category; one honest Rodin asset in the shipped game qualifies (`docs/submission.md`). Generate it on the
+  Hyper3D account itself: whether Rodin reached through fal counts is not stated anywhere.
+- **fal** hosts other vendors' models (3D: Rodin, Trellis 2, Hunyuan 3D, Tripo; image, video and audio models too).
+  The 3D results come back as a file URL (`model_mesh.url`): download it into `<Project>\Generated\` and use
+  `--model`. Its video models are not for the submission video, which shows the game itself
+  (`docs/ue/cinematics-video.md`). Check a model's licence line on its fal page before shipping its output.
 
 ## Moving parts: one fused mesh into parts with pivots (tested 2026-11-11 on UE 5.9 Preview and 5.8.4, Blender 5.3)
 

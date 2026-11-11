@@ -26,6 +26,9 @@ gameplay code, levels or game assets.
 | Code, editor work, orchestration | Claude Code (Claude Opus 5.5) | – |
 | Concept art and key frames | Google Gemini `gemini-3-pro-image` (OpenAI `gpt-image-2` as fallback) | `gen/image.ts` |
 | Image to 3D model, re-texturing, auto-rigging | Tripo (API + CLI; texture model v3.5) | `gen/asset.ts`, `gen/character.ts` |
+| Image to 3D model, second generator | Hyper3D Rodin (Gen-2.5; web app or API) | web app, then `gen/asset.ts --model` (see `PIPELINE.md` "Partner generators") |
+| Image to 3D model, fallback; remesh | Meshy (`meshy-7.1`; web app or API) | web app, then `gen/asset.ts --model` |
+| Other image, 3D, video and audio models through one API | fal | no kit script (see `PIPELINE.md` "Partner generators") |
 | Sound effects, music, voice | ElevenLabs (`eleven_text_to_sound_v3`, `music_v2_5`, `eleven_v4`) | `gen/audio.ts` |
 | Text-to-motion animation | NVIDIA Kimodo in UE 5.9 (AnimGenOffline plugin; local, with Meta Llama 3 as its text encoder) | `gen/unreal/kimodo.ts` |
 | Text-to-motion animation, fallback | Uthana (`text-to-motion-3.0`) | manual (see `PIPELINE.md`) |
