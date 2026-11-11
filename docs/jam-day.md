@@ -50,7 +50,7 @@ No project, no code, no level, no images (rule 7(h)).
 - The session asks before paid batches, before closing the editor and before anything that takes the screen.
   Reports come at each round close (about every 2 hours) with captures.
 - Your calls go in `DECISIONS.md`: say them plainly and it records them.
-- **You are the second generator.** The partner credits are web app credits (Tripo's 3,000, Rodin, Meshy). The
+- **You are the second generator.** Tripo's 3,000 partner credits work in its web app only, and Rodin and Meshy have no kit script. The
   session gives you a concept image and settings; you generate in the web app, save the download to
   `<Project>\Generated\inbox\<Name>.glb` and say "done"; it imports it (`PIPELINE.md` "The director as a second
   generator"). The scripts spend the API balances, which you top up separately (`node gen\balances.ts`).

@@ -124,8 +124,8 @@ director). **The target PC** is the machine the game is built and measured on (R
   call with options, evidence (captures, numbers) and a recommendation. The session can also call on the director
   like a tool: when a step needs a human (a UI-only button, a sign-in, a purchase, a cold playtest, judging feel by
   hand), ask for exactly that, step by step, and keep working on something else meanwhile.
-  **The director is also a second generator:** partner credits (Tripo's 3,000, Rodin, Meshy) are web app credits
-  the scripts can't spend, so hand over prop generations to run in the web apps in parallel and import the
+  **The director is also a second generator:** Tripo's 3,000 partner credits work in its web app only, and the kit has no
+  script for Rodin or Meshy, so hand over prop generations to run in the web apps in parallel and import the
   downloads with `asset.ts --model` (`PIPELINE.md` "The director as a second generator").
 - **Work long stretches unassisted.** Once the session has what it needs (the concept, the look, the calls in
   `DECISIONS.md`), it keeps going round after round without waiting for replies. It stops only for a director's call,

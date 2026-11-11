@@ -99,8 +99,8 @@ under "Tools you used" on the form.
 
 ### The director as a second generator (web apps, in parallel)
 
-Partner credits are mostly **web app credits**: Tripo's 3,000 can't be spent by the kit's scripts, which use the API
-balance. So the session hands the director generations to run by hand while it keeps working: two generators at
+Tripo's 3,000 partner credits are **web app credits**: the kit's scripts can't spend them (they use the API
+balance). Rodin and Meshy credits do work through their APIs, but the kit has no script for either. So the session hands the director generations to run by hand while it keeps working: two generators at
 once, and the web credits get used.
 
 - **The session prepares the request** and asks once, with everything needed: the concept image's full path
