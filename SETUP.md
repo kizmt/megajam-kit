@@ -387,10 +387,13 @@ project (its first run downloads ~16 GB and may show dialogs that block MCP).
    `& "C:\dev\<Project>\Intermediate\PipInstall\Scripts\python.exe" -m pip install --no-deps antlr4-python3-runtime==4.9.3 omegaconf==2.3.0`
 4. **First clip** (worked 2026-11-10 on the target PC; this downloads ~17.5 GB the first time):
    - A scratch level (File > New Level > Basic, saved in a `_KimodoTest` folder) and a Level Sequence (clapperboard >
-     **Add Level Sequence**, same folder).
+     **Add Level Sequence**, same folder). **Per jam project** the kit's examples use `/Game/_Kimodo/L_Kimodo` and
+     `/Game/_Kimodo/LS_Kimodo` (`kimodo.ts --seq /Game/_Kimodo/LS_Kimodo`); one mannequin sequence serves every
+     character (`--for <Name>` retargets).
    - Add the character the plugin's way: Sequencer toolbar > the **AnimGenOffline** drop-down (a running-figure icon
      with no text) > **Add Character**. Pose Generator Kimodo, Source Skeletal Mesh, the mesh (e.g. `SKM_Manny_Simple`),
-     **Control Rig** ticked (Auto finds Manny's `CR_Mannequin_Body`: needed for pose and foot keys), **Spline** ticked
+     **Control Rig** ticked with its drop-down on **Auto** (it finds Manny's `CR_Mannequin_Body`: needed for pose
+     and foot keys; left on Manual Asset the dialog says "Control rig compatibility Failed", 2026-11-11), **Spline** ticked
      only for "walk along this path" clips, Transform Track ticked. The character is a spawnable of the sequence; it
      gets a Generated Animation section. (Adding a placed mesh by hand with + Track > Actor To Sequencer > Add Generated
      Animation Section also works, but without the pose-editing rig.)

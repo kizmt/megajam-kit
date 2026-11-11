@@ -105,7 +105,7 @@ Never wait for a reply; never end a turn with a question.
    "Light and shadow", "Running out", "Small world", "Change of perspective", "Connections", "Unstable".
 2. **Concept** (`prompts/concept.md`, all steps; the theme window doesn't apply, so planning files go straight in
    the project). Step 1's direction comes from the run card: target length 5-10 min, budget as the card says, no
-   taste given. Step 3's pick comes from the panel. Then `init-repo.ps1` (no `-Push`).
+   taste given. Step 3's pick comes from the panel. Then `init-repo.ps1` (it commits locally; nothing is pushed).
 3. **Style lock** (`prompts/style-lock.md`). The session writes the mood words and references itself (step 1),
    makes 2-3 key-art directions, and the critic picks against the mood words and the concept's set-piece shot.
    One revision round at most, then lock.

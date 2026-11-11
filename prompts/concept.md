@@ -12,7 +12,7 @@ decisions only. No game repo, no code, no level, no images (key art included).
 "0. Planning folder"); start Claude Code there. There is no game project yet, so every file this prompt names goes
 in the planning folder: `design\concept.md`, `design\concepts.md`, `design\schedule.md` (the step 5 table) and
 `DECISIONS.md` at the planning folder root.
-**At S:** create the project (`SETUP.md`), then give the planning session access to it before moving anything:
+**At S:** create the project (`SETUP.md`; `docs/jam-day.md` is the one-page order), then give the planning session access to it before moving anything:
 `/add-dir C:\dev\<Project>` (or restart Claude Code in the project with `C:\dev\_plan` in `additionalDirectories`).
 Full paths on both sides usually work without it (a rehearsal moved the files and wrote project files that way);
 `/add-dir` is the fix when a copy or a write is refused. Move `design\` and `DECISIONS.md` into the project, copy the
@@ -32,7 +32,7 @@ in the morning; the window fits either.
 - **Prizes this entry can win** (`docs/submission.md` "What a solo Unreal Engine entry can win"): Best Overall,
   Solo Driver, Render Royalty, Glass Box (the NVIDIA RTX Award needs DLSS 4.5, NvRTX or ACE: not on the 5.9 Preview). Read the submission form's
   questions now (the NVIDIA ones included) and note anything a prize needs from the game or the dev log.
-- **Partner credits** (emailed on Nov 10; the list and claim deadlines are in `docs/submission.md` "Partner credits").
+- **Partner credits** (the list and claim deadlines are in `docs/submission.md` "Partner credits").
   Ask the director which are claimed and their balances: they change the paid-generation budget (CLAUDE.md "Money,
   keys and installs"). Claiming is the director's (sign-ups accept terms; Meshy asks for a card).
 - The judging categories (CLAUDE.md "Jam compliance"): Ambition and Innovation, Use of Theme, Fun Factor, Gameplay,

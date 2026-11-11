@@ -83,7 +83,8 @@ So qualifying means building the jam game on 5.8.4 with the DLSS plugin, and giv
 
 ## Partner credits (jam page, 2026-11-11)
 
-Codes and claim links were emailed on Nov 10 (check spam). The director claims them; times are as the page gives
+The page says codes and claim links were emailed on Nov 10; none had arrived by the morning of Nov 11 JST (check
+spam; Tripo's code comes from its own page, below). The director claims them; times are as the page gives
 them (PST where stated).
 
 | Partner | What | Claim by | Notes |

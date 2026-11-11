@@ -190,6 +190,7 @@ if (-not (Test-Path (Join-Path $Project '.mcp.json'))) { $todo += 'Output Log Cm
 if ($needEditorStart) { $todo += "After that first start, close the editor and run this script again: it then installs Kimodo's two extra packages." }
 if ($kimodo) { $todo += 'Kimodo, once per project: a Level Sequence with the mannequin (SKM_Manny_Simple) added through Sequencer''s AnimGenOffline drop-down > Add Character (SETUP 10b step 4). The script can''t see whether this is done.' }
 if (-not (Test-Path (Join-Path $Project '.git'))) { $todo += "$Project\scripts\init-repo.ps1" }
+$todo += "Render settings (SETUP 7b), once the style lock has chosen the path, editor closed: $Kit\scripts\apply-7b.ps1 -Project $Project -Path lumen|lite|none"
 $todo += "With the editor open: C:\dev\megajam-kit\scripts\preflight.ps1 -Project $Project   then: cd $Project; claude"
 Write-Host ''
 Write-Host 'Left for you (SETUP.md has the detail):'

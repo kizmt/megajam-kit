@@ -182,7 +182,8 @@ director). **The target PC** is the machine the game is built and measured on (R
   target fps (chosen at the style lock, in `DECISIONS.md`), and a settings menu that scales down for weaker PCs**
   (the bar: `docs/ue/performance.md`). Run `gen/perf/bench.ts --target-fps <target>` per milestone.
 - **Choose the render path (full Lumen, Lumen Lite or no Lumen; internal resolution) with the style lock, not
-  mid-game**: SETUP step 7b and `docs/ue/performance.md` "Render paths". Compare candidates on the same frame at
+  mid-game**: SETUP step 7b (`scripts\apply-7b.ps1 -Path lumen|lite|none` writes it, editor closed) and
+  `docs/ue/performance.md` "Render paths". Compare candidates on the same frame at
   true 1:1, including something moving. Never SMAA/FXAA below 100% screen percentage (lower detail, not crisper).
 - C++ must compile with **zero UHT warnings** (UHT treats warnings as errors). `.generated.h` is the last
   include; a delegates-only header needs `UDELEGATE`. See `docs/ue/cpp.md`.

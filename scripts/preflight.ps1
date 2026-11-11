@@ -154,7 +154,7 @@ else { Warn 'no Intermediate\PythonStub\unreal.py: tick Python Developer Mode an
 if ($is59) {
     $game = Join-Path $Project 'Config\DefaultGame.ini'
     if ((Test-Path $game) -and (Get-Content -Raw $game) -match 'megajam-kit project: one AI session') { Pass 'MCP project Instructions set (5.9)' }
-    else { Warn 'MCP project Instructions not found in DefaultGame.ini (5.9, SETUP step 3.5; the ini key is unconfirmed)' }
+    else { Warn 'MCP project Instructions not found in DefaultGame.ini (5.9, SETUP step 3.5: scripts\setup-project.ps1 writes it, editor closed)' }
 }
 # "Use Less CPU when in Background": per user and per engine version (5.9 keeps it in %LOCALAPPDATA%\UnrealEngine\5.9\
 # ...\EditorSettings.ini); a project file may also carry it. On, a background editor runs at ~3 fps: fatal unattended.

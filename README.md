@@ -27,7 +27,8 @@ gameplay code, levels or game assets.
 | Concept art and key frames | Google Gemini `gemini-3-pro-image` (OpenAI `gpt-image-2` as fallback) | `gen/image.ts` |
 | Image to 3D model, re-texturing, auto-rigging | Tripo (API + CLI; texture model v3.5) | `gen/asset.ts`, `gen/character.ts` |
 | Sound effects, music, voice | ElevenLabs (`eleven_text_to_sound_v3`, `music_v2_5`, `eleven_v4`) | `gen/audio.ts` |
-| Text-to-motion animation | Uthana (`text-to-motion-3.0`) | manual for now (see `PIPELINE.md`) |
+| Text-to-motion animation | NVIDIA Kimodo in UE 5.9 (AnimGenOffline plugin; local, with Meta Llama 3 as its text encoder) | `gen/unreal/kimodo.ts` |
+| Text-to-motion animation, fallback | Uthana (`text-to-motion-3.0`) | manual (see `PIPELINE.md`) |
 
 Non-AI tools: Blender (headless, for model clean-up and texture packing), ffmpeg (audio conversion, capture and
 video editing), Node 24 (the kit's TypeScript runs directly), Git + Git LFS.
@@ -36,6 +37,7 @@ video editing), Node 24 (the kit's TypeScript runs directly), Git + Git LFS.
 
 | Path | What it is |
 |---|---|
+| `docs/jam-day.md` | The one-page order for the jam: the night before, the theme reveal, the contest start, each day, the last day |
 | `SETUP.md` | Checklist from empty project to ready: plugins, MCP, build loop, packaging, render and performance defaults |
 | `CLAUDE.md` | Standing rules for the Claude session: scope, workflow, engine conventions, verification |
 | `PIPELINE.md` | How each asset type is produced, with the facts learned while testing the pipeline |
@@ -60,10 +62,11 @@ video editing), Node 24 (the kit's TypeScript runs directly), Git + Git LFS.
 | `gen/parts.ts` | Split a generated prop into movable parts (lid, lever, wheel) with pivots on the hinge, imported next to the prop |
 | `gen/blender/` | Headless Blender scripts: size/pivot/texture prep, rig prep, PBR map extraction, ORM packing, previews, style-mask bake, part splitting |
 | `gen/vfx/` | VFX building blocks: procedural mask/noise textures, the master VFX material and instances, effect meshes |
-| `gen/unreal/` | Editor automation over MCP: master material + material instances, skeletal import checks, retargeting, screenshots, running editor Python |
+| `gen/unreal/` | Editor automation over MCP: master material + material instances, skeletal import checks, retargeting, Kimodo text-to-animation, screenshots, running editor Python |
 | `gen/perf/` | Benchmarking of the packaged build: CSV profile summaries and settings comparisons |
+| `gen/video/` | `trailer.ts`: cuts recorded segments into the video and lays sound effects and music from the game's event log |
 | `gen/test/` | `-game` tests: scripted tests, posted-key input, camera-set captures, a shimmer meter, trailer shots, a route walker; foreground key tests (with approval) and safe recording |
-| `scripts/` | PowerShell: C++ build (fails on warnings), packaging + itch.io zip, itch.io upload (butler), project Git/LFS setup |
+| `scripts/` | PowerShell: new-project setup in one command, the readiness check (preflight), render settings (SETUP 7b), C++ build (fails on warnings), packaging + itch.io zip, itch.io upload (butler), project Git/LFS setup |
 | `unreal/Plugins/MegajamTools` | The kit's small editor plugin (Python tools exposed to Unreal MCP; on 5.9 also the kit's editor skills) |
 
 All generated files go into the game project (`<Project>/Generated/`), never into this kit.

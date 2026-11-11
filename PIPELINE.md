@@ -263,7 +263,8 @@ voice lines on Eleven v4, designing a narrator or character voice). Read it befo
 
 ## Motion: Uthana (text-to-motion)
 
-No kit script yet (`gen/uthana.ts` is planned: generate with cost logged, fetch, then import, bake root, retarget).
+No kit script: on 5.9 the scripted route is Kimodo (`gen/unreal/kimodo.ts`, local and free); Uthana stays a manual,
+paid fallback (generate, fetch, then import, bake root, retarget).
 Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls needed):
 
 - **API:** one GraphQL endpoint, `https://uthana.com/graphql`, HTTP Basic auth with the key (`UTHANA_API_KEY` in
@@ -326,6 +327,7 @@ Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls nee
 | `gen/vfx/vfx.ts` | VFX building blocks: procedural mask/noise textures (`gen/vfx/textures.ts`), `M_VFX_Master` + per-effect instances (`gen/unreal/py/build_vfx_material.py`, `build_vfx_instance.py`), effect meshes (`gen/blender/vfx_meshes.py`) (`docs/ue/vfx.md` "Kit VFX building blocks") |
 | `scripts/build.ps1` | Full C++ editor build with the editor closed; PASS only with zero warnings (`-AllowWarnings` to relax; the engine comes from the `.uproject`, `-EngineRoot` overrides) |
 | `scripts/package.ps1` | Win64 package to `C:\dev\Builds\<Project>\` + `<ZipName>_<Project>.zip` (`-ZipName` required, `-EngineRoot` optional; the jam requires the default Development config) |
+| `scripts/setup-project.ps1` | SETUP steps 2-6 in one command for a new project: plugins, MCP Instructions, Asset Manager entry, `.mcp.json`, Claude Code settings, `CLAUDE.md`, critic, scripts, kit plugin, Kimodo's pip fixes; prints the clicks left. Editor closed; safe to rerun |
 | `scripts/apply-7b.ps1` | SETUP 7b in one command: display settings and the render path (`-Path lumen\|lite\|none`, `-Internal`, `-Title`) written into `Config\Default*.ini`; `-Check` reports without writing. Editor closed |
 | `scripts/preflight.ps1` | Read-only check that a project is ready for a session to start (kit files, settings, engine, MCP, plugin; `-Autonomous` adds the run card): PASS/WARN/FAIL, exit 1 on any FAIL (`SETUP.md` 6 and 11) |
 | `scripts/upload.ps1` | itch.io upload of the zip with butler: dry run unless `-Push` (`-ZipName`, `-Target user/game`, `-Channel windows`) |
