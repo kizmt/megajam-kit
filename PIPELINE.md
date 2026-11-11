@@ -68,7 +68,7 @@ Tripo stays the kit's main 3D generator (scripted end to end). These three are j
 generate in the web app (or by API), export, and bring the file in with `asset.ts --model`. **Untested in the kit
 with a real export from any of the three** (the `--model` path is tested with Tripo files): do the first one early
 and check the import report. They are paid generations like any other: quote first (CLAUDE.md "Money, keys and
-installs"). What they make is generated content, not a sourced asset; log each use in the devlog and list the tool
+installs"); `node gen\balances.ts` reads all three balances (fal's only if the key has billing permission). What they make is generated content, not a sourced asset; log each use in the devlog and list the tool
 under "Tools you used" on the form.
 
 | | Hyper3D Rodin | Meshy | fal |
@@ -332,7 +332,7 @@ Facts from one trial (3 clips: idle fidget, hit reaction, death; no re-rolls nee
 | `gen/unreal/shot.ts` | Viewport screenshot to PNG (`--wait N` for shader compiles) |
 | `gen/character.ts` | Concept -> rigged, PBR-textured, retargeted character (+ BP); see Characters |
 | `gen/views.ts` | Cut a four-view turnaround sheet into front/left/back/right images for Tripo multiview (Four views) |
-| `gen/balances.ts` | Every paid service's balance and key status in one call, no key printed |
+| `gen/balances.ts` | Every paid service's balance and key status in one call, no key printed (Tripo, ElevenLabs, Uthana, Gemini, OpenAI; Meshy, Hyper3D and fal when their optional keys are set) |
 | `gen/hf_token.ts` | Copies `HUGGINGFACE_ACCESS_TOKEN` from `.env` into Hugging Face's token file for 5.9's Kimodo (`SETUP.md` 10b); `--check` compares; never prints it |
 | `gen/tripo.ts` | The `tripo` CLI with the kit `.env` loaded (`node gen\tripo.ts balance --json`, `history`, `task watch`) |
 | `gen/blender/prep_rig.py` | Rigged character: height, facing, armature-safe cm export, textures stripped |

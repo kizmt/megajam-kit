@@ -4,6 +4,8 @@
 //   node gen\balances.ts            (one line per service)
 //   node gen\balances.ts --json     (BALANCES_JSON={...})
 // Tripo: credits and frozen holds. ElevenLabs: credits left this cycle and the reset time. Uthana: pay-as-you-go USD.
+// The partner generators (PIPELINE.md "Partner generators"), each optional: Meshy and Hyper3D credits, fal USD.
+// A service with no key prints SKIP, not FAIL.
 // Gemini and OpenAI have no balance API for these keys: checked with a free model lookup (key valid, model
 // available); spend there is counted from prices (PIPELINE.md), and the remaining prepay is read in their consoles.
 // A shared account's balance can move without this project's calls: count a run's spend from its own calls (the
@@ -82,8 +84,41 @@ async function openai(): Promise<Row> {
     note: 'no balance API for project keys: see the OpenAI dashboard' };
 }
 
+// The three partner generators are optional: no key is a skipped row, not a failure.
+const skipped = (service: string, key: string): Row => ({ service, ok: true, skipped: true, note: `no ${key} in .env (optional)` });
+
+async function meshy(): Promise<Row> {
+  const key = env('MESHY_API_KEY');
+  if (!key) return skipped('meshy', 'MESHY_API_KEY');
+  const r = await get('https://api.meshy.ai/openapi/v1/balance', { headers: { authorization: `Bearer ${key}` } });
+  return typeof r.body?.balance === 'number'
+    ? { service: 'meshy', ok: true, credits: r.body.balance }
+    : { service: 'meshy', ok: false, note: `HTTP ${r.status}` };
+}
+
+async function hyper3d(): Promise<Row> {
+  const key = env('HYPER3D_API_KEY');
+  if (!key) return skipped('hyper3d', 'HYPER3D_API_KEY');
+  const r = await get('https://api.hyper3d.com/api/v2/check_balance', { headers: { authorization: `Bearer ${key}` } });
+  return typeof r.body?.balance === 'number'
+    ? { service: 'hyper3d', ok: true, credits: r.body.balance }
+    : { service: 'hyper3d', ok: false, note: `HTTP ${r.status}` };
+}
+
+async function fal(): Promise<Row> {
+  const key = env('FAL_KEY');
+  if (!key) return skipped('fal', 'FAL_KEY');
+  const r = await get('https://api.fal.ai/v1/account/billing?expand=credits', { headers: { authorization: `Key ${key}` } });
+  const usd = r.body?.credits?.current_balance;
+  if (typeof usd === 'number') return { service: 'fal', ok: true, usd };
+  // A key made for running models may lack the billing:usage:read permission: the key can still be fine.
+  return r.status === 403
+    ? { service: 'fal', ok: true, key: 'set', note: 'this key cannot read the balance (no billing permission): see fal.ai/dashboard/billing' }
+    : { service: 'fal', ok: false, note: `HTTP ${r.status}` };
+}
+
 export async function balances(): Promise<Row[]> {
-  const jobs = [tripo, elevenlabs, uthana, gemini, openai].map(async (f) => {
+  const jobs = [tripo, elevenlabs, uthana, gemini, openai, meshy, hyper3d, fal].map(async (f) => {
     try { return await f(); } catch (e) { return { service: f.name, ok: false, note: errorMessage(e).split('\n')[0] }; }
   });
   return Promise.all(jobs);
@@ -96,8 +131,8 @@ if (isMain(import.meta.url)) {
     console.log(`BALANCES_JSON=${JSON.stringify({ at: new Date().toISOString(), rows })}`);
   } else {
     for (const r of rows) {
-      const { service, ok, ...rest } = r;
-      console.log(`${ok ? 'OK  ' : 'FAIL'} ${service.padEnd(10)} ${Object.entries(rest).map(([k, v]) => `${k}=${v}`).join('  ')}`);
+      const { service, ok, skipped: skip, ...rest } = r;
+      console.log(`${skip ? 'SKIP' : ok ? 'OK  ' : 'FAIL'} ${service.padEnd(10)} ${Object.entries(rest).map(([k, v]) => `${k}=${v}`).join('  ')}`);
     }
   }
 }
