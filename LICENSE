@@ -1,0 +1,27 @@
+Copyright (c) 2026 Oni Rocket. All rights reserved.
+
+This repository is published so that it can be read: as a record of the tools
+prepared before the 2026 Epic AI MegaJam, and for review by Epic Games and the
+jam's judges.
+
+No licence is granted. You may view the contents and, as GitHub's Terms of
+Service allow, fork the repository on GitHub in order to view it. You may not
+copy, modify, merge, publish, distribute, sublicense, sell, or otherwise use
+any part of it, in source or any other form, without prior written permission
+from the copyright holder.
+
+Third-party material is not covered by this notice and stays the property of
+its owners:
+
+- docs/ue59/pages/ and docs/ue59/known-issues.md contain text from the Unreal
+  Engine documentation, copyright Epic Games, Inc., kept here as an offline
+  reference. Unreal Engine and its logo are trademarks of Epic Games, Inc.
+- Packages named in package.json and pnpm-lock.yaml are under their own
+  licences.
+- Names of other products and services belong to their owners.
+
+THE CONTENTS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND. IN NO EVENT
+SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY
+ARISING FROM THEIR USE.
+
+To ask for permission, open an issue on this repository.
